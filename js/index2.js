@@ -3042,8 +3042,10 @@
   ];
   var collectFilter='inbox';
   var collectSeq=107;
+  var COLLECT_SRC={};   // 後端補的來源說明：connector id → {name,cat,license}
   function collectById(id){ return COLLECT.filter(function(x){ return x.id===id; })[0]; }
   function collectSourceOf(id){
+    if (COLLECT_SRC[id]) return COLLECT_SRC[id];
     if (id==='manual') return {name:'手動收集',cat:'本頁',license:'—'};
     var a=acqById(id);
     return a?{name:a.name,cat:a.cat,license:a.license}:{name:id,cat:'—',license:'—'};
@@ -3678,6 +3680,41 @@
       return;
     }
   });
+  /* ---------- 對外接口：讓 js/api.js 用真資料覆蓋這頁的示範資料 ---------- */
+  window.KOLINDEX_UI={
+    version:'2026-11-21',
+    /* 用 kolindex-api 的收集清單換掉 COLLECT 並重繪 */
+    setCollect:function(items){
+      if (!Array.isArray(items)||!items.length) return false;
+      COLLECT=items.map(function(x){
+        if (x.srcName) COLLECT_SRC[String(x.source)]={name:String(x.srcName),cat:String(x.srcCat||'—'),license:String(x.srcLicense||'—')};
+        return {
+          id:String(x.id), title:String(x.title||''), source:String(x.source||'manual'),
+          pri:String(x.pri||'p2'), priLabel:String(x.priLabel||'P2'),
+          role:String(x.role||'審核席'), state:String(x.state||'inbox'), note:String(x.note||'')
+        };
+      });
+      collectFilter='inbox';
+      renderCollect();
+      return true;
+    },
+    /* 用 /api/alerts 的 ui 形狀換掉 store.alerts 並重繪 */
+    setAlerts:function(items){
+      if (!Array.isArray(items)) return false;
+      store.alerts=items.map(function(a){
+        return {
+          id:String(a.id), tone:a.tone==='red'?'red':(a.tone==='amber'?'amber':'orange'),
+          icon:String(a.icon||'i-warn'), title:String(a.title||''),
+          desc:String(a.desc||''), time:String(a.time||'')
+        };
+      });
+      renderAlerts();
+      return true;
+    },
+    /* 目前頁面上的收集項 / 告警數，方便測試腳本檢查 */
+    counts:function(){ return {collect:COLLECT.length, alerts:store.alerts.length}; }
+  };
+
   bootRouter();
   mountTips();
   requestAnimationFrame(pumpTicker);

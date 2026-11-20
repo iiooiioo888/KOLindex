@@ -42,7 +42,7 @@
   </div>
   <div class="chip-row">
     <span class="chip green">自動認領 ON</span>
-    <span class="chip or">DEMO DATA</span>
+    <span class="chip or" id="dataChip" data-api="offline" title="示範資料：後端沒開時這頁照樣能看">DEMO DATA</span>
     <span class="chip cyan">LLM 槽位 <span data-num="slotUsed">—</span>/8</span>
     <span class="chip red" id="guardChip">guard: <span data-num="guardPending">—</span> 待審</span>
   </div>
@@ -1056,5 +1056,6 @@
 <script defer src="js/index2.js?v=20261121"></script>
 <script defer src="js/wireframe.js?v=20261121"></script>
 <script defer src="js/studio.js?v=20261121"></script>
+<script defer src="js/api.js?v=20261121"></script>
 </body>
 </html>
