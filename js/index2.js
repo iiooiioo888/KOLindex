@@ -1434,6 +1434,11 @@
       el.classList.toggle('hide',!!q&&!m);
       if (m&&q){ hits++; highlight(el,q); }
     });
+    $$('.ccard',active).forEach(function(el){
+      var m=!q||el.textContent.toLowerCase().indexOf(q)>-1;
+      el.classList.toggle('hide',!!q&&!m);
+      if (m&&q){ hits++; highlight(el,q); }
+    });
     $$('.flow-node',active).forEach(function(el){
       var m=!q||el.textContent.toLowerCase().indexOf(q)>-1;
       el.classList.toggle('hide',!!q&&!m);
@@ -1450,6 +1455,16 @@
       if (m&&q) hits++;
     });
     $$('.oss-card',active).forEach(function(el){
+      var m=!q||el.textContent.toLowerCase().indexOf(q)>-1;
+      el.classList.toggle('hide',!!q&&!m);
+      if (m&&q) hits++;
+    });
+    $$('.par-lane',active).forEach(function(el){
+      var m=!q||el.textContent.toLowerCase().indexOf(q)>-1;
+      el.classList.toggle('hide',!!q&&!m);
+      if (m&&q) hits++;
+    });
+    $$('.acq-row',active).forEach(function(el){
       var m=!q||el.textContent.toLowerCase().indexOf(q)>-1;
       el.classList.toggle('hide',!!q&&!m);
       if (m&&q) hits++;
@@ -1529,8 +1544,9 @@
   $('#autoClaimBtn').addEventListener('click',toggleAuto);
 
   /* ================= 路由 + 轉頁 ================= */
-  var TOPICS=['queue','sense','out','seat','pipe','infra','oss'];
+  var TOPICS=['collect','queue','sense','out','seat','pipe','infra','oss'];
   var TOPIC_META={
+    collect:{label:'任務收集',hint:'待收項確認後才進隊列 · 這頁不拉取外部內容'},
     queue:{label:'任務隊列',hint:'席位自動拉取任務 · 等 LLM 空檔才執行'},
     sense:{label:'感測上下文',hint:'壓縮與文本感知 · 8 槽各自回寫'},
     out:{label:'產出庫',hint:'另存新版 · 舊檔不覆蓋'},
@@ -1702,11 +1718,18 @@
   function revealFocus(r,fromNav){
     if (!(r.topic==='sense' && r.focus)){
       if ($('.scard.selected')) clearSensorFilter();
-    $$('.qcard.linked,.flow-node.linked').forEach(function(q){ q.classList.remove('linked'); });
+    $$('.qcard.linked,.flow-node.linked,.ccard.linked').forEach(function(q){ q.classList.remove('linked'); });
     }
     if (!r.focus) return;
     var behave=document.body.classList.contains('reduce-motion')?'auto':'smooth';
-    if (r.topic==='queue'){
+    if (r.topic==='collect'){
+      renderCollect();
+      var inbox=document.querySelector('.ccard[data-id="'+r.focus+'"]');
+      if (inbox){
+        inbox.classList.add('linked');
+        if (fromNav) inbox.scrollIntoView({behavior:behave,block:'center'});
+      }
+    } else if (r.topic==='queue'){
       var card=document.querySelector('.qcard[data-id="'+r.focus+'"]');
       var flow=document.querySelector('.flow-node[data-id="'+r.focus+'"]');
       if (card){
@@ -2312,7 +2335,7 @@
     if (typing) return;
     if (e.code==='Space'&&!e.target.closest('button')){ e.preventDefault(); togglePause(); return; }
     if ((e.metaKey||e.ctrlKey)&&e.shiftKey&&e.key.toLowerCase()==='a'){ e.preventDefault(); toggleAuto(); return; }
-    if ((e.metaKey||e.ctrlKey)&&e.key>='1'&&e.key<='7'){ e.preventDefault(); setTopic(TOPICS[parseInt(e.key,10)-1]); return; }
+    if ((e.metaKey||e.ctrlKey)&&e.key>='1'&&e.key<='8'){ e.preventDefault(); setTopic(TOPICS[parseInt(e.key,10)-1]); return; }
     if (!e.metaKey && !e.ctrlKey && !e.altKey && (e.key==='ArrowLeft'||e.key==='ArrowRight')){
       if (overlay.classList.contains('on') || ($('#dlgMask') && !$('#dlgMask').hidden)) return;
       if (e.target.closest('#seats,#topicBar,#infraTabs,#seatLegend,#rangeRow')) return;
@@ -2633,6 +2656,21 @@
     btn._tm=setTimeout(function(){ btn.classList.remove('confirm'); btn.textContent=orig; },2600);
   });
 
+  /* ================= 官方容器採集目錄 ================= */
+  var ACQ=[
+    {id:'xhs',cat:'小紅書採集',name:'XHS-Downloader',repo:'JoeanAmier/XHS-Downloader',image:'joeanamier/xhs-downloader',imageSrc:'Docker Hub · joeanamier',compose:'—',license:'GPL-3.0',deploy:'docker run · :5556',pin:'joeanamier/xhs-downloader',file:'倉庫根目錄 Dockerfile',use:'官方鏡像在 Docker Hub，倉庫根目錄也有 Dockerfile。CLI、API、MCP、TUI 同一行程，埠 5556。這頁只登記，不拉取、不啟動。',cmd:'docker pull joeanamier/xhs-downloader\ndocker run -p 5556:5556 -v xhs_data:/app/Volume joeanamier/xhs-downloader'},
+    {id:'douyin-api',cat:'抖音／TikTok／B站',name:'Douyin_TikTok_Download_API',repo:'Evil0ctal/Douyin_TikTok_Download_API',image:'evil0ctal/douyin_tiktok_download_api',imageSrc:'Docker Hub · evil0ctal',compose:'docker/compose.yml',license:'Apache-2.0',deploy:'compose up -d',pin:'docker/compose.yml',file:'docker/Dockerfile · docker/compose.yml',use:'官方主推 Docker Compose。生產編排含身份池、PostgreSQL 17 + TimescaleDB、Redis 8，另有 browser、downloader、transcriber 三個可選 profile。這頁只登記，不拉取、不啟動。',cmd:'git clone https://github.com/Evil0ctal/Douyin_TikTok_Download_API.git\ncd Douyin_TikTok_Download_API\ndocker compose -p dtk -f docker/compose.yml up -d'},
+    {id:'douyin-dl',cat:'抖音（個人輕量）',name:'douyin-dl',repo:'Achaiccccc/douyin-dl',image:'—',imageSrc:'倉庫 Dockerfile，compose --build',compose:'docker-compose.yml',license:'Apache-2.0',deploy:'compose up -d --build · :18080',pin:'docker-compose.yml',file:'Dockerfile · docker-compose.yml',use:'DTK 的個人／家庭裁剪。沒有獨立的 Docker Hub 鏡像名，靠倉庫裡的 Dockerfile 與 compose 建置。對外埠 18080。compose 裡的 APP_PASSWORD 是範例 123456，註解要求暴露到公網前先改掉。這頁只登記，不建置、不啟動。',cmd:'git clone https://github.com/Achaiccccc/douyin-dl.git\ncd douyin-dl\ndocker compose up -d --build'},
+    {id:'maigret',cat:'帳號發現／OSINT',name:'Maigret',repo:'soxoj/maigret',image:'soxoj/maigret',imageSrc:'Docker Hub · soxoj',compose:'—',license:'MIT',deploy:'docker run CLI',pin:'soxoj/maigret',file:'倉庫根目錄 Dockerfile',use:'作者 soxoj 維護的官方鏡像。Dockerfile 有 CLI 與 Web UI 兩個 stage。這頁只登記鏡像，不對任何帳號執行搜尋。',cmd:'docker pull soxoj/maigret\ndocker run -v "$(pwd)/reports:/app/reports" soxoj/maigret:latest USERNAME'},
+    {id:'sherlock',cat:'帳號發現／OSINT',name:'Sherlock',repo:'sherlock-project/sherlock',image:'sherlock/sherlock',imageSrc:'Docker Hub · sherlock',compose:'—',license:'MIT',deploy:'docker run CLI',pin:'sherlock/sherlock',file:'倉庫根目錄 Dockerfile',use:'Sherlock Project 維護的官方鏡像，一次跑完的 CLI。這頁只登記鏡像，不對任何帳號執行搜尋。',cmd:'docker pull sherlock/sherlock\ndocker run --rm -t -v "$PWD/results:/opt/sherlock/results" sherlock/sherlock USERNAME'}
+  ];
+  var ACQ_OUT=[
+    {name:'MediaCrawler',why:'沒有官方 Dockerfile，也沒有官方命名鏡像。網上流傳的容器方案是第三方自己寫的，不要照搬那些鏡像位址。'},
+    {name:'feedgrab',why:'官方安裝是 pip install。沒有官方 Dockerfile，也沒有官方鏡像。'},
+    {name:'sociopath',why:'Go CLI／函式庫，官方沒有容器交付。搜尋結果裡的 Docker 是它能讀 Docker Hub 用戶資料，不是這個專案自己的容器方案。'}
+  ];
+  function acqById(id){ return ACQ.filter(function(x){ return x.id===id; })[0]; }
+
   /* ================= GitHub 開源組件 ================= */
   var OSS_LIST=[
     {id:'skill-evaluator',name:'SkillEvaluator',repo:'NVIDIA/SkillEvaluator',license:'以倉庫 LICENSE 為準',pin:'未鎖定',face:'技能評估閘門 · 候選',state:'candidate',load:'off',sample:true,use:'多層技能與外掛評估框架：品質閘、安全掃描、相容性、語意重疊、合成評估集，以及技能對代理行為的影響。加載只登記閘門，不在這頁執行掃描或即時代理評估。'},
@@ -2652,6 +2690,24 @@
     {id:'maigret',name:'Maigret',repo:'soxoj/maigret',license:'待核對',pin:'未鎖定',face:'Sandbox 候選',state:'candidate',use:'帳號發現候選。只許在隔離沙箱評估，不能直連主庫。'},
     {id:'sherlock',name:'Sherlock',repo:'sherlock-project/sherlock',license:'待核對',pin:'未鎖定',face:'Sandbox 候選',state:'candidate',use:'帳號發現候選。候選不是能力，不能當已接入的 Connector。'}
   ];
+  ACQ.forEach(function(a){
+    if (a.lane==null) a.lane=2;
+    var item=OSS_LIST.filter(function(x){ return x.id===a.id; })[0];
+    if (!item) return;
+    item.name=a.name;
+    item.repo=a.repo;
+    item.license=a.license;
+    item.pin=a.pin;
+    item.face=a.cat;
+    item.use=a.use;
+    item.image=a.image;
+    item.imageSrc=a.imageSrc;
+    item.compose=a.compose;
+    item.deploy=a.deploy;
+    item.cmd=a.cmd;
+    item.file=a.file;
+    item.checked=true;
+  });
   var ossFilter='all';
   var ossPick='skill-evaluator';
   var OSS_BLOCK={scrapling:1,xhs:1,'douyin-api':1,'douyin-dl':1,maigret:1,sherlock:1};
@@ -2694,18 +2750,136 @@
     var href=cur.repo.indexOf('/')>0?'https://github.com/'+cur.repo:'';
     var repoHtml=href?'<a href="'+esc(href)+'" target="_blank" rel="noopener noreferrer">'+esc(cur.repo)+'</a>':esc(cur.repo);
     renderPacks();
+    renderAcq();
+    var imageHtml=cur.image && cur.image!=='—'
+      ? '<a href="https://hub.docker.com/r/'+esc(cur.image)+'" target="_blank" rel="noopener noreferrer">'+esc(cur.image)+'</a>'
+      : esc(cur.image||'');
     detail.innerHTML=
       '<div class="oss-st '+cur.state+'">'+(cur.state==='wired'?'已接入':'候選 · 未批准')+'</div>'+
       '<h3>'+esc(cur.name)+'</h3>'+
       '<div class="od-repo">'+repoHtml+'</div>'+
       '<p class="od-use">'+esc(cur.use)+'</p>'+
       '<div class="kv"><span>接入面</span><b>'+esc(cur.face)+'</b></div>'+
+      (cur.image?'<div class="kv"><span>官方鏡像</span><b>'+imageHtml+'</b></div>':'')+
+      (cur.imageSrc?'<div class="kv"><span>鏡像來源</span><b>'+esc(cur.imageSrc)+'</b></div>':'')+
+      (cur.compose?'<div class="kv"><span>官方 Compose</span><b>'+esc(cur.compose)+'</b></div>':'')+
+      (cur.deploy?'<div class="kv"><span>部署</span><b>'+esc(cur.deploy)+'</b></div>':'')+
+      (cur.file?'<div class="kv"><span>倉庫檔案</span><b>'+esc(cur.file)+'</b></div>':'')+
       '<div class="kv"><span>鎖定</span><b>'+esc(cur.pin)+'</b></div>'+
       '<div class="kv"><span>授權</span><b>'+esc(cur.license)+'</b></div>'+
       '<div class="kv"><span>變更</span><b>'+(cur.state==='wired'?'改版本就要改這頁的鎖定':'新版本從 candidate 重走')+'</b></div>'+
+      (cur.cmd?'<pre class="acq-cmd">'+esc(cur.cmd)+'</pre>':'')+
       '<div class="note">'+(cur.state==='wired'
         ?'這顆已經接在運行時頁面。不使用 latest，也不會因為上游更新自動換版本。'
-        :'候選只代表可以評估。未核對官方來源、授權與摘要前，不得放進主棧，也不得在這頁啟動。')+'</div>';
+        :(cur.checked
+          ?'官方鏡像或倉庫 Dockerfile 已核對。這頁只登記來源、許可和部署方式，不拉取、不建置、不啟動，也不進主棧。'
+          :'候選只代表可以評估。未核對官方來源、授權與摘要前，不得放進主棧，也不得在這頁啟動。'))+'</div>';
+  }
+  function renderPar(){
+    var host=$('#parLanes'); if (!host) return;
+    var ready=ACQ.filter(function(a){ return (a.lane||2)>=3; }).length;
+    var meta=$('#parMeta');
+    if (meta) meta.textContent=ready+'/'+ACQ.length+' 沙箱就緒 · 主棧 0';
+    var allBtn=$('#parAll');
+    if (allBtn){
+      allBtn.disabled=ready===ACQ.length;
+      allBtn.textContent=ready===ACQ.length?'五條都停在沙箱':'五條一起推進';
+    }
+    host.innerHTML=ACQ.map(function(a){
+      var lane=a.lane||2;
+      var steps=['來源核對','契約鎖定','沙箱邊界','主棧'].map(function(name,i){
+        var cls=i===3?'stop':(i<lane?'done':(i===lane?'now':''));
+        return '<i class="par-step '+cls+'" title="'+esc(name)+'"></i>';
+      }).join('');
+      var img=a.image==='—'?'倉庫 Dockerfile 建置':a.image;
+      var done=lane>=3;
+      return '<article class="par-lane'+(a.id===ossPick?' sel':'')+'" data-lane="'+esc(a.id)+'">'+
+        '<div class="pl-cat">'+esc(a.cat)+'</div>'+
+        '<div class="pl-name">'+esc(a.name)+'</div>'+
+        '<div class="par-steps" aria-hidden="true">'+steps+'</div>'+
+        '<div class="pl-now">'+(done?'沙箱就緒 · 主棧拒絕':'進行中 · 沙箱邊界')+'</div>'+
+        '<div class="pl-meta" title="'+esc(a.license)+' · '+esc(a.deploy)+'">'+esc(a.license)+' · '+esc(a.deploy)+'</div>'+
+        '<div class="pl-meta" title="'+esc(img)+'">'+esc(img)+'</div>'+
+        '<button type="button" class="mini-btn" data-par="'+esc(a.id)+'"'+(done?' disabled':'')+'>'+(done?'主棧拒絕':'推進這一條')+'</button>'+
+        '</article>';
+    }).join('');
+  }
+  function advanceLane(id){
+    var a=acqById(id); if (!a) return;
+    if ((a.lane||2)>=3){
+      toast(a.name+' 停在沙箱，不進主棧','err');
+      return;
+    }
+    a.lane=3;
+    ossPick=id;
+    renderOss();
+    toast(a.name+' 已到沙箱邊界','ok');
+    audit('并行開發 '+a.name+' 沙箱就緒');
+    pushEvent('#f0a500','<b>parallel</b> '+esc(a.name)+' 沙箱就緒 · 主棧拒絕');
+  }
+  function advanceAll(){
+    var moved=[];
+    ACQ.forEach(function(a){
+      if ((a.lane||2)<3){ a.lane=3; moved.push(a.name); }
+    });
+    renderOss();
+    if (!moved.length){
+      toast('五條都已停在沙箱，主棧不開','err');
+      return;
+    }
+    toast('並行推進 '+moved.length+' 條到沙箱邊界','ok');
+    audit('并行開發 一次推進 '+moved.join('、'));
+    pushEvent('#43d4e4','<b>parallel</b> '+moved.length+' 條同時到沙箱邊界');
+  }
+  function renderAcq(){
+    var host=$('#acqTable'); if (!host) return;
+    renderPar();
+    var meta=$('#acqMeta');
+    if (meta) meta.textContent=ACQ.length+' 官方容器 · '+ACQ_OUT.length+' 未收錄';
+    host.innerHTML=ACQ.map(function(a){
+      var img=a.image!=='—'
+        ? '<a href="https://hub.docker.com/r/'+esc(a.image)+'" target="_blank" rel="noopener noreferrer">'+esc(a.image)+'</a>'
+        : '倉庫 Dockerfile';
+      var repo='<a href="https://github.com/'+esc(a.repo)+'" target="_blank" rel="noopener noreferrer">'+esc(a.name)+'</a>';
+      var compose=a.compose==='—'?'無 Compose':a.compose;
+      return '<article class="acq-row'+(a.id===ossPick?' sel':'')+'" data-acq="'+esc(a.id)+'">'+
+        '<div class="acq-main"><span class="acq-cat">'+esc(a.cat)+'</span><span class="acq-name">'+repo+'</span><span class="acq-lic">'+esc(a.license)+'</span></div>'+
+        '<div class="acq-sub"><span class="acq-img">'+img+'</span><span>'+esc(a.imageSrc)+'</span><span>'+esc(compose)+'</span><span>'+esc(a.deploy)+'</span></div>'+
+        '</article>';
+    }).join('');
+    var out=$('#acqOut');
+    if (out){
+      out.innerHTML='<h4>未收錄 · 沒有官方 Docker</h4><ul>'+ACQ_OUT.map(function(x){
+        return '<li><b>'+esc(x.name)+'</b>　'+esc(x.why)+'</li>';
+      }).join('')+'</ul>';
+    }
+  }
+  function openAcq(id){
+    var a=acqById(id); if (!a) return;
+    ossPick=id;
+    renderOss();
+    var repoHref='https://github.com/'+a.repo;
+    var imageRow=a.image!=='—'
+      ? ['官方鏡像','<a href="https://hub.docker.com/r/'+esc(a.image)+'" target="_blank" rel="noopener noreferrer">'+esc(a.image)+'</a>', true]
+      : ['官方鏡像','沒有獨立鏡像名，用倉庫 Dockerfile 建置'];
+    openPeek({
+      kicker:a.cat,
+      title:a.name,
+      status:a.license,
+      tone:'warn',
+      lead:a.use,
+      chips:[{t:a.deploy},{t:a.compose==='—'?'無 Compose':a.compose}],
+      sections:[{h:'官方交付', rows:[
+        ['倉庫','<a href="'+esc(repoHref)+'" target="_blank" rel="noopener noreferrer">'+esc(a.repo)+'</a>', true],
+        imageRow,
+        ['鏡像來源', a.imageSrc],
+        ['倉庫檔案', a.file],
+        ['官方 Compose', a.compose],
+        ['許可', a.license],
+        ['部署', '<pre class="acq-cmd">'+esc(a.cmd)+'</pre>', true],
+        ['主棧','只登記。這頁不拉取、不建置、不啟動。']
+      ]}]
+    });
   }
   var SKILLS=[
     {id:'sk-evaluator',name:'SkillEvaluator',ver:'未鎖定',bind:'NVIDIA/SkillEvaluator',state:'idle',note:'技能閘門。加載後只登記要先過評估，不在這頁跑掃描或即時評估。'},
@@ -2831,6 +3005,22 @@
     var card=e.target.closest('.oss-card[data-oss-id]');
     if (card && !e.target.closest('a,button')) go({topic:'oss',pane:null,focus:card.getAttribute('data-oss-id')},'replace');
   });
+  var acqTable=$('#acqTable');
+  if (acqTable) acqTable.addEventListener('click', function(e){
+    if (e.target.closest('a')) return;
+    var row=e.target.closest('[data-acq]');
+    if (!row) return;
+    openAcq(row.getAttribute('data-acq'));
+  });
+  var parLanes=$('#parLanes');
+  if (parLanes) parLanes.addEventListener('click', function(e){
+    var btn=e.target.closest('[data-par]');
+    if (btn){ advanceLane(btn.getAttribute('data-par')); return; }
+    var lane=e.target.closest('.par-lane');
+    if (lane && !e.target.closest('a,button')) openAcq(lane.getAttribute('data-lane'));
+  });
+  var parAll=$('#parAll');
+  if (parAll) parAll.addEventListener('click', advanceAll);
 
   document.addEventListener('click',function(e){
     var b=e.target.closest('[data-std-level]'); if (!b) return;
@@ -2838,6 +3028,159 @@
     stdLevel=v==='all'?'all':parseInt(v,10);
     $$('#levelTabs [data-std-level]').forEach(function(x){ x.setAttribute('aria-pressed',x===b?'true':'false'); });
     renderStdRows();
+  });
+
+  /* ================= 任務收集 ================= */
+  var COLLECT=[
+    {id:'C-101',title:'小紅書筆記摘要待歸檔',source:'xhs',pri:'p1',priLabel:'P1',role:'分析席',state:'inbox',note:'官方容器只登記。這頁不拉取內容，確認後才進任務隊列。'},
+    {id:'C-102',title:'抖音作品連結待核對',source:'douyin-api',pri:'p1',priLabel:'P1',role:'分析席',state:'inbox',note:'來源是 DTK 官方 Compose。入列前不呼叫下載。'},
+    {id:'C-103',title:'個人庫作品批次待整理',source:'douyin-dl',pri:'p2',priLabel:'P2',role:'報告席',state:'inbox',note:'輕量 compose 的登記項。入列後由席位拉取，不在這頁建置容器。'},
+    {id:'C-104',title:'公開帳號線索待判讀',source:'maigret',pri:'p2',priLabel:'P2',role:'審核席',state:'inbox',note:'只收線索標題。這頁不對任何帳號執行搜尋。'},
+    {id:'C-105',title:'補充帳號線索交叉核對',source:'sherlock',pri:'p2',priLabel:'P2',role:'審核席',state:'inbox',note:'與 Maigret 分開收。入列前不跑官方鏡像。'},
+    {id:'C-106',title:'現場巡檢補充項',source:'manual',pri:'p0',priLabel:'P0',role:'工業席',state:'inbox',note:'手動收集，不經過外部容器。'}
+  ];
+  var collectFilter='inbox';
+  var collectSeq=107;
+  function collectById(id){ return COLLECT.filter(function(x){ return x.id===id; })[0]; }
+  function collectSourceOf(id){
+    if (id==='manual') return {name:'手動收集',cat:'本頁',license:'—'};
+    var a=acqById(id);
+    return a?{name:a.name,cat:a.cat,license:a.license}:{name:id,cat:'—',license:'—'};
+  }
+  function renderCollect(){
+    var kpis=$('#collectKpis'), list=$('#collectList');
+    if (!list) return;
+    var counts={inbox:0,queued:0,skip:0};
+    COLLECT.forEach(function(x){ if (counts[x.state]!=null) counts[x.state]++; });
+    var bd=$('#navCollectBd');
+    if (bd && bd.textContent!==String(counts.inbox)) bd.textContent=String(counts.inbox);
+    if (kpis){
+      kpis.innerHTML=[
+        ['待收',counts.inbox],
+        ['已入列',counts.queued],
+        ['已略過',counts.skip],
+        ['全部',COLLECT.length]
+      ].map(function(row){
+        return '<div class="collect-stat"><span>'+esc(row[0])+'</span><b>'+esc(row[1])+'</b></div>';
+      }).join('');
+    }
+    var src=$('#collectSource');
+    if (src && !src.options.length){
+      src.innerHTML='<option value="manual">手動收集</option>'+ACQ.map(function(a){
+        return '<option value="'+esc(a.id)+'">'+esc(a.cat+' · '+a.name)+'</option>';
+      }).join('');
+    }
+    var shown=COLLECT.filter(function(x){ return collectFilter==='all'||x.state===collectFilter; });
+    list.innerHTML=shown.map(function(x){
+      var s=collectSourceOf(x.source);
+      var actions=x.state==='inbox'
+        ? '<button type="button" class="mini-btn" data-collect-take="'+esc(x.id)+'">收入隊列</button><button type="button" class="mini-btn" data-collect-skip="'+esc(x.id)+'">略過</button>'
+        : '<span class="pill '+(x.state==='queued'?'green':'')+'">'+(x.state==='queued'?'已入列 '+(x.taskId||''):'已略過')+'</span>';
+      return '<article class="ccard'+(routeState.focus===x.id&&routeState.topic==='collect'?' linked':'')+'" data-id="'+esc(x.id)+'" data-search>'+
+        '<div class="ccard-top"><span class="qid">'+esc(x.id)+'</span><span class="pri '+esc(x.pri)+'">'+esc(x.priLabel)+'</span><span class="pill">'+esc(s.cat)+'</span></div>'+
+        '<h4>'+esc(x.title)+'</h4>'+
+        '<div class="cmeta">'+esc(s.name)+' · '+esc(x.role)+' · '+esc(s.license)+'</div>'+
+        '<div class="cmeta">'+esc(x.note)+'</div>'+
+        '<div class="ccard-actions">'+actions+'</div></article>';
+    }).join('')||'<div class="collect-empty">這個狀態下沒有收集項</div>';
+  }
+  function admitCollect(id){
+    var item=collectById(id);
+    if (!item||item.state!=='inbox') return;
+    var src=collectSourceOf(item.source);
+    var qid='Q-'+(lifeSeq++);
+    item.state='queued';
+    item.taskId=qid;
+    store.tasks.push({
+      id:qid,title:item.title,pri:item.pri,priLabel:item.priLabel,lane:'queue',role:item.role,
+      parent:'T-2841',step:nextStep('T-2841'),wave:nextWave('T-2841'),seat:'',slot:'',
+      prompt:ROLE_PROMPT[item.role]||'',sensors:[],
+      tags:[{t:'收集入列',c:''},{t:item.role,c:''}],
+      meta:'來自任務收集 <b>'+esc(item.id)+'</b> · '+esc(src.name),sla:4,
+      stamp:['來源 <b>'+esc(src.cat)+'</b>','等待該席拉取'],
+      fromCollect:item.id
+    });
+    renderQueue();
+    renderCollect();
+    toast(item.id+' 已入列 '+qid,'ok');
+    audit('任務收集 '+item.id+' → '+qid);
+    pushEvent('#5fd97d','<b>collect</b> '+esc(item.id)+' 入列 '+esc(qid));
+  }
+  function skipCollect(id){
+    var item=collectById(id);
+    if (!item||item.state!=='inbox') return;
+    item.state='skip';
+    renderCollect();
+    toast(item.id+' 已略過','');
+    audit('任務收集略過 '+item.id);
+    pushEvent('#9aa2a9','<b>collect</b> '+esc(item.id)+' 略過');
+  }
+  function addCollect(fields){
+    var title=(fields.title||'').trim();
+    if (!title){ toast('標題不能是空的','err'); return; }
+    var pri=fields.pri==='p0'||fields.pri==='p2'?fields.pri:'p1';
+    var role=ROLES[fields.role]?fields.role:'分析席';
+    var source=fields.source==='manual'||acqById(fields.source)?fields.source:'manual';
+    var item={
+      id:'C-'+(collectSeq++),title:title,source:source,pri:pri,priLabel:pri.toUpperCase(),
+      role:role,state:'inbox',note:'本頁新增。確認後才進隊列，不在這裡拉取外部內容。'
+    };
+    COLLECT.unshift(item);
+    collectFilter='inbox';
+    $$('#collectFilters [data-collect]').forEach(function(b){
+      b.setAttribute('aria-pressed',b.getAttribute('data-collect')==='inbox'?'true':'false');
+    });
+    renderCollect();
+    toast(item.id+' 已放入待收','ok');
+    audit('任務收集新增 '+item.id);
+    pushEvent('#43d4e4','<b>collect</b> 新增 '+esc(item.id));
+  }
+  var collectRoot=$('#topic-collect');
+  if (collectRoot) collectRoot.addEventListener('click', function(e){
+    var f=e.target.closest('#collectFilters [data-collect]');
+    if (f){
+      collectFilter=f.getAttribute('data-collect')||'inbox';
+      $$('#collectFilters [data-collect]').forEach(function(b){ b.setAttribute('aria-pressed',b===f?'true':'false'); });
+      renderCollect();
+      return;
+    }
+    var take=e.target.closest('[data-collect-take]');
+    if (take){ admitCollect(take.getAttribute('data-collect-take')); return; }
+    var skip=e.target.closest('[data-collect-skip]');
+    if (skip){ skipCollect(skip.getAttribute('data-collect-skip')); return; }
+    var card=e.target.closest('.ccard');
+    if (!card||e.target.closest('button')) return;
+    var id=card.getAttribute('data-id');
+    var item=collectById(id); if (!item) return;
+    var src=collectSourceOf(item.source);
+    go({topic:'collect',pane:null,focus:id},'replace');
+    openPeek({
+      kicker:'任務收集 · '+src.cat,
+      title:item.title,
+      status:item.state==='inbox'?'待收':(item.state==='queued'?'已入列 '+(item.taskId||''):'已略過'),
+      tone:item.state==='queued'?'ok':(item.state==='skip'?'':'warn'),
+      lead:item.note,
+      chips:[{t:item.id},{t:item.priLabel},{t:item.role}],
+      sections:[{h:'這筆收集', rows:[
+        ['來源', src.name+' · '+src.cat],
+        ['許可', src.license],
+        ['席位', item.role],
+        ['隊列', item.taskId||'還沒入列'],
+        ['邊界','確認前不進任務隊列，也不在這頁拉取、搜尋或啟動容器。']
+      ]}]
+    });
+  });
+  var collectForm=$('#collectForm');
+  if (collectForm) collectForm.addEventListener('submit', function(e){
+    e.preventDefault();
+    addCollect({
+      title:$('#collectTitle').value,
+      pri:$('#collectPri').value,
+      role:$('#collectRole').value,
+      source:$('#collectSource').value
+    });
+    collectForm.reset();
+    $('#collectPri').value='p1';
   });
 
   /* ================= init ================= */
@@ -2849,8 +3192,8 @@
   renderLocks();
   renderAlerts();
   renderAudit();
-  renderNumbers();
   renderOss();
+  renderCollect();
   pushEvent('#5fd97d','<b>auto-claim</b> 席位自動拉取已啟用');
   pushEvent('#43d4e4','<b>Q-118</b> 佔用槽位 A1 · call_llm 中');
   pushEvent('#ff8b3d','<b>Q-119</b> 已拉取 · 待空檔 #1');

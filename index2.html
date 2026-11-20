@@ -7,13 +7,14 @@
 <title>靈境·Linkin 運行時 · 自動認領 × LLM 空檔排程</title>
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tippy.js@6.3.7/dist/tippy.css" integrity="sha384-IBgYl+I5X6ZDZXI5zv1vsSE3VopDomz4BxSu/GlxaPHfFtcrJ3uj70z1w6srO9zU" crossorigin="anonymous">
-<link rel="stylesheet" href="css/index2.css">
+<link rel="stylesheet" href="css/index2.css?v=20261120">
 </head>
 <body>
 
 <svg class="sprite" aria-hidden="true">
   <symbol id="i-opc" viewBox="0 0 16 16"><rect x="4" y="4" width="8" height="8" rx="1"/><path d="M8 1.2V4M8 12v2.8M1.2 8H4M12 8h2.8M4 4L2 2M12 4l2-2M4 12l-2 2M12 12l2 2"/></symbol>
   <symbol id="i-queue" viewBox="0 0 16 16"><rect x="2" y="2.5" width="12" height="3" rx="1"/><rect x="2" y="6.5" width="12" height="3" rx="1"/><rect x="2" y="10.5" width="12" height="3" rx="1"/></symbol>
+  <symbol id="i-inbox" viewBox="0 0 16 16"><path d="M2 9.2l2.2-6h7.6L14 9.2V13a1 1 0 01-1 1H3a1 1 0 01-1-1z"/><path d="M2 9.2h3.2a1.2 1.2 0 001.2 1.1h3.2a1.2 1.2 0 001.2-1.1H14"/></symbol>
   <symbol id="i-tasks" viewBox="0 0 16 16"><path d="M2 4l1.6 1.6L6 3M2 9l1.6 1.6L6 8M8.5 4.5h5.5M8.5 9.5H14M8.5 12.5H12"/></symbol>
   <symbol id="i-monitor" viewBox="0 0 16 16"><rect x="1.5" y="2.5" width="13" height="9" rx="1.5"/><path d="M6 14h4M8 11.5V14"/></symbol>
   <symbol id="i-docker" viewBox="0 0 16 16"><rect x="2" y="7" width="3" height="3"/><rect x="5.6" y="7" width="3" height="3"/><rect x="9.2" y="7" width="3" height="3"/><rect x="5.6" y="3.5" width="3" height="3"/><path d="M9.2 4.6c1.2-1.4 3.2-.6 3.4.3.6-.2 1.4.1 1.5.8.6.4.8 1.2.5 1.8-.5 1.3-1.9 2.3-3.6 2.3H2.4c-.6 1.2-1.7 1.9-3 2"/></symbol>
@@ -66,6 +67,7 @@
   <aside class="rail" aria-label="分頁導覽">
     <div>
       <div class="rail-label">分頁 Topics<span id="railQueueCount">— 在列</span></div>
+      <button class="nav-item" data-topic="collect"><svg class="ic"><use href="#i-inbox"/></svg><span class="nm">任務收集</span><span class="bd" id="navCollectBd">—</span></button>
       <button class="nav-item active" data-topic="queue"><svg class="ic"><use href="#i-queue"/></svg><span class="nm">任務隊列</span><span class="bd" id="navQueueBd">—</span></button>
       <button class="nav-item" data-topic="sense"><svg class="ic"><use href="#i-opc"/></svg><span class="nm">感測上下文</span><span class="bd">8</span></button>
       <button class="nav-item" data-topic="out"><svg class="ic"><use href="#i-cube"/></svg><span class="nm">產出庫</span><span class="bd" id="navOutBd">5</span></button>
@@ -102,7 +104,7 @@
       <h4>快捷鍵</h4>
       <div class="kv"><span>搜尋</span><b>⌘K / Ctrl+K</b></div>
       <div class="kv"><span>清除</span><b>ESC</b></div>
-      <div class="kv"><span>切換分頁</span><b>⌘1–7 / ←→</b></div>
+      <div class="kv"><span>切換分頁</span><b>⌘1–8 / ←→</b></div>
       <div class="kv"><span>深連結</span><b>#/頁/編號</b></div>
       <div class="kv"><span>暫停渲染</span><b>SPACE</b></div>
       <div class="kv"><span>自動認領</span><b>⌘⇧A</b></div>
@@ -120,6 +122,7 @@
 
   <main class="stage">
     <div class="topic-bar" role="tablist" aria-label="主題分頁" id="topicBar">
+      <button class="topic-btn" id="tab-collect" role="tab" aria-selected="false" aria-controls="topic-collect" data-topic="collect">任務收集</button>
       <button class="topic-btn" id="tab-queue" role="tab" aria-selected="true" aria-controls="topic-queue" data-topic="queue">任務隊列</button>
       <button class="topic-btn" id="tab-sense" role="tab" aria-selected="false" aria-controls="topic-sense" data-topic="sense">感測上下文</button>
       <button class="topic-btn" id="tab-out" role="tab" aria-selected="false" aria-controls="topic-out" data-topic="out">產出庫</button>
@@ -129,6 +132,52 @@
       <button class="topic-btn" id="tab-oss" role="tab" aria-selected="false" aria-controls="topic-oss" data-topic="oss">開源組件</button>
       <span class="topic-hint" id="topicHint">#/queue  ·  席位自動拉取任務 · 等 LLM 空檔才執行</span>
     </div>
+
+    <!-- ═══ 任務收集 ═══ -->
+    <section class="waterfall" id="topic-collect" role="tabpanel" aria-labelledby="tab-collect" aria-hidden="true">
+      <div class="panel">
+        <div class="panel-head">
+          <div class="panel-title">任務收集<span class="en">inbox · before queue</span></div>
+          <div class="panel-tools" id="collectFilters" role="group" aria-label="收集狀態過濾">
+            <button type="button" class="mini-btn" data-collect="inbox" aria-pressed="true">待收</button>
+            <button type="button" class="mini-btn" data-collect="queued" aria-pressed="false">已入列</button>
+            <button type="button" class="mini-btn" data-collect="skip" aria-pressed="false">已略過</button>
+            <button type="button" class="mini-btn" data-collect="all" aria-pressed="false">全部</button>
+          </div>
+        </div>
+        <div class="panel-body">
+          <div class="collect-stats" id="collectKpis"></div>
+          <div class="collect-layout">
+            <form class="collect-form" id="collectForm">
+              <div class="kicker">新收集項</div>
+              <label>標題
+                <input type="text" id="collectTitle" name="title" maxlength="80" required placeholder="要交給席位的任務" autocomplete="off">
+              </label>
+              <label>優先
+                <select id="collectPri" name="pri">
+                  <option value="p0">P0</option>
+                  <option value="p1" selected>P1</option>
+                  <option value="p2">P2</option>
+                </select>
+              </label>
+              <label>席位
+                <select id="collectRole" name="role">
+                  <option>分析席</option>
+                  <option>審核席</option>
+                  <option>報告席</option>
+                  <option>工業席</option>
+                </select>
+              </label>
+              <label>來源
+                <select id="collectSource" name="source"></select>
+              </label>
+              <button type="submit" class="mini-btn">放入待收</button>
+            </form>
+            <div class="collect-list" id="collectList" aria-label="收集項"></div>
+          </div>
+        </div>
+      </div>
+    </section>
 
     <!-- ═══ 任務隊列 ═══ -->
     <section class="waterfall on" id="topic-queue" role="tabpanel" aria-labelledby="tab-queue">
@@ -690,6 +739,32 @@
             <div class="oss-list" id="ossList" aria-label="GitHub 開源組件清單"></div>
             <aside class="oss-detail" id="ossDetail" aria-label="組件整合明細"></aside>
           </div>
+          <section class="src-board acq-board" aria-label="官方容器採集目錄">
+            <div class="load-head">
+              <div>
+                <div class="load-k">OFFICIAL CONTAINERS</div>
+                <h3>平台採集 · 只收官方容器</h3>
+              </div>
+              <div class="load-meta" id="acqMeta">—</div>
+            </div>
+            <div class="par-board">
+              <div class="par-head">
+                <div>
+                  <div class="load-k">PARALLEL</div>
+                  <h3>并行開發</h3>
+                </div>
+                <div class="par-tools">
+                  <span class="load-meta" id="parMeta">—</span>
+                  <button type="button" class="mini-btn" id="parAll">五條一起推進</button>
+                </div>
+              </div>
+              <div class="par-lanes" id="parLanes" aria-label="官方容器并行開發"></div>
+            </div>
+            <div class="roster-wrap plain">
+              <div class="acq-list" id="acqTable"></div>
+            </div>
+            <div class="acq-out" id="acqOut"></div>
+          </section>
           <section class="src-board" aria-label="技能來源目錄">
             <div class="load-head">
               <div>
@@ -849,11 +924,12 @@
   <div class="sb-item">ports <b>3001 · 8000 · 8001 · 6379 · 8100</b></div>
   <div class="sb-item">資料 <b>DEMO DATA · 接 SSE/WebSocket</b></div>
   <div class="sb-spacer"></div>
-  <div class="sb-item">docker compose up -d · python -m backend.main · npm run dev</div>
+  <div class="sb-item sb-cmd" title="docker compose up -d · python -m backend.main · npm run dev">docker compose up -d · python -m backend.main · npm run dev</div>
 </footer>
 
 <nav class="tabs" aria-label="行動版導覽">
   <div class="inner">
+    <button class="tab" data-topic="collect"><svg class="ic"><use href="#i-inbox"/></svg>收集</button>
     <button class="tab active" data-topic="queue"><svg class="ic"><use href="#i-queue"/></svg>隊列</button>
     <button class="tab" data-topic="sense"><svg class="ic"><use href="#i-opc"/></svg>感測</button>
     <button class="tab" data-topic="out"><svg class="ic"><use href="#i-cube"/></svg>產出</button>
@@ -911,6 +987,6 @@
 
 <script defer src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js" integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r" crossorigin="anonymous"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/tippy.js@6.3.7/dist/tippy.umd.min.js" integrity="sha384-pjtv4LzKGI/lGxchW/wd/upB/HsGOP/Q2iPYyDU8qo2bp4JLbN34hQkdAArvidZX" crossorigin="anonymous"></script>
-<script defer src="js/index2.js"></script>
+<script defer src="js/index2.js?v=20261120"></script>
 </body>
 </html>
