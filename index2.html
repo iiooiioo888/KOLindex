@@ -9,6 +9,7 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tippy.js@6.3.7/dist/tippy.css" integrity="sha384-IBgYl+I5X6ZDZXI5zv1vsSE3VopDomz4BxSu/GlxaPHfFtcrJ3uj70z1w6srO9zU" crossorigin="anonymous">
 <link rel="stylesheet" href="css/index2.css?v=20261120">
 <link rel="stylesheet" href="css/studio.css?v=20261121">
+<link rel="stylesheet" href="css/person.css?v=20261121">
 </head>
 <body>
 
@@ -77,6 +78,7 @@
       <button class="nav-item" data-topic="infra"><svg class="ic"><use href="#i-docker"/></svg><span class="nm">基礎設施</span><span class="bd">6/6</span></button>
       <button class="nav-item" data-topic="oss"><svg class="ic"><use href="#i-git"/></svg><span class="nm">開源組件</span><span class="bd">16</span></button>
       <button class="nav-item" data-topic="studio"><svg class="ic"><use href="#i-cube"/></svg><span class="nm">UI 生成</span><span class="bd">NEW</span></button>
+      <button class="nav-item" data-topic="person"><svg class="ic"><use href="#i-pulse"/></svg><span class="nm">人物檔案</span><span class="bd">API</span></button>
     </div>
 
     <div class="micro-card">
@@ -106,7 +108,7 @@
       <h4>快捷鍵</h4>
       <div class="kv"><span>搜尋</span><b>⌘K / Ctrl+K</b></div>
       <div class="kv"><span>清除</span><b>ESC</b></div>
-      <div class="kv"><span>切換分頁</span><b>⌘1–9 / ←→</b></div>
+      <div class="kv"><span>切換分頁</span><b>⌘1–9 · ⌘0 / ←→</b></div>
       <div class="kv"><span>深連結</span><b>#/頁/編號</b></div>
       <div class="kv"><span>暫停渲染</span><b>SPACE</b></div>
       <div class="kv"><span>自動認領</span><b>⌘⇧A</b></div>
@@ -133,6 +135,7 @@
       <button class="topic-btn" id="tab-infra" role="tab" aria-selected="false" aria-controls="topic-infra" data-topic="infra">基礎設施</button>
       <button class="topic-btn" id="tab-oss" role="tab" aria-selected="false" aria-controls="topic-oss" data-topic="oss">開源組件</button>
       <button class="topic-btn" id="tab-studio" role="tab" aria-selected="false" aria-controls="topic-studio" data-topic="studio">UI 生成</button>
+      <button class="topic-btn" id="tab-person" role="tab" aria-selected="false" aria-controls="topic-person" data-topic="person">人物檔案</button>
       <span class="topic-hint" id="topicHint">#/queue  ·  席位自動拉取任務 · 等 LLM 空檔才執行</span>
     </div>
 
@@ -870,6 +873,40 @@
       </div>
     </section>
 
+    <section class="waterfall" id="topic-person" role="tabpanel" aria-labelledby="tab-person" aria-hidden="true">
+      <div class="panel">
+        <div class="panel-head">
+          <div class="panel-title">人物檔案<span class="en">person · unified timeline</span></div>
+          <div class="panel-tools">
+            <span class="chip or" id="personStatus">待連線</span>
+            <span class="chip cyan" id="personCount">—</span>
+          </div>
+        </div>
+        <div class="panel-body">
+          <div class="person-grid">
+            <aside class="person-side">
+              <label class="person-search" for="personSearch">搜尋人物
+                <input id="personSearch" type="search" placeholder="姓名 或 @handle" autocomplete="off">
+              </label>
+              <div class="person-list" id="personList"></div>
+            </aside>
+            <div class="person-main">
+              <div class="person-head" id="personHead"></div>
+              <div class="person-filters" id="personFilters" role="group" aria-label="時間軸篩選">
+                <button type="button" data-kind="all" aria-pressed="true">全部</button>
+                <button type="button" data-kind="post" aria-pressed="false">貼文</button>
+                <button type="button" data-kind="ai_event" aria-pressed="false">AI 事件</button>
+                <button type="button" data-kind="alert" aria-pressed="false">告警</button>
+              </div>
+              <div class="person-timeline" id="personTimeline"></div>
+            </div>
+          </div>
+          <div class="p-cap">
+            <b>這一頁只讀。</b>左邊是 <code>/api/persons</code> 的歸戶結果，右邊把 <code>/api/persons/:id/timeline</code> 回來的貼文、AI 事件、告警按時間合併。AI 事件只產候選，要人工複核；後端不在時這頁留空，其他分頁照常。
+          </div>
+        </div>
+      </div>
+    </section>
   </main>
 
   <aside class="rail-right" aria-label="監控面板">
@@ -1003,6 +1040,7 @@
     <button class="tab" data-topic="infra"><svg class="ic"><use href="#i-docker"/></svg>設施</button>
     <button class="tab" data-topic="oss"><svg class="ic"><use href="#i-git"/></svg>組件</button>
     <button class="tab" data-topic="studio"><svg class="ic"><use href="#i-cube"/></svg>生成</button>
+    <button class="tab" data-topic="person"><svg class="ic"><use href="#i-pulse"/></svg>人物</button>
   </div>
 </nav>
 
@@ -1057,5 +1095,6 @@
 <script defer src="js/wireframe.js?v=20261121"></script>
 <script defer src="js/studio.js?v=20261121"></script>
 <script defer src="js/api.js?v=20261121"></script>
+<script defer src="js/person.js?v=20261121"></script>
 </body>
 </html>

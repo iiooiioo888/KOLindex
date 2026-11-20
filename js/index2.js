@@ -1544,7 +1544,7 @@
   $('#autoClaimBtn').addEventListener('click',toggleAuto);
 
   /* ================= 路由 + 轉頁 ================= */
-  var TOPICS=['collect','queue','sense','out','seat','pipe','infra','oss','studio'];
+  var TOPICS=['collect','queue','sense','out','seat','pipe','infra','oss','studio','person'];
   var TOPIC_META={
     collect:{label:'任務收集',hint:'待收項確認後才進隊列 · 這頁不拉取外部內容'},
     queue:{label:'任務隊列',hint:'席位自動拉取任務 · 等 LLM 空檔才執行'},
@@ -1554,7 +1554,8 @@
     pipe:{label:'統一管線',hint:'resolve_execution_path · 唯一判斷源'},
     infra:{label:'基礎設施',hint:'Docker Compose · 阿里雲唯讀'},
     oss:{label:'開源組件',hint:'GitHub 鎖定版本 · 候選不進主棧'},
-    studio:{label:'UI 生成',hint:'一句話需求 → 線框圖 · 只出結構不出像素'}
+    studio:{label:'UI 生成',hint:'一句話需求 → 線框圖 · 只出結構不出像素'},
+    person:{label:'人物檔案',hint:'歸戶結果 · 貼文／AI 事件／告警合併時間軸'}
   };
   var INFRA_PANES=['docker','ecs','bill','cost'];
   var INFRA_LABEL={docker:'Docker',ecs:'ECS',bill:'帳單',cost:'成本預算'};
@@ -2337,6 +2338,7 @@
     if (e.code==='Space'&&!e.target.closest('button')){ e.preventDefault(); togglePause(); return; }
     if ((e.metaKey||e.ctrlKey)&&e.shiftKey&&e.key.toLowerCase()==='a'){ e.preventDefault(); toggleAuto(); return; }
     if ((e.metaKey||e.ctrlKey)&&e.key>='1'&&e.key<='9'){ var kb=TOPICS[parseInt(e.key,10)-1]; if (kb){ e.preventDefault(); setTopic(kb); } return; }
+    if ((e.metaKey||e.ctrlKey)&&e.key==='0'){ var kb0=TOPICS[9]; if (kb0){ e.preventDefault(); setTopic(kb0); } return; }
     if (!e.metaKey && !e.ctrlKey && !e.altKey && (e.key==='ArrowLeft'||e.key==='ArrowRight')){
       if (overlay.classList.contains('on') || ($('#dlgMask') && !$('#dlgMask').hidden)) return;
       if (e.target.closest('#seats,#topicBar,#infraTabs,#seatLegend,#rangeRow')) return;

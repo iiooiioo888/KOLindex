@@ -1012,7 +1012,7 @@ body.reduce-motion .topic-bar::after{
   .tabs{display:block;position:fixed;left:0;right:0;bottom:0;z-index:80;
     background:rgba(12,14,17,.96);border-top:1px solid var(--line);
     padding:7px 5px calc(7px + env(safe-area-inset-bottom))}
-  .tabs .inner{display:grid;grid-template-columns:repeat(8,1fr)}
+  .tabs .inner{display:grid;grid-template-columns:repeat(10,1fr)}
   .tab{display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 2px;
     color:var(--faint);font-size:var(--fs-ui);letter-spacing:.06em;font-family:var(--body)}
   .tab.active{color:var(--amber)}
