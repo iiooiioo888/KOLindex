@@ -148,6 +148,11 @@
       bill1:72,bill2:62,bill3:88,t1:14,t2:26,t3:8,t4:58,t5:5,t6:88}
   };
   var tipInstances=[];
+  var tipSingleton=null;
+  var tipHide=function(){
+    if (tipSingleton && tipSingleton.hide) tipSingleton.hide();
+  };
+  function hideTip(){ tipHide(); }
 
   /* ================= SELECTORS（所有數字/百分比唯一來源） ================= */
   function laneCount(lane){ return store.tasks.filter(function(t){ return t.lane===lane; }).length; }
@@ -295,14 +300,17 @@
     var bar='';
     var prog='—';
     if (lane==='queue'){
-      bar='<div class="slabar" role="progressbar" aria-valuenow="'+(t.sla||0)+'" aria-valuemin="0" aria-valuemax="100"><i style="--pct:'+(t.sla||0)+'%;background:linear-gradient(90deg,#8c3a30,var(--red))"></i></div>';
-      prog='SLA '+(t.sla||0)+'% · 等待席位拉取';
+      var sla=Math.round(t.sla||0);
+      bar='<div class="slabar" role="progressbar" aria-valuenow="'+sla+'" aria-valuemin="0" aria-valuemax="100"><i data-f="bar" data-mark="'+sla+'%" style="--pct:'+sla+'%;background:linear-gradient(90deg,#8c3a30,var(--red))"></i></div>';
+      prog='SLA '+sla+'% · 等待席位拉取';
     } else if (lane==='wait'){
-      bar='<div class="waitbar" role="progressbar" aria-valuenow="'+Math.round(t.waitPct||0)+'" aria-valuemin="0" aria-valuemax="100"><i style="--pct:'+(t.waitPct||0)+'%"></i></div>';
-      prog='等空檔 '+Math.round(t.waitPct||0)+'%';
+      var waitN=Math.round(t.waitPct||0);
+      bar='<div class="waitbar" role="progressbar" aria-valuenow="'+waitN+'" aria-valuemin="0" aria-valuemax="100"><i data-f="bar" data-mark="'+waitN+'%" style="--pct:'+waitN+'%"></i></div>';
+      prog='等空檔 '+waitN+'%';
     } else if (t.progress!==undefined){
-      bar='<div class="qbar" role="progressbar" aria-valuenow="'+Math.round(t.progress)+'" aria-valuemin="0" aria-valuemax="100"><i style="--pct:'+t.progress+'%"></i></div>';
-      prog=Math.round(t.progress)+'%';
+      var progN=Math.round(t.progress);
+      bar='<div class="qbar" role="progressbar" aria-valuenow="'+progN+'" aria-valuemin="0" aria-valuemax="100"><i data-f="bar" data-mark="'+progN+'%" style="--pct:'+progN+'%"></i></div>';
+      prog=progN+'%';
     }
     var btn=(lane==='queue'&&!t.exiting)?'<button class="claim-btn" data-force data-id="'+esc(t.id)+'">強制派發</button>':'';
     var seatLine=t.seat?('席位 '+t.seat+' 已接'):'尚未被席位拉取';
@@ -314,33 +322,114 @@
       '<div><dt>席位</dt><dd>'+esc(seatLine+' · '+(t.role||'未指定'))+'</dd></div>'+
       '<div><dt>提示詞</dt><dd>'+esc(t.prompt||'—')+'</dd></div>'+
       '<div><dt>上下文</dt><dd>'+esc(sense)+'</dd></div>'+
-      '<div><dt>進度</dt><dd>'+esc(prog)+'</dd></div>'+
+      '<div><dt>進度</dt><dd data-f="prog">'+esc(prog)+'</dd></div>'+
       '</dl>';
     return '<article class="qcard'+(t.exiting?' is-out':'')+'" data-id="'+esc(t.id)+'" data-sensors="'+esc((t.sensors||[]).join(','))+'" data-role="'+esc(t.role)+'" data-search>'+
       '<div class="qtop"><span class="qid">'+esc(t.id)+'</span><span class="pri '+t.pri+'"><span class="sig '+(t.pri==='p0'?'warn':'ok')+'"></span>'+esc(t.priLabel)+'</span></div>'+
       '<h4 class="qtitle">'+esc(t.title)+'</h4><div class="qtags">'+tags+'</div>'+bar+par+
       '<div class="qmeta">'+(t.exiting?'此步完成 · 離開狀態欄':t.meta)+'</div>'+detail+btn+
-      '<div class="claim-stamp"><span>'+(t.stamp&&t.stamp[0]||'')+'</span><span>'+(t.stamp&&t.stamp[1]||'')+'</span></div></article>';
+      '<div class="claim-stamp"><span data-f="stamp0">'+(t.stamp&&t.stamp[0]||'')+'</span><span>'+(t.stamp&&t.stamp[1]||'')+'</span></div></article>';
   }
-  function renderQueue(){
-    var root=$('#lanes');
-    var prev={},scrollPos={};
-    if (root) $$('.qcard',root).forEach(function(n){ prev[n.getAttribute('data-id')]=n.getBoundingClientRect(); });
-    ['queue','wait','proc','split','gen'].forEach(function(lane){
-      var body=$('#body-'+lane); if (!body) return;
-      scrollPos[lane]=body.scrollTop;
-      var items=store.tasks.filter(function(t){
-        if (t.lane==='done'&&!t.exiting) return false;
-        return t.exiting?t.leftFrom===lane:t.lane===lane;
+  var QUEUE_LANES=['queue','wait','proc','split','gen'];
+  var laneSigSeen={};
+  function laneOf(t){
+    if (t.lane==='done' && !t.exiting) return '';
+    return t.exiting ? (t.leftFrom||'') : t.lane;
+  }
+  function tasksInLane(lane){
+    return store.tasks.filter(function(t){ return laneOf(t)===lane; });
+  }
+  function laneStructSig(lane){
+    return tasksInLane(lane).map(function(t){
+      var tags=(t.tags||[]).map(function(g){ return g.t+'/'+g.c; }).join(',');
+      return [t.id, t.exiting?1:0, t.pri, t.title, t.role||'', t.seat||'', t.slot||'', t.wave||'', tags, t.meta||'', (t.stamp&&t.stamp[1])||'', t.prompt||'', (t.sensors||[]).join(','), parallelLine(t)].join('|');
+    }).join('~');
+  }
+  function cardValue(t){
+    var lane=laneOf(t);
+    var stamp0=(t.stamp&&t.stamp[0])||'';
+    if (lane==='queue'){
+      var sla=Math.round(t.sla||0);
+      return {pct:sla, prog:'SLA '+sla+'% · 等待席位拉取', stamp0:stamp0};
+    }
+    if (lane==='wait'){
+      var waitN=Math.round(t.waitPct||0);
+      return {pct:waitN, prog:'等空檔 '+waitN+'%', stamp0:stamp0};
+    }
+    if (t.progress!==undefined){
+      var progN=Math.round(t.progress);
+      return {pct:progN, prog:progN+'%', stamp0:stamp0};
+    }
+    return null;
+  }
+  function paintCardValues(t){
+    var card=document.querySelector('#lanes .qcard[data-id="'+String(t.id).replace(/"/g,'')+'"]');
+    if (!card) return;
+    var v=cardValue(t);
+    if (!v) return;
+    var bar=card.querySelector('[data-f="bar"]');
+    if (bar){
+      var mark=v.pct+'%';
+      if (bar.getAttribute('data-mark')!==mark){
+        bar.style.setProperty('--pct', mark);
+        bar.setAttribute('data-mark', mark);
+        if (bar.parentElement) bar.parentElement.setAttribute('aria-valuenow', String(v.pct));
+      }
+    }
+    var prog=card.querySelector('[data-f="prog"]');
+    if (prog && prog.textContent!==v.prog) prog.textContent=v.prog;
+    var stamp=card.querySelector('[data-f="stamp0"]');
+    if (stamp && stamp._raw!==v.stamp0){
+      stamp.innerHTML=v.stamp0;
+      stamp._raw=v.stamp0;
+    }
+  }
+  function paintLane(lane, seen){
+    var body=document.getElementById('body-'+lane);
+    if (!body) return false;
+    var items=tasksInLane(lane);
+    var sig=laneStructSig(lane);
+    var par=body.parentElement && $('.lane-par', body.parentElement);
+    if (par) par.hidden=items.length<2;
+    if (laneSigSeen[lane]===sig && body.childElementCount){
+      items.forEach(paintCardValues);
+      return false;
+    }
+    laneSigSeen[lane]=sig;
+    var scroll=body.scrollTop;
+    hideTip();
+    body.innerHTML=items.length?items.map(taskCard).join('')
+      :'<div class="lane-empty"><span class="sig ok" style="width:10px;height:10px;color:var(--faint)"></span> EMPTY<br>暫無項目</div>';
+    body.scrollTop=scroll||0;
+    if (seen && !document.body.classList.contains('reduce-motion')){
+      $$('.qcard', body).forEach(function(n){
+        if (n.classList.contains('is-out')) return;
+        if (!seen[n.getAttribute('data-id')]) n.classList.add('is-in');
       });
-      body.innerHTML=items.length?items.map(taskCard).join('')
-        :'<div class="lane-empty"><span class="sig ok" style="width:10px;height:10px;color:var(--faint)"></span> EMPTY<br>暫無項目</div>';
-      body.scrollTop=scrollPos[lane]||0;
-      var mark=body.parentElement&&$('.lane-par',body.parentElement);
-      if (mark) mark.hidden=items.length<2;
+    }
+    return true;
+  }
+  function paintQueueValues(){
+    store.tasks.forEach(function(t){
+      var lane=laneOf(t);
+      if (lane==='queue'||lane==='wait'||lane==='proc') paintCardValues(t);
     });
-    renderParallel();
-    renderFlow();
+    if (currentQuery) applyQuery();
+  }
+  function renderQueue(only){
+    var partial=!!(only && only.length);
+    var lanes=partial
+      ? QUEUE_LANES.filter(function(lane){ return only.indexOf(lane)>=0 || laneStructSig(lane)!==laneSigSeen[lane]; })
+      : QUEUE_LANES;
+    var root=$('#lanes');
+    var seen={};
+    if (root) $$('.qcard', root).forEach(function(n){ seen[n.getAttribute('data-id')]=1; });
+    var rebuilt=false;
+    lanes.forEach(function(lane){ if (paintLane(lane, seen)) rebuilt=true; });
+    if (!partial || rebuilt){
+      renderParallel();
+      renderFlow();
+    }
     renderNumbers();
     applyQuery();
     if (routeState && routeState.topic==='queue' && routeState.focus){
@@ -350,11 +439,6 @@
       if (keep) keep.classList.add('linked');
       if (flow) flow.classList.add('linked');
     }
-    if (!root || document.body.classList.contains('reduce-motion')) return;
-    $$('.qcard',root).forEach(function(n){
-      if (n.classList.contains('is-out')) return;
-      if (!prev[n.getAttribute('data-id')]) n.classList.add('is-in');
-    });
   }
   var flowSeen=null;
   function laneState(t){ return t.lane==='done'?'done':(t.exiting?t.leftFrom:t.lane); }
@@ -799,6 +883,34 @@
   }
   function tabSig(){
     return ide.open.map(function(id){ var f=fileBy(id); return id+(f&&dirtyOf(f)?'*':''); }).join('|')+':'+ide.active;
+  }
+  var HL_CSS='https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.10.0/build/styles/github-dark.min.css';
+  var HL_CSS_SRI='sha384-wH75j6z1lH97ZOpMOInqhgKzFkAInZPPSPlZpYKYTOqsaizPvhQZmAtLcPKXpLyH';
+  var HL_JS='https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.10.0/build/highlight.min.js';
+  var HL_JS_SRI='sha384-GdEWAbCjn+ghjX0gLx7/N1hyTVmPAjdC2OvoAA0RyNcAOhqwtT8qnbCxWle2+uJX';
+  var hlPromise=null;
+  function ensureHighlight(){
+    if (window.hljs) return Promise.resolve(window.hljs);
+    if (hlPromise) return hlPromise;
+    hlPromise=new Promise(function(resolve){
+      if (!document.querySelector('link[data-hlcss]')){
+        var link=document.createElement('link');
+        link.rel='stylesheet';
+        link.href=HL_CSS;
+        link.integrity=HL_CSS_SRI;
+        link.crossOrigin='anonymous';
+        link.setAttribute('data-hlcss','1');
+        document.head.appendChild(link);
+      }
+      var script=document.createElement('script');
+      script.integrity=HL_JS_SRI;
+      script.crossOrigin='anonymous';
+      script.onload=function(){ resolve(window.hljs||null); };
+      script.onerror=function(){ hlPromise=null; resolve(null); };
+      script.src=HL_JS;
+      document.head.appendChild(script);
+    });
+    return hlPromise;
   }
   function paintEditor(){
     var f=fileBy(ide.active);
@@ -1645,7 +1757,10 @@
       showInfraPane(next.pane,!!(prev && prev.topic==='infra' && paneChanged));
     }
     revealFocus(next,!!(next.focus || (prev && prev.topic)));
-    if (next.topic==='out') requestAnimationFrame(paintEditor);
+    if (next.topic==='out'){
+      ensureHighlight().then(function(hl){ if (hl) paintEditor(); });
+      requestAnimationFrame(paintEditor);
+    }
     var gs=$('#globalSearch');
     runSearch(gs?gs.value:'');
   }
@@ -1869,18 +1984,20 @@
   function moveCard(id,targetLane,mutate){
     var t=store.tasks.filter(function(x){ return x.id===id; })[0];
     if (!t) return;
+    var from=laneOf(t);
     t.lane=targetLane;
     t.exiting=false;
     if (targetLane!=='split'&&targetLane!=='gen') t.departAt=0;
     if (mutate) mutate(t);
-    renderQueue();
+    renderQueue([from, targetLane]);
   }
-  function markDone(t){
+  function markDone(t, opt){
     if (!t||t.lane==='done'||t.exiting||t.flowClosing) return;
+    var from=t.lane;
     t.leftFrom=t.lane;
     t.exiting=true;
     t.departAt=0;
-    renderQueue();
+    if (!opt || !opt.silent) renderQueue([from]);
     setTimeout(function(){
       t.exiting=false;
       t.lane='done';
@@ -2026,14 +2143,18 @@
     });
   });
 
-  /* 執行進度推移 */
+  /* 執行進度：數值只改 --pct / 文字，換道才重建相關欄 */
   every(4200, function(){
     if (store.paused||document.hidden) return;
+    var touched=[];
+    var slotMoved=false;
+    function touch(lane){ if (lane && touched.indexOf(lane)<0) touched.push(lane); }
     store.tasks.forEach(function(t){
-      if (t.lane!=='proc') return;
+      if (t.lane!=='proc' || t.exiting) return;
       t.progress=Math.min(96,(t.progress||0)+Math.random()*3);
-      t.stamp=['進度 <b>'+t.progress.toFixed(0)+'%</b>',t.stamp[1]];
+      t.stamp=['進度 <b>'+Math.round(t.progress)+'%</b>', t.stamp[1]];
       if (t.progress>=96&&Math.random()>0.7){
+        var from=t.lane;
         if (Math.random()>0.5){
           t.lane='split';
           t.tags=[{t:'再分拆',c:'t-split'},{t:'槽位已釋放',c:''}];
@@ -2047,21 +2168,41 @@
           pushEvent('#5fd97d','<b>seat-gen</b> '+esc(t.id)+' 走向席位生成');
         }
         t.departAt=Date.now()+4500;
+        touch(from);
+        touch(t.lane);
         freeSlotOf(t);
+        slotMoved=true;
         setTimeout(dispatchFromWait,700);
       }
     });
     store.tasks.forEach(function(t){
-      if (t.lane==='wait'&&t.waitPct!==undefined&&t.waitPct<92) t.waitPct+=Math.random()*4;
+      if (t.lane==='wait'&&!t.exiting&&t.waitPct!==undefined&&t.waitPct<92) t.waitPct+=Math.random()*4;
       if ((t.lane==='split'||t.lane==='gen')&&!t.departAt) t.departAt=Date.now()+4500;
-      if (t.departAt&&(t.lane==='split'||t.lane==='gen')&&Date.now()>=t.departAt) markDone(t);
+      if (t.departAt&&(t.lane==='split'||t.lane==='gen')&&Date.now()>=t.departAt){
+        var from=t.lane;
+        var was=t.exiting;
+        markDone(t,{silent:true});
+        if (!was && t.exiting) touch(from);
+      }
     });
-    renderQueue(); renderSlots();
+    if (touched.length){
+      renderQueue(touched);
+      if (slotMoved) renderSlots();
+    } else {
+      paintQueueValues();
+    }
     $$('#seatRoster .mp-fill').forEach(function(f){
       var v=parseFloat(f.getAttribute('aria-valuenow'))||0;
-      if (v>0&&v<99){ v=Math.min(99,v+Math.random()*1.5);
-        f.setAttribute('aria-valuenow',v.toFixed(0)); f.style.setProperty('--pct',v.toFixed(0)+'%');
-        var n=f.closest('.mini-progress').querySelector('.mp-num'); if (n) n.textContent=v.toFixed(0)+'%'; }});
+      if (v>0&&v<99){
+        v=Math.min(99,v+Math.random()*1.5);
+        var next=v.toFixed(0);
+        if (f.getAttribute('aria-valuenow')===next) return;
+        f.setAttribute('aria-valuenow', next);
+        f.style.setProperty('--pct', next+'%');
+        var n=f._num||(f._num=f.closest('.mini-progress').querySelector('.mp-num'));
+        if (n && n.textContent!==next+'%') n.textContent=next+'%';
+      }
+    });
   });
 
   /* ================= [P0-7] 席位圖 roving tabindex + 方向鍵 ================= */
@@ -2258,40 +2399,100 @@
       '<div class="donut-legend">'+legend+'</div></div>';
   }
 
-  function mountTips(){
-    if (typeof tippy==='undefined') return;
-    $$('[title]').forEach(function(el){
-      var text=el.getAttribute('title');
-      if (!text) return;
-      el.setAttribute('data-tip',text);
+  function tipText(el){
+    if (!el) return '';
+    if (el.hasAttribute('title')){
+      el.setAttribute('data-tip', el.getAttribute('title'));
       el.removeAttribute('title');
-    });
-    var reduced=document.body.classList.contains('reduce-motion');
-    var base={
-      theme:'linkin',
-      animation:reduced?'fade':'shift-away-subtle',
-      duration:reduced?0:[180,120],
-      delay:[240,40],
-      arrow:true,
-      offset:[0,8],
-      appendTo:function(){ return document.body; },
-      maxWidth:280
-    };
-    function track(nodes){
-      if (!nodes) return;
-      (Array.isArray(nodes)?nodes:[nodes]).forEach(function(t){ if (t) tipInstances.push(t); });
     }
-    track(tippy('[data-tip]',Object.assign({},base,{content:function(r){ return r.getAttribute('data-tip')||''; }})));
-    track(tippy('#topicBar .topic-btn',Object.assign({},base,{content:function(r){ return '#/'+(r.getAttribute('data-topic')||''); }})));
-    track(tippy('.kpi',Object.assign({},base,{delay:[380,40],content:function(r){
-      var a=r.querySelector('.kl'),b=r.querySelector('.ks');
+    if (el.hasAttribute('data-tip')) return el.getAttribute('data-tip')||'';
+    if (el.matches('#topicBar .topic-btn')) return '#/'+(el.getAttribute('data-topic')||'');
+    if (el.classList.contains('kpi')){
+      var a=el.querySelector('.kl'), b=el.querySelector('.ks');
       return ((a&&a.textContent)||'')+(b?' · '+b.textContent:'');
-    }})));
-    track(tippy('#seats .seat',Object.assign({},base,{delay:[80,30],content:function(el){
+    }
+    if (el.classList.contains('seat')){
       var map={run:'執行中',wait:'待空檔',queue:'待拉取',done:'完成',lock:'鎖定',gen:'生成'};
       var st=el.getAttribute('data-status')||'';
       return (el.getAttribute('data-seat')||'席位')+' · '+(map[st]||'空閒');
-    }})));
+    }
+    return '';
+  }
+  function tipAnchor(node){
+    if (!node || !node.closest) return null;
+    return node.closest('[data-tip], [title], #topicBar .topic-btn, .kpi, #seats .seat');
+  }
+  function mountTips(){
+    if (typeof tippy==='undefined' || tipSingleton) return;
+    $$('[title]').forEach(function(el){
+      var text=el.getAttribute('title');
+      if (!text) return;
+      el.setAttribute('data-tip', text);
+      el.removeAttribute('title');
+    });
+    var reduced=document.body.classList.contains('reduce-motion');
+    var holder=document.createElement('span');
+    holder.id='tipAnchor';
+    holder.setAttribute('aria-hidden','true');
+    holder.style.cssText='position:fixed;width:1px;height:1px;overflow:hidden;pointer-events:none';
+    document.body.appendChild(holder);
+    var current=null;
+    var showTimer=0;
+    tipSingleton=tippy(holder,{
+      theme:'linkin',
+      trigger:'manual',
+      animation:reduced?'fade':'shift-away-subtle',
+      duration:reduced?0:[180,120],
+      delay:0,
+      arrow:true,
+      offset:[0,8],
+      appendTo:function(){ return document.body; },
+      maxWidth:280,
+      content:''
+    });
+    tipInstances.push(tipSingleton);
+    function hide(){
+      clearTimeout(showTimer);
+      current=null;
+      tipSingleton.hide();
+    }
+    function show(el){
+      if (current===el) return;
+      var text=tipText(el);
+      if (!text){ hide(); return; }
+      current=el;
+      clearTimeout(showTimer);
+      var delay=reduced?0:(el.classList.contains('seat')?80:el.classList.contains('kpi')?380:240);
+      tipSingleton.setProps({
+        getReferenceClientRect:function(){ return el.getBoundingClientRect(); },
+        content:text
+      });
+      showTimer=setTimeout(function(){
+        if (current!==el) return;
+        tipSingleton.setContent(text);
+        tipSingleton.show();
+      }, delay);
+    }
+    document.addEventListener('mouseover', function(e){
+      var el=tipAnchor(e.target);
+      if (el) show(el);
+    });
+    document.addEventListener('mouseout', function(e){
+      var el=tipAnchor(e.target);
+      if (!el || current!==el) return;
+      var next=e.relatedTarget && tipAnchor(e.relatedTarget);
+      if (next===el) return;
+      hide();
+    });
+    document.addEventListener('focusin', function(e){
+      var el=tipAnchor(e.target);
+      if (el) show(el);
+    });
+    document.addEventListener('focusout', function(e){
+      if (tipAnchor(e.target)) hide();
+    });
+    document.addEventListener('scroll', hide, true);
+    tipHide=hide;
   }
   renderDepth();
   $('#rangeRow').addEventListener('click',function(e){
@@ -2439,7 +2640,7 @@
     {id:'craft-anything',name:'Craft Anything',repo:'storytold/craft-anything',license:'以倉庫 LICENSE 為準',pin:'未鎖定',face:'設計參考 · 候選',state:'candidate',load:'off',sample:true,use:'倉庫自述是理解軟體如何運作，再做出自己的東西。可以加載為唯讀工藝草稿，不寫倉庫、不在主棧跑它的工具。'},
     {id:'animejs',name:'anime.js',repo:'juliangarnier/anime',license:'MIT',pin:'WAAPI',face:'頁面動效',state:'wired',use:'進場改由 Web Animations API。不再載入 anime.js。'},
     {id:'apexcharts',name:'ApexCharts',repo:'apexcharts/apexcharts.js',license:'MIT',pin:'頁內 SVG',face:'圖表',state:'wired',use:'佇列深度用手繪 SVG，預算環用 conic-gradient，成本組成用 SVG 環。不再載入 ApexCharts。'},
-    {id:'tippyjs',name:'Tippy.js',repo:'atomiks/tippyjs',license:'MIT',pin:'6.3.7',face:'提示',state:'wired',use:'席位、指標與按鈕的提示泡泡。需先載入 Popper。'},
+    {id:'tippyjs',name:'Tippy.js',repo:'atomiks/tippyjs',license:'MIT',pin:'6.3.7',face:'提示',state:'wired',use:'單一實例跟著滑鼠委派。重繪後的新卡片不用重新掛載，也不留舊 instance。需先載入 Popper。'},
     {id:'popper',name:'Popper',repo:'floating-ui/floating-ui',license:'MIT',pin:'2.11.8',face:'定位',state:'wired',use:'Tippy 的定位核心。只負責座標，不讀業務資料。'},
     {id:'lucide',name:'Lucide',repo:'lucide-icons/lucide',license:'ISC',pin:'頁內 sprite',face:'圖示',state:'wired',use:'導覽與告警圖示只用頁內 sprite。不再載入 Lucide。'},
     {id:'noto',name:'Noto Sans TC',repo:'notofonts/noto-cjk',license:'OFL',pin:'系統字',face:'正文字型',state:'wired',use:'中文走系統字堆疊（蘋方、微軟正黑體、思源黑體）。不向 Google Fonts 取字。'},
