@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='4' fill='%230b0d0f'/%3E%3Cpath d='M6 26V6h6l7 12V6h6v20h-6l-7-12v12z' fill='%23f0a500'/%3E%3C/svg%3E">
+<title>靈境·Linkin 運行時 · 自動認領 × LLM 空檔排程</title>
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tippy.js@6.3.7/dist/tippy.css" integrity="sha384-IBgYl+I5X6ZDZXI5zv1vsSE3VopDomz4BxSu/GlxaPHfFtcrJ3uj70z1w6srO9zU" crossorigin="anonymous">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.10.0/build/styles/github-dark.min.css" integrity="sha384-wH75j6z1lH97ZOpMOInqhgKzFkAInZPPSPlZpYKYTOqsaizPvhQZmAtLcPKXpLyH" crossorigin="anonymous">
+<link rel="stylesheet" href="css/index2.css">
+</head>
+<body>
+
+<svg class="sprite" aria-hidden="true">
+  <symbol id="i-opc" viewBox="0 0 16 16"><rect x="4" y="4" width="8" height="8" rx="1"/><path d="M8 1.2V4M8 12v2.8M1.2 8H4M12 8h2.8M4 4L2 2M12 4l2-2M4 12l-2 2M12 12l2 2"/></symbol>
+  <symbol id="i-queue" viewBox="0 0 16 16"><rect x="2" y="2.5" width="12" height="3" rx="1"/><rect x="2" y="6.5" width="12" height="3" rx="1"/><rect x="2" y="10.5" width="12" height="3" rx="1"/></symbol>
+  <symbol id="i-tasks" viewBox="0 0 16 16"><path d="M2 4l1.6 1.6L6 3M2 9l1.6 1.6L6 8M8.5 4.5h5.5M8.5 9.5H14M8.5 12.5H12"/></symbol>
+  <symbol id="i-monitor" viewBox="0 0 16 16"><rect x="1.5" y="2.5" width="13" height="9" rx="1.5"/><path d="M6 14h4M8 11.5V14"/></symbol>
+  <symbol id="i-docker" viewBox="0 0 16 16"><rect x="2" y="7" width="3" height="3"/><rect x="5.6" y="7" width="3" height="3"/><rect x="9.2" y="7" width="3" height="3"/><rect x="5.6" y="3.5" width="3" height="3"/><path d="M9.2 4.6c1.2-1.4 3.2-.6 3.4.3.6-.2 1.4.1 1.5.8.6.4.8 1.2.5 1.8-.5 1.3-1.9 2.3-3.6 2.3H2.4c-.6 1.2-1.7 1.9-3 2"/></symbol>
+  <symbol id="i-search" viewBox="0 0 16 16"><circle cx="7" cy="7" r="4.5"/><path d="M10.4 10.4L14 14"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 16 16"><rect x="3" y="7" width="10" height="7" rx="1.5"/><path d="M5.2 7V5a2.8 2.8 0 015.6 0v2"/></symbol>
+  <symbol id="i-pulse" viewBox="0 0 16 16"><path d="M1 8h3l2-5 3 10 2-5h4"/></symbol>
+  <symbol id="i-warn" viewBox="0 0 16 16"><path d="M8 2l6.2 11H1.8z"/><path d="M8 6.2v3.2M8 11.2h.01"/></symbol>
+  <symbol id="i-cube" viewBox="0 0 16 16"><path d="M8 1.6l5.6 3.1v6.6L8 14.4l-5.6-3.1V4.7z"/><path d="M2.5 4.8L8 7.9l5.5-3.1M8 7.9v6.4"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6.2"/><path d="M8 4.4V8l2.6 1.8"/></symbol>
+  <symbol id="i-slot" viewBox="0 0 16 16"><rect x="2" y="4" width="12" height="8" rx="1.5"/><path d="M5 8h6"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 16 16"><path d="M8 1.8l5.2 2.2v4c0 3.4-2.2 5.6-5.2 6.4-3-.8-5.2-3-5.2-6.4v-4z"/><path d="M5.8 8l1.7 1.7L10.4 6.6"/></symbol>
+  <symbol id="i-git" viewBox="0 0 16 16"><path d="M6.2 14.2v-2.1a2.2 2.2 0 01.6-1.6C4.6 10.2 3.4 9.4 3.4 7.3a2.6 2.6 0 01.7-1.8 2.4 2.4 0 010-1.8s.6-.2 1.9.7a6.5 6.5 0 013.4 0c1.3-.9 1.9-.7 1.9-.7a2.4 2.4 0 010 1.8 2.6 2.6 0 01.7 1.8c0 2.1-1.2 2.9-3.4 3.2a2.2 2.2 0 01.6 1.6v2.1"/></symbol>
+</svg>
+
+<header class="topbar">
+  <div class="brand">
+    <svg class="brand-mark" viewBox="0 0 30 30" fill="none" aria-hidden="true">
+      <path d="M4 26V4h5.4l7 12.2V4H22v22h-5.2l-7.2-12.6V26z" fill="#f0a500" opacity=".92"/>
+      <path d="M2 2h26v26H2z" stroke="rgba(240,165,0,.38)" stroke-width="1.1"/>
+      <circle cx="25" cy="5" r="1.7" fill="#43d4e4"/>
+    </svg>
+    <div class="brand-name">靈境<em>·</em>Linkin</div>
+    <div class="brand-sub">Auto-Claim × LLM Slot</div>
+  </div>
+  <div class="chip-row">
+    <span class="chip green">自動認領 ON</span>
+    <span class="chip or">DEMO DATA</span>
+    <span class="chip cyan">LLM 槽位 <span data-num="slotUsed">—</span>/8</span>
+    <span class="chip red" id="guardChip">guard: <span data-num="guardPending">—</span> 待審</span>
+  </div>
+  <label class="searchbox" for="globalSearch">
+    <svg class="ic" aria-hidden="true"><use href="#i-search"/></svg>
+    <input type="search" id="globalSearch" placeholder="搜尋目前分頁內容…" aria-label="全站搜尋">
+    <span class="search-count" id="searchCount" aria-live="polite"></span>
+    <span class="kbd">⌘K</span>
+  </label>
+  <div class="top-right">
+    <button class="icon-btn" id="searchOpen" aria-label="開啟搜尋"><svg class="ic"><use href="#i-search"/></svg></button>
+    <button class="icon-btn on" id="autoClaimBtn" aria-pressed="true" title="自動認領開關">AUTO</button>
+    <button class="icon-btn" id="motionBtn" aria-pressed="false" title="減少動畫">FX</button>
+    <button class="icon-btn" id="pauseBtn" aria-pressed="false" title="暫停即時渲染">⏸</button>
+    <div class="live" id="liveTag"><span class="dot"></span>LIVE</div>
+    <div class="clock" id="clock">--:--:--</div>
+    <div class="avatar" title="操作者 AD">AD</div>
+  </div>
+</header>
+
+<div class="shell">
+
+  <aside class="rail" aria-label="分頁導覽">
+    <div>
+      <div class="rail-label">分頁 Topics<span id="railQueueCount">— 在列</span></div>
+      <button class="nav-item active" data-topic="queue"><svg class="ic"><use href="#i-queue"/></svg><span class="nm">任務隊列</span><span class="bd" id="navQueueBd">—</span></button>
+      <button class="nav-item" data-topic="sense"><svg class="ic"><use href="#i-opc"/></svg><span class="nm">感測上下文</span><span class="bd">8</span></button>
+      <button class="nav-item" data-topic="out"><svg class="ic"><use href="#i-cube"/></svg><span class="nm">產出庫</span><span class="bd" id="navOutBd">5</span></button>
+      <button class="nav-item" data-topic="seat"><svg class="ic"><use href="#i-tasks"/></svg><span class="nm">席位執行</span><span class="bd">80</span></button>
+      <button class="nav-item" data-topic="pipe"><svg class="ic"><use href="#i-monitor"/></svg><span class="nm">統一管線</span><span class="bd">6 段</span></button>
+      <button class="nav-item" data-topic="infra"><svg class="ic"><use href="#i-docker"/></svg><span class="nm">基礎設施</span><span class="bd">6/6</span></button>
+      <button class="nav-item" data-topic="oss"><svg class="ic"><use href="#i-git"/></svg><span class="nm">開源組件</span><span class="bd">16</span></button>
+    </div>
+
+    <div class="micro-card">
+      <h4>自動認領 · Auto-Claim</h4>
+      <div class="kv"><span>模式</span><b class="ok">席位自動拉取</b></div>
+      <div class="kv"><span>匹配</span><b>角色→心跳→負載→SLA</b></div>
+      <div class="kv"><span>執行門檻</span><b class="warn">LLM 空檔釋放</b></div>
+      <div class="kv"><span>手動覆寫</span><b class="or">強制派發（審計）</b></div>
+    </div>
+
+    <div class="micro-card">
+      <h4>系統摘要</h4>
+      <div class="kv"><span>LLM 槽位</span><b class="warn"><span data-num="slotUsed">—</span>/8 佔用</b></div>
+      <div class="kv"><span>待空檔</span><b class="or"><span data-num="claimedWait">—</span> 項</b></div>
+      <div class="kv"><span>guard.py</span><b class="warn"><span data-num="guardPending">—</span> 待審</b></div>
+      <div class="kv"><span>熔斷器</span><b class="ok">CLOSED</b></div>
+      <div class="kv"><span>席位池</span><b class="vi">87/120</b></div>
+      <div class="kv"><span>Compose</span><b class="ok">6/6</b></div>
+    </div>
+
+    <div class="micro-card">
+      <h4>LLM 槽位 · 8</h4>
+      <div class="slot-rail" id="slotRail"></div>
+    </div>
+
+    <div class="micro-card">
+      <h4>快捷鍵</h4>
+      <div class="kv"><span>搜尋</span><b>⌘K / Ctrl+K</b></div>
+      <div class="kv"><span>清除</span><b>ESC</b></div>
+      <div class="kv"><span>切換分頁</span><b>⌘1–7 / ←→</b></div>
+      <div class="kv"><span>深連結</span><b>#/頁/編號</b></div>
+      <div class="kv"><span>暫停渲染</span><b>SPACE</b></div>
+      <div class="kv"><span>自動認領</span><b>⌘⇧A</b></div>
+    </div>
+
+    <div class="micro-card">
+      <h4>埠號</h4>
+      <div class="kv"><span>前端</span><b>3001</b></div>
+      <div class="kv"><span>後端</span><b class="amber">8000</b></div>
+      <div class="kv"><span>OPC</span><b class="cyan">8001</b></div>
+      <div class="kv"><span>Redis</span><b>6379</b></div>
+      <div class="kv"><span>Chroma</span><b>8100</b></div>
+    </div>
+  </aside>
+
+  <main class="stage">
+    <div class="topic-bar" role="tablist" aria-label="主題分頁" id="topicBar">
+      <button class="topic-btn" id="tab-queue" role="tab" aria-selected="true" aria-controls="topic-queue" data-topic="queue">任務隊列</button>
+      <button class="topic-btn" id="tab-sense" role="tab" aria-selected="false" aria-controls="topic-sense" data-topic="sense">感測上下文</button>
+      <button class="topic-btn" id="tab-out" role="tab" aria-selected="false" aria-controls="topic-out" data-topic="out">產出庫</button>
+      <button class="topic-btn" id="tab-seat" role="tab" aria-selected="false" aria-controls="topic-seat" data-topic="seat">席位執行</button>
+      <button class="topic-btn" id="tab-pipe" role="tab" aria-selected="false" aria-controls="topic-pipe" data-topic="pipe">統一管線</button>
+      <button class="topic-btn" id="tab-infra" role="tab" aria-selected="false" aria-controls="topic-infra" data-topic="infra">基礎設施</button>
+      <button class="topic-btn" id="tab-oss" role="tab" aria-selected="false" aria-controls="topic-oss" data-topic="oss">開源組件</button>
+      <span class="topic-hint" id="topicHint">#/queue  ·  席位自動拉取任務 · 等 LLM 空檔才執行</span>
+    </div>
+
+    <!-- ═══ 任務隊列 ═══ -->
+    <section class="waterfall on" id="topic-queue" role="tabpanel" aria-labelledby="tab-queue">
+      <div class="kpis rise" id="kpiBand">
+        <div class="kpi"><div class="kl">Auto-claim</div><div class="kv2" style="color:var(--green)"><span data-num="claimRate">—</span><small>/min</small></div><div class="ks">席位自動拉取</div><div class="kbar"><i data-pct="claimRate" style="background:linear-gradient(90deg,#2f8a4c,var(--green))"></i></div></div>
+        <div class="kpi"><div class="kl">Queue depth</div><div class="kv2" style="color:var(--cyan)"><span data-num="queueDepth">—</span></div><div class="ks">待拉取（佇列中）</div><div class="kbar"><i data-pct="queue" style="background:linear-gradient(90deg,#266d78,var(--cyan))"></i></div></div>
+        <div class="kpi"><div class="kl">Claimed / 待空檔</div><div class="kv2" style="color:var(--orange)"><span data-num="claimedWait">—</span></div><div class="ks">已拉取 · 等 LLM 空檔</div><div class="kbar"><i data-pct="wait" style="background:linear-gradient(90deg,#8c4c1d,var(--orange))"></i></div></div>
+        <div class="kpi"><div class="kl">Executing</div><div class="kv2" style="color:var(--amber)"><span data-num="executing">—</span></div><div class="ks">執行中 · 佔用槽位</div><div class="kbar"><i data-pct="exec" style="background:linear-gradient(90deg,#8c6a12,var(--amber))"></i></div></div>
+        <div class="kpi"><div class="kl">Slot util</div><div class="kv2"><span data-num="slotUsed">—</span><small>/8</small></div><div class="ks">LLM 併發槽位</div><div class="kbar"><i data-pct="slot" style="background:linear-gradient(90deg,#8c6a12,var(--amber))"></i></div></div>
+        <div class="kpi"><div class="kl">Avg slot wait</div><div class="kv2"><span data-num="slotWait">—</span><small>s</small></div><div class="ks">平均待空檔時間</div><div class="kbar"><i data-pct="slotWait" style="background:linear-gradient(90deg,#8c6a12,var(--amber))"></i></div></div>
+        <div class="kpi"><div class="kl">Re-split</div><div class="kv2" style="color:var(--violet)"><span data-num="split">—</span></div><div class="ks">回注子任務</div><div class="kbar"><i data-pct="split" style="background:linear-gradient(90deg,#574d92,var(--violet))"></i></div></div>
+        <div class="kpi"><div class="kl">Throughput</div><div class="kv2"><span data-num="thru">—</span><small>/h</small></div><div class="ks">完成 <span data-num="done">—</span> · 失敗 <span data-num="fail">—</span></div><div class="kbar"><i data-pct="thru" style="background:linear-gradient(90deg,#266d78,var(--cyan))"></i></div></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <div class="panel-title">任務看板<span class="en">狀態 × 總任務進程</span></div>
+          <div class="panel-tools">
+            <span class="chip green" id="autoChip">AUTO-CLAIM ON</span>
+            <span class="chip or">P0 保留槽位 1</span>
+            <span class="chip cyan">槽位 8</span>
+          </div>
+        </div>
+        <div class="panel-body">
+          <div class="angle">
+            <div class="angle-head">
+              <div class="ah">總任務進程 <b>同一波上下並行，波與波才有先後</b></div>
+              <div class="ah">節點留到整件任務完成才移走</div>
+            </div>
+            <div class="flow-board" id="flowBoard" aria-label="總任務進程"></div>
+          </div>
+          <div class="angle">
+            <div class="angle-head">
+              <div class="ah">任務狀態 <b>同一欄可以同時有多步</b></div>
+              <div class="ah">待拉取 · 待空檔 · 執行 · 收尾</div>
+            </div>
+          <div class="par-now" id="parNow" aria-label="此刻並行"></div>
+          <div class="lanes" id="lanes" aria-label="任務狀態">
+            <div class="lane" data-lane="queue">
+              <div class="lane-head"><span class="lane-dot" style="background:var(--cyan)"></span><span class="lane-name">佇列 · 待拉取</span><span class="lane-par" hidden>並行</span><span class="lane-count" data-count="queue">0</span></div>
+              <div class="lane-body" id="body-queue"></div>
+            </div>
+            <div class="lane" data-lane="wait">
+              <div class="lane-head"><span class="lane-dot" style="background:var(--orange)"></span><span class="lane-name">已拉取 · 待空檔</span><span class="lane-par" hidden>並行</span><span class="lane-count" data-count="wait">0</span></div>
+              <div class="lane-body" id="body-wait"></div>
+            </div>
+            <div class="lane" data-lane="proc">
+              <div class="lane-head"><span class="lane-dot" style="background:var(--amber-hot)"></span><span class="lane-name">LLM 執行 · 佔用槽位</span><span class="lane-par" hidden>並行</span><span class="lane-count" data-count="proc">0</span></div>
+              <div class="lane-body" id="body-proc"></div>
+            </div>
+            <div class="lane-fork">
+              <div class="lane" data-lane="split">
+                <div class="lane-head"><span class="lane-dot" style="background:var(--violet)"></span><span class="lane-name">再分拆 · 回注</span><span class="lane-par" hidden>並行</span><span class="lane-count" data-count="split">0</span></div>
+                <div class="lane-body" id="body-split"></div>
+              </div>
+              <div class="lane" data-lane="gen">
+                <div class="lane-head"><span class="lane-dot" style="background:var(--green)"></span><span class="lane-name">席位生成 · 完成前停留</span><span class="lane-par" hidden>並行</span><span class="lane-count" data-count="gen">0</span></div>
+                <div class="lane-body" id="body-gen"></div>
+              </div>
+            </div>
+          </div>
+          </div>
+          <div class="p-cap">
+            <b>兩個角度，同一批任務。</b>同一波的步驟可以同時處於不同狀態：有的已在槽上執行，有的還在等空檔。進程上它們上下疊在同一欄；狀態欄各自停在自己的位置。單步完成後離開狀態欄，進程節點留到整件任務完成才一起移走。
+          </div>
+
+          <div class="mini-2col" style="margin-top:12px">
+            <div>
+              <div class="kicker" style="margin-bottom:7px">自動認領策略 · auto-claim policy</div>
+              <div class="micro-card" style="padding:9px 10px">
+                <div class="kv"><span>拉取模型</span><b class="ok">席位閒置自動 PULL</b></div>
+                <div class="kv"><span>匹配順序</span><b>角色 → 心跳 → 負載 → SLA</b></div>
+                <div class="kv"><span>執行門檻</span><b class="warn">等 LLM 空檔釋放才開跑</b></div>
+                <div class="kv"><span>保留槽位</span><b class="bad">1 席留給 P0 搶佔</b></div>
+                <div class="kv"><span>手動覆寫</span><b class="or">二次確認＋原因＋審計</b></div>
+              </div>
+              <div class="note">認領後任務只持有席位與 lock，<b>不佔 LLM</b>；空檔釋放時 dispatcher 按排位自動開跑。</div>
+            </div>
+            <div>
+              <div class="kicker" style="margin-bottom:7px">LLM 空檔排程 · slot scheduler</div>
+              <div class="slot-grid" id="slotGrid"></div>
+              <div style="margin-top:10px">
+                <div class="quota-row"><span class="ql">Token 配額</span><div class="qtrack"><i data-pct="qToken" style="background:linear-gradient(90deg,#8c6a12,var(--amber))"></i></div><span class="qv" data-num="quotaToken">—</span></div>
+                <div class="quota-row"><span class="ql">成本配額</span><div class="qtrack"><i data-pct="qCost" style="background:linear-gradient(90deg,#8c4c1d,var(--orange))"></i></div><span class="qv" data-num="quotaCost">—</span></div>
+                <div class="quota-row"><span class="ql">速率限制</span><div class="qtrack"><i data-pct="qRate" style="background:linear-gradient(90deg,#266d78,var(--cyan))"></i></div><span class="qv" data-num="quotaRpm">—</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ 感測上下文 ═══ -->
+    <section class="waterfall" id="topic-sense" role="tabpanel" aria-labelledby="tab-sense">
+      <div class="panel sense-panel">
+        <div class="panel-head">
+          <div class="panel-title">感測上下文<span class="en">compress · perceive</span></div>
+          <div class="panel-tools">
+            <span class="chip cyan">窗口 16K</span>
+            <span class="chip">原文→壓縮→感知</span>
+            <span class="chip amber">8 份獨立壓縮</span>
+            <span class="chip red">行動句→guard.py</span>
+            <button type="button" class="mini-btn" data-topic="out">產出庫</button>
+            <button class="mini-btn" id="clearSensorFilter" style="display:none">✕ 清除篩選</button>
+          </div>
+        </div>
+        <div class="panel-body sense-body">
+          <div class="sense-grid">
+
+            <article class="scard" data-state="warn" data-sensor="CTX-WIN" data-search>
+              <div class="sc-top">
+                <div style="min-width:0"><div class="sc-id">CTX-WIN · WINDOW</div><h3 class="sc-name">原文窗口</h3></div>
+                <div class="sc-state"><span class="sig warn"></span>警戒</div>
+              </div>
+              <div class="sc-val"><span data-sensor-val="CTX-WIN">76</span><u>%</u><span class="delta up" data-sensor-delta="CTX-WIN">▲ +1</span></div>
+              <div class="sc-stats">
+                <div><div class="l">MIN</div><div class="v" data-stat="CTX-WIN:min">61</div></div>
+                <div><div class="l">AVG</div><div class="v" data-stat="CTX-WIN:avg">70</div></div>
+                <div><div class="l">MAX</div><div class="v" data-stat="CTX-WIN:max">76</div></div>
+                <div><div class="l">P95</div><div class="v" data-stat="CTX-WIN:p95">75</div></div>
+              </div>
+              <div class="thr" role="img" aria-label="窗口占用：小於72充裕，72到88偏滿，大於88將截斷"><div class="marker" data-thr-marker="CTX-WIN" style="left:74%"></div></div>
+              <div class="thr-legend"><span>&lt; 72 充裕</span><span>72–88 偏滿</span><span>&gt; 88 截斷</span></div>
+              <svg class="sc-spark" data-spark="61,64,66,68,70,71,73,74,75,76,76" data-color="#f0a500" data-threshold="72" role="img" aria-label="原文窗口占用走勢"></svg>
+              <div class="sc-cons">
+                <div class="cw">壓縮後注入</div>
+                <div class="cons-row"><button class="cref" data-jump="Q-118">Q-118</button><span class="cwhat">趨勢分析吃的是壓縮窗</span></div>
+                <div class="cons-row"><button class="cref" data-jump="T-2841">T-2841</button><span class="cwhat">總任務目標附在窗首</span></div>
+              </div>
+              <div class="sc-foot"><span class="fresh" data-fresh><i></i>0.4s</span><span>12.4K → 待壓 · 唯讀</span></div>
+              <div class="sc-actions">
+                <button class="mini-btn primary" data-filter-sensor="CTX-WIN">篩選關聯項目</button>
+                <button class="mini-btn" data-alarm-log="CTX-WIN">記錄異常</button>
+              </div>
+            </article>
+
+            <article class="scard" data-state="ok" data-sensor="CTX-CMP" data-search>
+              <div class="sc-top">
+                <div style="min-width:0"><div class="sc-id">CTX-CMP · COMPRESS</div><h3 class="sc-name">上下文壓縮</h3></div>
+                <div class="sc-state"><span class="sig ok"></span>正常</div>
+              </div>
+              <div class="sc-val"><span data-sensor-val="CTX-CMP">34</span><u>% 留</u><span class="delta down" data-sensor-delta="CTX-CMP">▼ -1</span></div>
+              <div class="sc-stats">
+                <div><div class="l">MIN</div><div class="v" data-stat="CTX-CMP:min">28</div></div>
+                <div><div class="l">AVG</div><div class="v" data-stat="CTX-CMP:avg">33</div></div>
+                <div><div class="l">MAX</div><div class="v" data-stat="CTX-CMP:max">41</div></div>
+                <div><div class="l">P95</div><div class="v" data-stat="CTX-CMP:p95">39</div></div>
+              </div>
+              <div class="thr" role="img" aria-label="保留率：小於48夠瘦，48到62偏肥，大於62幾乎沒壓"><div class="marker" data-thr-marker="CTX-CMP" style="left:38%"></div></div>
+              <div class="thr-legend"><span>&lt; 48 夠瘦</span><span>48–62 偏肥</span><span>&gt; 62 沒壓</span></div>
+              <svg class="sc-spark" data-spark="41,39,38,36,35,34,33,34,32,33,34" data-color="#43d4e4" data-threshold="48" role="img" aria-label="壓縮保留率走勢"></svg>
+              <div class="sc-cons">
+                <div class="cw">摘要注入對象</div>
+                <div class="cons-row"><button class="cref" data-jump="Q-120">Q-120</button><span class="cwhat">複核吃壓縮摘要</span></div>
+                <div class="cons-row"><button class="cref" data-jump="Q-117">Q-117</button><span class="cwhat">再分拆沿用同一摘要</span></div>
+              </div>
+              <div class="sc-foot"><span class="fresh" data-fresh><i></i>0.6s</span><span>保留目標 · 最新證據 · 未完成步</span></div>
+              <div class="sc-actions">
+                <button class="mini-btn primary" data-filter-sensor="CTX-CMP">篩選關聯項目</button>
+                <button class="mini-btn" data-alarm-log="CTX-CMP">記錄異常</button>
+              </div>
+            </article>
+
+            <article class="scard" data-state="warn" data-sensor="TXT-SEE" data-search>
+              <div class="sc-top">
+                <div style="min-width:0"><div class="sc-id">TXT-SEE · PERCEIVE</div><h3 class="sc-name">文本感知</h3></div>
+                <div class="sc-state"><span class="sig warn"></span>警戒</div>
+              </div>
+              <div class="sc-val"><span data-sensor-val="TXT-SEE">0.74</span><u>置信</u><span class="delta up" data-sensor-delta="TXT-SEE">▲ +0.02</span></div>
+              <div class="sc-stats">
+                <div><div class="l">MIN</div><div class="v" data-stat="TXT-SEE:min">0.41</div></div>
+                <div><div class="l">AVG</div><div class="v" data-stat="TXT-SEE:avg">0.63</div></div>
+                <div><div class="l">MAX</div><div class="v" data-stat="TXT-SEE:max">0.74</div></div>
+                <div><div class="l">P95</div><div class="v" data-stat="TXT-SEE:p95">0.72</div></div>
+              </div>
+              <div class="thr" role="img" aria-label="感知置信：小於0.62僅參考，0.62到0.85為候選，大於0.85必須守門"><div class="marker" data-thr-marker="TXT-SEE" style="left:68%"></div></div>
+              <div class="thr-legend"><span>&lt; .62 參考</span><span>.62–.85 候選</span><span>&gt; .85 守門</span></div>
+              <svg class="sc-spark" data-spark="0.41,0.48,0.52,0.58,0.61,0.66,0.69,0.71,0.72,0.73,0.74" data-color="#a493ff" data-threshold="0.62" role="img" aria-label="文本感知置信走勢"></svg>
+              <div class="sc-write" id="writeBox">
+                <div class="swt"><span class="sig lock" style="vertical-align:-1px"></span> 感知行動句 · guard.py 審核中</div>
+                <div class="swd">看出一句行動：閥位 <b>62% → 54%</b> · 只是候選 · 觸發 <b>Q-121</b> · 未核可不得執行</div>
+                <div class="sc-actions" style="margin-top:7px">
+                  <button class="mini-btn warn" id="guardApprove">核准候選</button>
+                  <button class="mini-btn" data-jump="Q-121">檢視 Q-121</button>
+                </div>
+              </div>
+              <div class="sc-foot"><span class="fresh" data-fresh><i></i>0.3s</span><span id="guardState">guard: <span data-num="guardPending">—</span> 待審</span></div>
+            </article>
+          </div>
+
+          <section class="cmp-board" aria-label="壓縮上下文">
+            <div class="angle-head">
+              <div class="ah">壓縮上下文 <b>八槽各一份，不共讀</b></div>
+              <div class="ah">留下目標、最新證據、未完成步 · 丟掉重複與過期</div>
+            </div>
+            <div class="cmp-grid" id="compressBoard"></div>
+          </section>
+          <div class="kb-duo">
+            <section class="kb-panel task" aria-label="任務知識庫">
+              <div class="kb-head">
+                <div>
+                  <div class="kb-k">TASK KB</div>
+                  <h3 class="kb-name">任務知識庫</h3>
+                </div>
+                <div class="kb-meta" id="taskKbMeta">同步中</div>
+              </div>
+              <div class="kb-list" id="taskKbList"></div>
+              <div class="kb-foot">只收本槽增量。A1–B2、B4 各自回寫自己的條目，空檔釋放後這條增量從槽上卸下，條目留在任務庫。</div>
+            </section>
+            <section class="kb-panel world" aria-label="世界知識庫">
+              <div class="kb-head">
+                <div>
+                  <div class="kb-k">WORLD KB</div>
+                  <h3 class="kb-name">世界知識庫</h3>
+                </div>
+                <div class="kb-meta" id="worldKbMeta">只讀</div>
+              </div>
+              <div class="kb-list" id="worldKbList"></div>
+              <div class="kb-foot">八槽共讀這一庫，不把它抄進各自的壓縮稿。佔用槽掛上閱讀鎖，空檔釋放後只還閱讀鎖，不改世界庫。產物另存於產出庫。</div>
+            </section>
+          </div>
+
+          <div class="sync-board">
+            <div class="angle-head">
+              <div class="ah">LLM 槽位 × 上下文 <b>A1–B4 各一份壓縮稿與感知</b></div>
+              <div class="ah">回寫任務庫 · 只讀世界庫 · 產物入產出庫</div>
+            </div>
+            <div class="sync-grid" id="senseSlots" aria-label="八個 LLM 槽位的上下文同步"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ 席位執行 ═══ -->
+    <section class="waterfall" id="topic-seat" role="tabpanel" aria-labelledby="tab-seat">
+      <div class="panel">
+        <div class="panel-head">
+          <div class="panel-title">任務經理 × 席位<span class="en">T-2841 · 自動拉取中</span></div>
+          <div class="panel-tools">
+            <span class="pill amber"><span class="sig busy"></span>company</span>
+            <span class="pill cyan"><span class="sig busy"></span>industrial_ops</span>
+            <span class="pill green"><span class="sig ok"></span>auto-claim</span>
+          </div>
+        </div>
+        <div class="panel-body">
+          <div class="role-intro">
+            <p>來源：<b>backend/company/roles/</b>（STANDARD_ROLES）＋ <b>backend/linkin/roles.py</b>（靈境子角色種子）</p>
+            <p>對齊日期 2026-10-22 · 內建 80 席＋靈境 16 席＋模板 8。席位表＝ 80 公司席＋ 5 RAHO 脊柱席＝ 85。脊柱席不進 STANDARD_ROLES，但必須在席位表內，否則 C-SEAT-003 無從驗證。</p>
+          </div>
+          <div class="kind-row" id="roleKinds"></div>
+          <div class="kicker">RAHO 脊柱 · seat_table.py · _RAHO_SPINE</div>
+          <div class="roster-wrap plain" id="rahoWrap"></div>
+          <div class="angle-head">
+            <div class="ah">組織職級 <b>L0 任務經理 → L1 Leads → L2 Domain → L3 Executors → L4 Support</b></div>
+            <div class="ah">數字越小越高層 · 任務分析由 Level 0 負責</div>
+          </div>
+          <div class="level-row" id="levelTabs" role="group" aria-label="組織職級"></div>
+          <div class="roster-wrap plain role-cat-wrap">
+            <table class="table" id="stdRoles">
+              <thead><tr><th>ID</th><th>名稱</th><th>分類</th><th>預算層</th><th>主要職責</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="kicker">組織模板 · 8 · 預組團隊，不是獨立角色</div>
+          <div class="tpl-grid" id="tplGrid"></div>
+          <div class="kicker">靈境子角色 · 16 · role_catalog</div>
+          <div class="linkin-note">四部門：建築、敘事、NPC、道具。16 個種子定義在 <b>backend/linkin/roles.py</b>，監控中心可覆寫 Prompt／預算／工具，持久化於 <b>EVOL_ROLE_CATALOG_PATH</b>（預設 backend/data/role_catalog.json）。此倉庫沒有那 16 個 id，本頁不編造名單。</div>
+          <div class="kicker">現場五席 · 點開看提示詞、邊界與正在承接的步驟</div>
+          <div class="role-board" id="roleBoard"></div>
+          <div class="task-grid">
+            <div>
+              <div class="t-id">T-2841 · REQ-8842</div>
+              <h2 class="t-title">工業區閥門巡檢與異常讀數彙報</h2>
+              <div class="t-meta">任務經理拆分 → 佇列 → 席位自動拉取 → 等空檔 → 執行</div>
+              <div class="milestone">
+                <div class="ms done"><span class="node-dot"></span><span class="txt">M1 彙整壓縮上下文（原文窗口 / 摘要 / 感知）</span><span class="seat-cnt">3 拉取</span><span class="st">DONE</span></div>
+                <div class="ms done"><span class="node-dot"></span><span class="txt">M2 判定異常門檻與成敗標準</span><span class="seat-cnt">2 拉取</span><span class="st">DONE</span></div>
+                <div class="ms run"><span class="node-dot"></span><span class="txt">M3 閥位調整與現場複核</span><span class="seat-cnt">1 待空檔</span><span class="st">RUNNING</span></div>
+                <div class="ms"><span class="node-dot"></span><span class="txt">M4 產出巡檢報告（寫入經護欄）</span><span class="seat-cnt">1 待拉取</span><span class="st">QUEUED</span></div>
+              </div>
+              <div class="bar" role="progressbar" aria-valuenow="62" aria-valuemin="0" aria-valuemax="100" aria-label="任務進度"><div class="bar-fill" style="--pct:62%"></div></div>
+              <div class="t-meta" style="margin-top:7px">進度 62% · 已拆 14 子任務 · 席位狀態由 store 派生</div>
+              <div class="chip-list">
+                <span class="pill">依賴 opc-service:8001</span>
+                <span class="pill vi"><span class="sig busy"></span>再分拆 ×2</span>
+                <span class="pill green"><span class="sig ok"></span>席位生成 ×3</span>
+                <span class="pill red"><span class="sig lock"></span>寫入鎖定</span>
+              </div>
+              <div class="kicker" style="margin:14px 0 7px">席位執行情況</div>
+              <div class="roster-wrap">
+                <table class="table" id="seatRoster" style="min-width:580px">
+                  <thead><tr><th>席位</th><th>角色</th><th>項目</th><th>狀態</th><th data-col="low">槽位</th><th>進度</th><th data-col="low">tok</th></tr></thead>
+                  <tbody id="seatRosterBody"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <div>
+              <div class="kicker">席位圖 · 方向鍵移動 / Enter 選取</div>
+              <div class="seats" id="seats" role="group" aria-label="80 席位圖（方向鍵移動焦點）"></div>
+              <div class="legend" id="seatLegend" role="group" aria-label="席位狀態過濾">
+                <button class="legend-btn" data-filter="run" aria-pressed="false"><i style="background:rgba(240,165,0,.85)"></i>執行中</button>
+                <button class="legend-btn" data-filter="wait" aria-pressed="false"><i style="background:rgba(255,139,61,.8)"></i>待空檔</button>
+                <button class="legend-btn" data-filter="queue" aria-pressed="false"><i style="background:rgba(67,212,228,.55)"></i>待拉取</button>
+                <button class="legend-btn" data-filter="done" aria-pressed="false"><i style="background:rgba(95,217,125,.6)"></i>完成</button>
+                <button class="legend-btn" data-filter="gen" aria-pressed="false"><i style="background:rgba(164,147,255,.75)"></i>生成</button>
+                <button class="legend-btn" data-filter="lock" aria-pressed="false"><i style="background:rgba(238,92,76,.7)"></i>鎖定</button>
+              </div>
+              <div class="note">席位圖為 roving tabindex：僅單一焦點可 Tab，方向鍵移動，Enter 選取並連動表列。</div>
+              <div class="kicker" style="margin:14px 0 7px">成敗標準 · 依賴</div>
+              <div class="micro-card" style="padding:9px 10px">
+                <div class="kv"><span>成敗標準</span><b>溫度 &lt; 68°C · 閥開度 40–65%</b></div>
+                <div class="kv"><span>依賴</span><b>opc 讀數→召回→guard</b></div>
+                <div class="kv"><span>失敗收尾</span><b class="bad">產出不足→存檔</b></div>
+                <div class="kv"><span>重試上限</span><b class="warn">2 次·超限改派</b></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ 統一管線 ═══ -->
+    <section class="waterfall" id="topic-pipe" role="tabpanel" aria-labelledby="tab-pipe">
+      <div class="panel pipe-panel">
+        <div class="panel-head">
+          <div class="panel-title">統一管線<span class="en">resolve_execution_path</span></div>
+          <div class="panel-tools">
+            <span class="chip amber">唯一判斷源</span>
+            <span class="chip cyan">company · rule #1</span>
+            <span class="chip red">guard 寫入</span>
+          </div>
+        </div>
+        <div class="panel-body pipe-body">
+          <div class="telemetry" id="pipeTel">
+            <button type="button" class="tcell" data-pipe="inject"><div class="tstage">01 · INJECT</div><div class="tname">記憶注入</div><div class="tval">42<small>ms</small></div><div class="tsub">1.2K TOK · CHROMA+REDIS</div><div class="tbar"><i data-pct="t1" style="background:linear-gradient(90deg,#8c6a12,var(--amber))"></i></div></button>
+            <button type="button" class="tcell cool" data-pipe="sense"><div class="tstage">02 · SENSE</div><div class="tname">感測上下文</div><div class="tval">88<small>ms</small></div><div class="tsub">每槽一份壓縮稿</div><div class="tbar"><i data-pct="t2" style="background:linear-gradient(90deg,#266d78,var(--cyan))"></i></div></button>
+            <button type="button" class="tcell" data-pipe="context"><div class="tstage">03 · CONTEXT</div><div class="tname">靈境上下文</div><div class="tval">15<small>ms</small></div><div class="tsub">16 子角色 · 四部門</div><div class="tbar"><i data-pct="t3" style="background:linear-gradient(90deg,#8c6a12,var(--amber))"></i></div></button>
+            <button type="button" class="tcell" data-pipe="recall"><div class="tstage">04 · RECALL</div><div class="tname">整合召回</div><div class="tval">210<small>ms</small></div><div class="tsub">任務庫回寫 · 世界庫只讀</div><div class="tbar"><i data-pct="t4" style="background:linear-gradient(90deg,#574d92,var(--violet))"></i></div></button>
+            <button type="button" class="tcell hot on" data-pipe="route"><div class="tstage">05 · ROUTE</div><div class="tname">選路判斷</div><div class="tval">8<small>ms</small></div><div class="tsub">COMPANY · RULE #1</div><div class="tbar"><i data-pct="t5" style="background:linear-gradient(90deg,#8c6a12,var(--amber-hot))"></i></div></button>
+            <button type="button" class="tcell good" data-pipe="act"><div class="tstage">06 · ACT</div><div class="tname">LLM 執行</div><div class="tval">2.4<small>s</small></div><div class="tsub">佔到空檔才 call_llm</div><div class="tbar"><i data-pct="t6" style="background:linear-gradient(90deg,#2f8a4c,var(--green))"></i></div></button>
+          </div>
+          <div class="pipe-scroll" aria-label="統一管線流程圖">
+            <svg class="pipeline-svg pipe-map" viewBox="0 0 1280 232" role="img">
+              <title>統一管線流程圖</title>
+              <path id="flow-main" class="flow glow" d="M104,116 H700"/>
+              <path class="flow cy" d="M748,86 C790,40 820,28 860,28"/>
+              <path class="flow" d="M748,146 C790,192 820,196 860,196"/>
+              <path class="flow" d="M980,28 H1004 M1108,28 H1132"/>
+              <path class="flow gr" d="M1108,12 C1160,0 1004,0 1004,16"/>
+              <path class="flow" d="M980,196 H1004 M1108,196 H1132"/>
+              <g class="pipe-hit" data-step="query"><rect class="node" x="8" y="92" width="96" height="48" rx="5"/><text class="nl" x="56" y="112" text-anchor="middle">查詢</text><text class="nl-sm" x="56" y="128" text-anchor="middle">POST /chat</text></g>
+              <g class="pipe-hit" data-step="inject"><rect class="node" x="116" y="92" width="112" height="48" rx="5"/><text class="nl" x="172" y="112" text-anchor="middle">記憶</text><text class="nl-sm" x="172" y="128" text-anchor="middle">42ms · 1.2K</text></g>
+              <g class="pipe-hit" data-step="sense"><rect class="node cy" x="240" y="92" width="124" height="48" rx="5"/><text class="nl" x="302" y="112" text-anchor="middle">感測</text><text class="nl-sm" x="302" y="128" text-anchor="middle">88ms · 各槽</text></g>
+              <g class="pipe-hit" data-step="context"><rect class="node" x="376" y="92" width="112" height="48" rx="5"/><text class="nl" x="432" y="112" text-anchor="middle">靈境</text><text class="nl-sm" x="432" y="128" text-anchor="middle">15ms · 16</text></g>
+              <g class="pipe-hit" data-step="recall"><rect class="node vi" x="500" y="92" width="132" height="48" rx="5"/><text class="nl" x="566" y="112" text-anchor="middle">召回</text><text class="nl-sm" x="566" y="128" text-anchor="middle">210ms · 兩庫</text></g>
+              <g class="pipe-hit" data-step="route"><polygon class="diamond" points="724,78 772,116 724,154 676,116"/><text class="d-t" x="724" y="114" text-anchor="middle">選路</text><text class="d-s" x="724" y="130" text-anchor="middle">8ms</text></g>
+              <g class="pipe-hit" data-step="length"><rect class="node or" x="860" y="8" width="120" height="40" rx="5"/><text class="nl" x="920" y="26" text-anchor="middle">長度守門</text><text class="nl-sm" x="920" y="40" text-anchor="middle">18ms</text></g>
+              <g class="pipe-hit" data-step="eval"><rect class="node gr" x="1004" y="8" width="104" height="40" rx="5"/><text class="nl" x="1056" y="26" text-anchor="middle">評估</text><text class="nl-sm" x="1056" y="40" text-anchor="middle">12ms</text></g>
+              <g class="pipe-hit" data-step="reflect"><rect class="node gr" x="1132" y="8" width="132" height="40" rx="5"/><text class="nl" x="1198" y="26" text-anchor="middle">反思 · SSE</text><text class="nl-sm" x="1198" y="40" text-anchor="middle">迴圈 · 不佔槽</text></g>
+              <g class="pipe-hit" data-step="manager"><rect class="node hot" x="860" y="176" width="120" height="40" rx="5"/><text class="nl" x="920" y="194" text-anchor="middle">任務經理</text><text class="nl-sm" x="920" y="208" text-anchor="middle">拆步指派</text></g>
+              <g class="pipe-hit" data-step="claim"><rect class="node" x="1004" y="176" width="104" height="40" rx="5"/><text class="nl" x="1056" y="194" text-anchor="middle">認領</text><text class="nl-sm" x="1056" y="208" text-anchor="middle">不佔 LLM</text></g>
+              <g class="pipe-hit" data-step="act"><rect class="node" x="1132" y="176" width="132" height="40" rx="5"/><text class="nl" x="1198" y="194" text-anchor="middle">空檔 · LLM</text><text class="nl-sm" x="1198" y="208" text-anchor="middle">2.4s · 79%</text></g>
+              <rect class="node rd" x="860" y="216" width="404" height="14" rx="3"/>
+              <circle class="trav" r="4">
+                <animateMotion dur="4.6s" repeatCount="indefinite" calcMode="linear"><mpath href="#flow-main"/></animateMotion>
+              </circle>
+            </svg>
+          </div>
+          <div class="pipe-lower">
+          <div class="pipe-fall">
+            <div class="pipe-h">請求時序瀑布 · LLM 生成佔 79%</div>
+            <div class="fall-row"><span>接入</span><i style="--w:2%"></i><b>2%</b></div>
+            <div class="fall-row"><span>記憶注入</span><i style="--w:3%"></i><b>3%</b></div>
+            <div class="fall-row"><span>感測壓縮</span><i style="--w:4%"></i><b>4%</b></div>
+            <div class="fall-row"><span>靈境上下文</span><i style="--w:1%"></i><b>1%</b></div>
+            <div class="fall-row"><span>整合召回</span><i style="--w:6%"></i><b>6%</b></div>
+            <div class="fall-row"><span>選路</span><i style="--w:1%"></i><b>1%</b></div>
+            <div class="fall-row"><span>守門／評估</span><i style="--w:2%"></i><b>2%</b></div>
+            <div class="fall-row hot"><span>LLM 生成</span><i style="--w:79%"></i><b>79%</b></div>
+            <div class="fall-row"><span>收尾</span><i style="--w:2%"></i><b>2%</b></div>
+          </div>
+          <div class="gate-list" aria-label="執行閘口">
+            <div class="pipe-h">執行閘口</div>
+            <div class="gate-row"><span>唯讀</span><b class="ok">通過</b><em>感測與世界庫只讀</em></div>
+            <div class="gate-row"><span>白名單</span><b class="ok">通過</b><em>工具與出口在白名單內</em></div>
+            <div class="gate-row"><span>長度守門</span><b class="ok">通過</b><em>simple 路徑才檢查長度</em></div>
+            <div class="gate-row"><span>評估迴圈</span><b class="warn">進行中</b><em>反思有次數上限</em></div>
+            <div class="gate-row"><span>護欄</span><b class="bad">ARMED</b><em>guard.py 未核可不得寫入</em></div>
+            <div class="gate-row"><span>存檔</span><b>待命</b><em>產出不足才存檔</em></div>
+            <div class="gate-row"><span>收尾</span><b>等待</b><em>SSE 輸出後關閉本輪</em></div>
+          </div>
+          </div>
+          <div class="pipe-live" id="pipeLive" aria-label="目前槽位與選路"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ 基礎設施 ═══ -->
+    <section class="waterfall" id="topic-infra" role="tabpanel" aria-labelledby="tab-infra">
+      <div class="panel">
+        <div class="panel-head">
+          <div class="panel-title">基礎設施<span class="en">docker compose · aliyun read-only</span></div>
+          <div class="panel-tools">
+            <span class="chip green">6/6 healthy</span>
+            <span class="chip or">DEMO · 兩段確認</span>
+            <span class="chip vi">ReadOnlyAccess</span>
+          </div>
+        </div>
+        <div class="tabs-row" id="infraTabs" role="tablist" aria-label="基礎設施子分頁">
+          <button class="tab-btn" id="itab-docker" role="tab" aria-selected="true" aria-controls="pane-docker" data-pane="docker">Docker 6</button>
+          <button class="tab-btn" id="itab-ecs" role="tab" aria-selected="false" aria-controls="pane-ecs" data-pane="ecs">ECS 4</button>
+          <button class="tab-btn" id="itab-bill" role="tab" aria-selected="false" aria-controls="pane-bill" data-pane="bill">帳單 6</button>
+          <button class="tab-btn" id="itab-cost" role="tab" aria-selected="false" aria-controls="pane-cost" data-pane="cost">成本預算</button>
+          <div class="tabs-meta">
+            <span>CPU 34%</span><span>MEM 2.8/8GB</span><span>本月 218h</span><span style="color:var(--orange)">¥6,180/¥8,000</span>
+          </div>
+        </div>
+
+        <div class="tab-pane on" id="pane-docker" role="tabpanel" aria-labelledby="itab-docker">
+          <div class="roster-wrap plain" style="border-radius:0">
+            <table class="table" id="dockerTable" style="min-width:640px">
+              <thead><tr><th>容器</th><th>映像</th><th>狀態</th><th data-col="low">CPU</th><th data-col="low">MEM</th><th>運行</th><th>操作</th></tr></thead>
+              <tbody>
+                <tr><td class="strong mono">linkin-backend</td><td class="mono">linkin/backend:1.24.0</td><td><span class="pill green"><span class="sig ok"></span>HEALTHY</span></td><td class="mono" data-col="low">22%</td><td class="mono" data-col="low">812 MB</td><td class="mono">4d06h</td><td><button class="act-btn" data-act="重啟">重啟</button> <button class="act-btn stop" data-act="停止">停止</button></td></tr>
+                <tr><td class="strong mono">linkin-frontend</td><td class="mono">linkin/frontend:1.24.0</td><td><span class="pill green"><span class="sig ok"></span>HEALTHY</span></td><td class="mono" data-col="low">8%</td><td class="mono" data-col="low">236 MB</td><td class="mono">4d06h</td><td><button class="act-btn" data-act="重啟">重啟</button> <button class="act-btn stop" data-act="停止">停止</button></td></tr>
+                <tr><td class="strong mono">linkin-opc</td><td class="mono">linkin/opc-service:1.24.0</td><td><span class="pill green"><span class="sig ok"></span>HEALTHY</span></td><td class="mono" data-col="low">3%</td><td class="mono" data-col="low">164 MB</td><td class="mono">4d06h</td><td><button class="act-btn" data-act="重啟">重啟</button> <button class="act-btn stop" data-act="停止">停止</button></td></tr>
+                <tr><td class="strong mono">linkin-redis</td><td class="mono">redis:7-alpine</td><td><span class="pill green"><span class="sig ok"></span>HEALTHY</span></td><td class="mono" data-col="low">1%</td><td class="mono" data-col="low">96 MB</td><td class="mono">12d02h</td><td><button class="act-btn" data-act="重啟">重啟</button> <button class="act-btn stop" data-act="停止">停止</button></td></tr>
+                <tr><td class="strong mono">linkin-chroma</td><td class="mono">chromadb/chroma:0.5</td><td><span class="pill green"><span class="sig ok"></span>HEALTHY</span></td><td class="mono" data-col="low">6%</td><td class="mono" data-col="low">1.1 GB</td><td class="mono">12d02h</td><td><button class="act-btn" data-act="重啟">重啟</button> <button class="act-btn stop" data-act="停止">停止</button></td></tr>
+                <tr><td class="strong mono">linkin-watch</td><td class="mono">containrrr/watchtower</td><td><span class="pill or"><span class="sig busy"></span>RESTARTING</span></td><td class="mono" data-col="low">0%</td><td class="mono" data-col="low">22 MB</td><td class="mono">0h14m</td><td><button class="act-btn" data-act="重啟">重啟</button> <button class="act-btn stop" data-act="停止">停止</button></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="tab-pane" id="pane-ecs" role="tabpanel" aria-labelledby="itab-ecs">
+          <div class="roster-wrap plain" style="border-radius:0">
+            <table class="table" style="min-width:640px">
+              <thead><tr><th>實例 ID</th><th>規格</th><th>可用域</th><th>角色</th><th>狀態</th><th data-col="low">CPU</th><th data-col="low">記憶體</th></tr></thead>
+              <tbody>
+                <tr class="hl"><td class="strong mono">i-uf6x2k9qa</td><td class="mono">ecs.c6.xlarge 4C8G</td><td class="mono">hz-b</td><td>容器宿主</td><td><span class="pill green"><span class="sig ok"></span>運行中</span></td><td class="mono" data-col="low">34%</td><td class="mono" data-col="low">2.8/8 GB</td></tr>
+                <tr><td class="strong mono">i-uf6y8m2vd</td><td class="mono">ecs.c6.xlarge 4C8G</td><td class="mono">hz-c</td><td>備援</td><td><span class="pill green"><span class="sig ok"></span>運行中</span></td><td class="mono" data-col="low">12%</td><td class="mono" data-col="low">1.4/8 GB</td></tr>
+                <tr><td class="strong mono">i-uf7b4n1tc</td><td class="mono">ecs.g7.2xlarge 8C32G</td><td class="mono">hz-b</td><td>AI Hub 推理</td><td><span class="pill green"><span class="sig ok"></span>運行中</span></td><td class="mono" data-col="low">61%</td><td class="mono" data-col="low">18.2/32 GB</td></tr>
+                <tr><td class="strong mono">i-uf7c6p9we</td><td class="mono">ecs.g7.xlarge 4C16G</td><td class="mono">bj-h</td><td>OPC 匯聚</td><td><span class="pill or"><span class="sig busy"></span>維護中</span></td><td class="mono" data-col="low">8%</td><td class="mono" data-col="low">3.1/16 GB</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="tab-pane" id="pane-bill" role="tabpanel" aria-labelledby="itab-bill">
+          <div class="roster-wrap plain" style="border-radius:0">
+            <table class="table" style="min-width:640px">
+              <thead><tr><th>帳期</th><th>產品</th><th data-col="low">模式</th><th>用量</th><th>金額</th><th data-col="low">積分折算</th><th>對帳</th></tr></thead>
+              <tbody>
+                <tr><td class="mono">10-22</td><td class="strong">ECS 雲伺服器</td><td data-col="low"><span class="pill or"><span class="sig busy"></span>按時</span></td><td class="mono">2,304 h</td><td class="mono strong">¥3,240</td><td class="mono" data-col="low">-12,480</td><td><span class="pill green"><span class="sig ok"></span>已對帳</span></td></tr>
+                <tr><td class="mono">10-22</td><td class="strong">RDS 資料庫</td><td data-col="low"><span class="pill or"><span class="sig busy"></span>包月</span></td><td class="mono">2 實例</td><td class="mono strong">¥1,880</td><td class="mono" data-col="low">-4,700</td><td><span class="pill green"><span class="sig ok"></span>已對帳</span></td></tr>
+                <tr><td class="mono">10-21</td><td class="strong">OSS 儲存</td><td data-col="low"><span class="pill">按量</span></td><td class="mono">1.24 TB</td><td class="mono strong">¥420</td><td class="mono" data-col="low">-1,050</td><td><span class="pill green"><span class="sig ok"></span>已對帳</span></td></tr>
+                <tr><td class="mono">10-21</td><td class="strong">網路流出</td><td data-col="low"><span class="pill">按量</span></td><td class="mono">1.9 TB</td><td class="mono strong">¥380</td><td class="mono" data-col="low">-950</td><td><span class="pill amber"><span class="sig warn"></span>待對帳</span></td></tr>
+                <tr><td class="mono">10-20</td><td class="strong">SLB</td><td data-col="low"><span class="pill or"><span class="sig busy"></span>按時</span></td><td class="mono">720 h</td><td class="mono strong">¥260</td><td class="mono" data-col="low">-650</td><td><span class="pill green"><span class="sig ok"></span>已對帳</span></td></tr>
+                <tr><td class="mono">10-19</td><td class="strong">ACR 倉庫</td><td data-col="low"><span class="pill">按量</span></td><td class="mono">186 GB</td><td class="mono strong">¥48</td><td class="mono" data-col="low">-120</td><td><span class="pill amber"><span class="sig warn"></span>待對帳</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="tab-pane" id="pane-cost" role="tabpanel" aria-labelledby="itab-cost">
+          <div class="panel-body">
+            <div class="cdn-charts">
+              <div>
+                <div class="kicker" style="margin-bottom:4px">預算使用</div>
+                <div class="apex-box" id="budgetRadial" role="img" aria-label="本月預算使用 77.2%"></div>
+              </div>
+              <div>
+                <div class="kicker" style="margin-bottom:4px">成本組成</div>
+                <div class="apex-box" id="costDonut" role="img" aria-label="本月成本組成"></div>
+              </div>
+            </div>
+            <div class="mini-2col">
+              <div>
+                <div class="kicker" style="margin-bottom:8px">成本分佈 2026-10（唯讀）</div>
+                <div class="cost-row"><div class="cl">ECS</div><div class="ctrack"><div class="cfill" style="--pct:82%;background:linear-gradient(90deg,#8c4c1d,var(--orange))"></div></div><div class="cval">¥3,240</div><div class="cpct">52.4%</div></div>
+                <div class="cost-row"><div class="cl">RDS</div><div class="ctrack"><div class="cfill" style="--pct:48%;background:linear-gradient(90deg,#266d78,var(--cyan))"></div></div><div class="cval">¥1,880</div><div class="cpct">30.4%</div></div>
+                <div class="cost-row"><div class="cl">OSS</div><div class="ctrack"><div class="cfill" style="--pct:16%;background:linear-gradient(90deg,#574d92,var(--violet))"></div></div><div class="cval">¥420</div><div class="cpct">6.8%</div></div>
+                <div class="cost-row"><div class="cl">網路</div><div class="ctrack"><div class="cfill" style="--pct:13%;background:linear-gradient(90deg,#8c6a12,var(--amber))"></div></div><div class="cval">¥380</div><div class="cpct">6.1%</div></div>
+                <div class="cost-row"><div class="cl">SLB</div><div class="ctrack"><div class="cfill" style="--pct:10%;background:linear-gradient(90deg,#2f8a4c,var(--green))"></div></div><div class="cval">¥260</div><div class="cpct">4.2%</div></div>
+              </div>
+              <div>
+                <div class="kicker" style="margin-bottom:8px">預算與換算</div>
+                <div class="micro-card" style="padding:9px 10px">
+                  <div class="kv"><span>本月累計</span><b class="or">¥6,180</b></div>
+                  <div class="kv"><span>預算上限</span><b>¥8,000（77.2%）</b></div>
+                  <div class="kv"><span>告警閾值</span><b class="warn">80% · 接近</b></div>
+                  <div class="kv"><span>Docker 時數</span><b class="or">218h ≈ 2,180 積分</b></div>
+                  <div class="kv"><span>權限</span><b class="vi">ReadOnlyAccess</b></div>
+                </div>
+                <div class="note">阿里雲成本<b>唯讀對帳</b>：只拉帳單與用量，不變更任何雲資源。</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ 產出庫 ═══ -->
+    <section class="waterfall" id="topic-out" role="tabpanel" aria-labelledby="tab-out">
+      <div class="ide" id="outIde">
+        <div class="ide-bar" role="toolbar" aria-label="產出庫工具">
+          <button type="button" class="ide-act on" data-ide="files" title="檔案總管" aria-label="檔案總管"><svg class="ic" viewBox="0 0 16 16"><path d="M2 3.2h3.4l1.2 1.4H14v8.2H2z"/></svg></button>
+          <button type="button" class="ide-act" data-ide="search" title="在產物中尋找" aria-label="在產物中尋找"><svg class="ic"><use href="#i-search"/></svg></button>
+        </div>
+        <aside class="ide-side">
+          <div class="ide-side-h"><span id="outSideTitle">產出庫</span><span id="outKbMeta">5</span></div>
+          <label class="ide-filter" id="outFilterWrap" hidden>在產物中尋找<input type="search" id="outFilter" placeholder="檔名、編號或內容"></label>
+          <div class="ide-tree" id="outTree" role="tree"></div>
+        </aside>
+        <div class="ide-main">
+          <div class="ide-tabs" id="outTabs" role="tablist"></div>
+          <div class="ide-crumb" id="outCrumb"></div>
+          <div class="ide-find" id="outFind" hidden>
+            <input type="search" id="outFindq" placeholder="在這個檔案裡尋找" aria-label="在這個檔案裡尋找">
+            <span id="outFindn"></span>
+            <button type="button" class="ide-tool" id="outFindNext">下一處</button>
+          </div>
+          <div class="ide-welcome" id="outWelcome">
+            <div class="ide-welcome-k">OUTPUT</div>
+            <h2>產出庫</h2>
+            <p>任務產物留在這一頁。後續任務可以引用或改進，改完另存新版，舊檔不覆蓋。</p>
+          </div>
+          <div class="ide-code" id="outCodeWrap">
+            <div class="ide-gutter" id="outGutter" aria-hidden="true"></div>
+            <div class="ide-sheet" id="outSheet">
+              <div class="ide-line" id="outLine" hidden></div>
+              <div class="ide-pair">
+                <pre class="ide-hl"><code id="outHl"></code></pre>
+                <textarea id="outCode" spellcheck="false" aria-label="產物內容"></textarea>
+              </div>
+            </div>
+            <div class="ide-map" id="outMap" title="縮圖"><div class="ide-map-view" id="outMapView"></div></div>
+          </div>
+          <div class="ide-status" id="outStatus"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ 開源組件 ═══ -->
+    <section class="waterfall" id="topic-oss" role="tabpanel" aria-labelledby="tab-oss">
+      <div class="panel oss-panel">
+        <div class="panel-head">
+          <div class="panel-title">開源組件<span class="en">github · pinned integration</span></div>
+          <div class="panel-tools" id="ossFilters" role="group" aria-label="組件狀態過濾">
+            <button class="mini-btn" data-oss="all" aria-pressed="true">全部</button>
+            <button class="mini-btn" data-oss="wired" aria-pressed="false">已接入</button>
+            <button class="mini-btn" data-oss="candidate" aria-pressed="false">候選</button>
+          </div>
+        </div>
+        <div class="panel-body oss-body">
+          <div class="oss-kpis" id="ossKpis"></div>
+          <div class="oss-layout">
+            <div class="oss-list" id="ossList" aria-label="GitHub 開源組件清單"></div>
+            <aside class="oss-detail" id="ossDetail" aria-label="組件整合明細"></aside>
+          </div>
+          <section class="src-board" aria-label="技能來源目錄">
+            <div class="load-head">
+              <div>
+                <div class="load-k">SKILL SOURCES</div>
+                <h3>技能來源</h3>
+              </div>
+              <div class="load-meta" id="skillSrcMeta">—</div>
+            </div>
+            <div class="roster-wrap plain">
+              <table class="table" id="skillSources">
+                <thead><tr><th>來源</th><th>數量</th><th>內容</th><th>說明</th><th>主棧</th></tr></thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </section>
+          <div class="load-duo">
+            <section class="load-panel" aria-label="技能展示與加載">
+              <div class="load-head">
+                <div>
+                  <div class="load-k">SKILL</div>
+                  <h3>技能展示／加載</h3>
+                </div>
+                <div class="load-meta" id="skillMeta">—</div>
+              </div>
+              <div class="load-list" id="skillList"></div>
+            </section>
+            <section class="load-panel mcp" aria-label="MCP 展示與加載">
+              <div class="load-head">
+                <div>
+                  <div class="load-k">MCP</div>
+                  <h3>MCP 展示／加載</h3>
+                </div>
+                <div class="load-meta" id="mcpMeta">—</div>
+              </div>
+              <div class="load-list" id="mcpList"></div>
+            </section>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <aside class="rail-right" aria-label="監控面板">
+    <div class="rr">
+      <div class="rr-head">
+        <div class="rr-ic" style="color:var(--cyan);border-color:rgba(67,212,228,.35);background:rgba(67,212,228,.08)"><svg><use href="#i-pulse"/></svg></div>
+        <div class="rr-title"><b>佇列監控</b> · LIVE</div>
+        <div class="range-row" id="rangeRow" role="group" aria-label="走勢圖範圍">
+          <button class="range-btn" data-range="1H" aria-pressed="false">1H</button>
+          <button class="range-btn" data-range="6H" aria-pressed="false">6H</button>
+          <button class="range-btn" data-range="24H" aria-pressed="true">24H</button>
+        </div>
+      </div>
+      <div class="rr-body">
+        <div class="hero-chart">
+          <div class="hc-top">
+            <div class="hc-val"><span data-num="queueDepth">—</span><small>ITEMS</small></div>
+            <div class="hc-delta up" id="depthDelta">▲ +2</div>
+          </div>
+          <div class="apex-slot" id="depthChart" role="img" aria-label="佇列深度走勢"></div>
+          <div class="hc-axis"><span id="rangeStart">-24H</span><span>-12H</span><span>NOW</span></div>
+        </div>
+        <div class="mgrid">
+          <div class="mtile"><div class="ml">自動拉取</div><div class="mv" style="color:var(--green)"><span data-num="claimRate">—</span><small>/min</small></div><svg class="mspark" data-spark="4,4.6,5,5.4,5.8,6.2,6,6.4,6.1,6.3,6.1" data-color="#5fd97d"></svg></div>
+          <div class="mtile"><div class="ml">待空檔</div><div class="mv" style="color:var(--orange)"><span data-num="claimedWait">—</span><small>項</small></div><div class="mbar"><i data-pct="wait" style="background:linear-gradient(90deg,#8c4c1d,var(--orange))"></i></div></div>
+          <div class="mtile"><div class="ml">槽位利用</div><div class="mv"><span data-num="slotUsed">—</span><small>/8</small></div><svg class="mspark" data-spark="5,6,7,6,8,7,6,7,6,6,6" data-color="#f0a500"></svg></div>
+          <div class="mtile"><div class="ml">待空檔時間</div><div class="mv" style="color:var(--cyan)"><span data-num="slotWait">—</span><small>s</small></div><svg class="mspark" data-spark="3,4,5,4,3.8,4.6,4.2,5,4.4,4,4.2" data-color="#43d4e4"></svg></div>
+          <div class="mtile"><div class="ml">再分拆</div><div class="mv" style="color:var(--violet)"><span data-num="split">—</span><small>子任務</small></div><svg class="mspark" data-spark="1,2,2,3,4,3,5,6,5,7,8" data-color="#a493ff"></svg></div>
+          <div class="mtile"><div class="ml">吞吐</div><div class="mv" style="color:var(--cyan)"><span data-num="thru">—</span><small>/h</small></div><svg class="mspark" data-spark="22,26,24,29,27,31,28,33,30,32,31" data-color="#43d4e4"></svg></div>
+        </div>
+        <div class="note" style="margin-top:8px">最後同步 <span id="lastSync">—</span> · pause＝暫停渲染（訂閱保留）</div>
+      </div>
+    </div>
+
+    <div class="rr">
+      <div class="rr-head">
+        <div class="rr-ic" style="color:var(--amber);border-color:rgba(240,165,0,.35);background:rgba(240,165,0,.08)"><svg><use href="#i-slot"/></svg></div>
+        <div class="rr-title"><b>LLM 空檔排程</b> · 8 槽位</div>
+        <div class="rr-live"><i></i><span data-num="slotUsed">—</span>/8 佔用</div>
+      </div>
+      <div class="rr-body tight">
+        <div class="slot-grid" id="slotGridRR"></div>
+        <div style="margin-top:10px">
+          <div class="quota-row"><span class="ql">Token 配額</span><div class="qtrack"><i data-pct="qToken" style="background:linear-gradient(90deg,#8c6a12,var(--amber))"></i></div><span class="qv" data-num="quotaToken">—</span></div>
+          <div class="quota-row"><span class="ql">成本配額</span><div class="qtrack"><i data-pct="qCost" style="background:linear-gradient(90deg,#8c4c1d,var(--orange))"></i></div><span class="qv" data-num="quotaCost">—</span></div>
+          <div class="quota-row"><span class="ql">速率限制</span><div class="qtrack"><i data-pct="qRate" style="background:linear-gradient(90deg,#266d78,var(--cyan))"></i></div><span class="qv" data-num="quotaRpm">—</span></div>
+        </div>
+        <div class="kv" style="margin-top:6px"><span>調度</span><b>空檔釋放 → 按排位派發</b></div>
+        <div class="kv"><span>保留</span><b class="bad">1 槽 · P0 搶佔</b></div>
+      </div>
+    </div>
+
+    <div class="rr">
+      <div class="rr-head">
+        <div class="rr-ic" style="color:var(--green);border-color:rgba(95,217,125,.35);background:rgba(95,217,125,.08)"><svg><use href="#i-clock"/></svg></div>
+        <div class="rr-title"><b>Dispatcher</b> · 自動認領</div>
+        <div class="rr-live"><i></i>TICK <span id="dispTick">04</span>s</div>
+      </div>
+      <div class="rr-body tight">
+        <div class="pulse-strip" id="pulseStrip" aria-hidden="true"></div>
+        <div class="kv"><span>拉取循環</span><b id="dispScan">— 項掃描</b></div>
+        <div class="kv"><span>自動拉取 / 釋放</span><b><span id="dispDispatch" style="color:var(--green)">3</span> / <span id="dispReclaim" style="color:var(--red)">1</span></b></div>
+        <div class="kv"><span>lock TTL</span><b class="warn">15m · 心跳 5s</b></div>
+        <div id="lockList" style="margin-top:8px"></div>
+      </div>
+    </div>
+
+    <div class="rr">
+      <div class="rr-head">
+        <div class="rr-ic" style="color:var(--cyan);border-color:rgba(67,212,228,.35);background:rgba(67,212,228,.08)"><svg><use href="#i-queue"/></svg></div>
+        <div class="rr-title"><b>事件流</b> · 上限 200 條</div>
+        <button class="mini-btn" id="evPause">PAUSE</button>
+        <button class="mini-btn" id="evClear">CLEAR</button>
+      </div>
+      <div class="rr-body tight">
+        <div class="stream" id="eventStream" aria-live="off"></div>
+      </div>
+    </div>
+
+    <div class="rr">
+      <div class="rr-head">
+        <div class="rr-ic" style="color:var(--red);border-color:rgba(238,92,76,.35);background:rgba(238,92,76,.08)"><svg><use href="#i-warn"/></svg></div>
+        <div class="rr-title"><b>告警</b></div>
+        <div class="rr-live paused"><i></i><span id="alertCount">0</span> ACTIVE</div>
+      </div>
+      <div class="rr-body tight" id="alertList" aria-live="polite" aria-relevant="additions removals"></div>
+    </div>
+
+    <div class="rr">
+      <div class="rr-head">
+        <div class="rr-ic" style="color:var(--violet);border-color:rgba(164,147,255,.35);background:rgba(164,147,255,.08)"><svg><use href="#i-shield"/></svg></div>
+        <div class="rr-title"><b>操作審計</b> · audit</div>
+        <div class="rr-live paused"><i></i>審批記錄</div>
+      </div>
+      <div class="rr-body tight" id="auditList"></div>
+    </div>
+
+    <div class="rr">
+      <div class="rr-head">
+        <div class="rr-ic" style="color:var(--orange);border-color:rgba(255,139,61,.35);background:rgba(255,139,61,.08)"><svg><use href="#i-cube"/></svg></div>
+        <div class="rr-title"><b>計費</b> · v6</div>
+        <div class="rr-live paused"><i></i>READ ONLY</div>
+      </div>
+      <div class="rr-body tight">
+        <div class="pool"><div class="p-top"><span>Docker 時數</span><b>218h / 300h</b></div><div class="p-track"><div class="p-fill" data-pct="bill1" style="background:linear-gradient(90deg,#8c4c1d,var(--orange))"></div></div></div>
+        <div class="pool"><div class="p-top"><span>個人池</span><b>12,480</b></div><div class="p-track"><div class="p-fill" data-pct="bill2" style="background:linear-gradient(90deg,#8c6a12,var(--amber))"></div></div></div>
+        <div class="pool"><div class="p-top"><span>共享池</span><b>45,000</b></div><div class="p-track"><div class="p-fill" data-pct="bill3" style="background:linear-gradient(90deg,#266d78,var(--cyan))"></div></div></div>
+        <div class="kv"><span>LLM 執行扣抵</span><b class="or">2,180 積分</b></div>
+      </div>
+    </div>
+  </aside>
+</div>
+
+<footer class="statusbar">
+  <div class="sb-item accent"><b>auto-claim</b> 席位自動拉取</div>
+  <div class="sb-item">pause＝暫停渲染 <b>訂閱保留</b></div>
+  <div class="sb-item">ports <b>3001 · 8000 · 8001 · 6379 · 8100</b></div>
+  <div class="sb-item">資料 <b>DEMO DATA · 接 SSE/WebSocket</b></div>
+  <div class="sb-spacer"></div>
+  <div class="sb-item">docker compose up -d · python -m backend.main · npm run dev</div>
+</footer>
+
+<nav class="tabs" aria-label="行動版導覽">
+  <div class="inner">
+    <button class="tab active" data-topic="queue"><svg class="ic"><use href="#i-queue"/></svg>隊列</button>
+    <button class="tab" data-topic="sense"><svg class="ic"><use href="#i-opc"/></svg>感測</button>
+    <button class="tab" data-topic="out"><svg class="ic"><use href="#i-cube"/></svg>產出</button>
+    <button class="tab" data-topic="seat"><svg class="ic"><use href="#i-tasks"/></svg>席位</button>
+    <button class="tab" data-topic="pipe"><svg class="ic"><use href="#i-monitor"/></svg>管線</button>
+    <button class="tab" data-topic="infra"><svg class="ic"><use href="#i-docker"/></svg>設施</button>
+    <button class="tab" data-topic="oss"><svg class="ic"><use href="#i-git"/></svg>組件</button>
+  </div>
+</nav>
+
+<div class="toast-wrap" id="toastWrap" aria-live="polite"></div>
+
+<div class="search-overlay" id="searchOverlay" role="dialog" aria-modal="true" aria-label="搜尋">
+  <div class="so-bar">
+    <input type="search" id="mobileSearch" placeholder="搜尋目前分頁內容…" aria-label="全站搜尋">
+    <button class="icon-btn" id="searchClose">✕</button>
+  </div>
+  <div class="note" id="mobileSearchCount"></div>
+</div>
+
+<div class="peek-mask" id="peek" hidden>
+  <aside class="peek" role="dialog" aria-modal="true" aria-labelledby="peekTitle">
+    <div class="peek-top">
+      <div>
+        <div class="peek-kicker" id="peekKicker">詳細</div>
+        <h3 id="peekTitle">詳細內容</h3>
+      </div>
+      <button type="button" class="icon-btn" id="peekClose" aria-label="關閉">✕</button>
+    </div>
+    <div id="peekStatus" hidden></div>
+    <div class="peek-chips" id="peekChips"></div>
+    <p class="peek-lead" id="peekLead"></p>
+    <blockquote class="peek-quote" id="peekQuote" hidden></blockquote>
+    <div class="peek-meter" id="peekBar" hidden></div>
+    <div id="peekBody"></div>
+  </aside>
+</div>
+
+<div class="dlg-mask" id="dlgMask" hidden>
+  <div class="dlg" role="dialog" aria-modal="true" aria-labelledby="dlgTitle">
+    <h3 id="dlgTitle">確認操作</h3>
+    <p id="dlgDesc"></p>
+    <label>審批人 / 操作者
+      <input id="dlgWho" value="AD" autocomplete="off">
+    </label>
+    <label>原因（必填）
+      <input id="dlgReason" placeholder="請填寫操作原因…" autocomplete="off">
+    </label>
+    <div class="dlg-actions">
+      <button class="mini-btn" id="dlgCancel">取消</button>
+      <button class="mini-btn warn" id="dlgOk">確認執行</button>
+    </div>
+  </div>
+</div>
+
+<script defer src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js" integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/tippy.js@6.3.7/dist/tippy.umd.min.js" integrity="sha384-pjtv4LzKGI/lGxchW/wd/upB/HsGOP/Q2iPYyDU8qo2bp4JLbN34hQkdAArvidZX" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.10.0/build/highlight.min.js" integrity="sha384-GdEWAbCjn+ghjX0gLx7/N1hyTVmPAjdC2OvoAA0RyNcAOhqwtT8qnbCxWle2+uJX" crossorigin="anonymous"></script>
+<script defer src="js/index2.js"></script>
+</body>
+</html>
