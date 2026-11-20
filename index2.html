@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tippy.js@6.3.7/dist/tippy.css" integrity="sha384-IBgYl+I5X6ZDZXI5zv1vsSE3VopDomz4BxSu/GlxaPHfFtcrJ3uj70z1w6srO9zU" crossorigin="anonymous">
 <link rel="stylesheet" href="css/index2.css?v=20261120">
+<link rel="stylesheet" href="css/studio.css?v=20261121">
 </head>
 <body>
 
@@ -75,6 +76,7 @@
       <button class="nav-item" data-topic="pipe"><svg class="ic"><use href="#i-monitor"/></svg><span class="nm">統一管線</span><span class="bd">6 段</span></button>
       <button class="nav-item" data-topic="infra"><svg class="ic"><use href="#i-docker"/></svg><span class="nm">基礎設施</span><span class="bd">6/6</span></button>
       <button class="nav-item" data-topic="oss"><svg class="ic"><use href="#i-git"/></svg><span class="nm">開源組件</span><span class="bd">16</span></button>
+      <button class="nav-item" data-topic="studio"><svg class="ic"><use href="#i-cube"/></svg><span class="nm">UI 生成</span><span class="bd">NEW</span></button>
     </div>
 
     <div class="micro-card">
@@ -104,7 +106,7 @@
       <h4>快捷鍵</h4>
       <div class="kv"><span>搜尋</span><b>⌘K / Ctrl+K</b></div>
       <div class="kv"><span>清除</span><b>ESC</b></div>
-      <div class="kv"><span>切換分頁</span><b>⌘1–8 / ←→</b></div>
+      <div class="kv"><span>切換分頁</span><b>⌘1–9 / ←→</b></div>
       <div class="kv"><span>深連結</span><b>#/頁/編號</b></div>
       <div class="kv"><span>暫停渲染</span><b>SPACE</b></div>
       <div class="kv"><span>自動認領</span><b>⌘⇧A</b></div>
@@ -130,6 +132,7 @@
       <button class="topic-btn" id="tab-pipe" role="tab" aria-selected="false" aria-controls="topic-pipe" data-topic="pipe">統一管線</button>
       <button class="topic-btn" id="tab-infra" role="tab" aria-selected="false" aria-controls="topic-infra" data-topic="infra">基礎設施</button>
       <button class="topic-btn" id="tab-oss" role="tab" aria-selected="false" aria-controls="topic-oss" data-topic="oss">開源組件</button>
+      <button class="topic-btn" id="tab-studio" role="tab" aria-selected="false" aria-controls="topic-studio" data-topic="studio">UI 生成</button>
       <span class="topic-hint" id="topicHint">#/queue  ·  席位自動拉取任務 · 等 LLM 空檔才執行</span>
     </div>
 
@@ -805,6 +808,68 @@
         </div>
       </div>
     </section>
+    <!-- ═══ UI 生成 ═══ -->
+    <section class="waterfall" id="topic-studio" role="tabpanel" aria-labelledby="tab-studio" aria-hidden="true">
+      <div class="panel">
+        <div class="panel-head">
+          <div class="panel-title">UI 生成<span class="en">prompt → wireframe</span></div>
+          <div class="panel-tools">
+            <span class="chip cyan" id="llmStatus">LLM 檢查中…</span>
+            <span class="chip or" id="studioCount">0 次生成</span>
+          </div>
+        </div>
+        <div class="panel-body">
+          <div class="studio-grid">
+            <form class="studio-form" id="studioForm">
+              <div class="kicker">一句話需求</div>
+              <label for="studioPrompt">想要什麼畫面
+                <textarea id="studioPrompt" rows="5" maxlength="600" autocomplete="off" placeholder="例：社群 KOL 影響力榜單頁，左側多維篩選，頂部三張 KPI，主區是可排序 KOL 表格，右側滑出詳情，底部趨勢圖"></textarea>
+              </label>
+              <div class="studio-2col">
+                <label for="studioDevice">裝置
+                  <select id="studioDevice">
+                    <option value="desktop" selected>桌面 1440</option>
+                    <option value="tablet">平板 834</option>
+                    <option value="mobile">手機 390</option>
+                  </select>
+                </label>
+                <label for="studioDensity">密度
+                  <select id="studioDensity">
+                    <option value="loose">寬鬆</option>
+                    <option value="normal" selected>標準</option>
+                    <option value="tight">緊湊</option>
+                  </select>
+                </label>
+              </div>
+              <div class="kicker">範例需求</div>
+              <div class="studio-presets" id="studioPresets"></div>
+              <button type="submit" class="mini-btn primary" id="studioGo">生成線框</button>
+              <div class="studio-hint" id="studioHint">輸出的是版面結構（線框），不是可執行的前端程式碼。<b>Ctrl / ⌘ + Enter</b> 可直接送出。</div>
+            </form>
+
+            <div class="studio-work">
+              <div class="studio-bar">
+                <div class="studio-seg" id="studioViews" role="group" aria-label="檢視切換">
+                  <button type="button" data-view="preview" aria-pressed="true">線框</button>
+                  <button type="button" data-view="json" aria-pressed="false">結構 JSON</button>
+                </div>
+                <span class="spacer"></span>
+                <button type="button" class="mini-btn" id="studioDemo">示範</button>
+                <button type="button" class="mini-btn" id="studioCopy">複製 JSON</button>
+              </div>
+              <div class="studio-view">
+                <div class="studio-stage" id="studioStage" data-density="normal"></div>
+                <pre class="studio-json" id="studioJson" hidden></pre>
+              </div>
+            </div>
+          </div>
+          <div class="p-cap">
+            <b>只出結構，不出像素。</b>模型回傳節點樹（型別、標籤、12 欄佔寬、建議高度），前端用固定樣式畫成線框圖；要改節點語彙改 <code>js/wireframe.js</code> 的 <code>TYPES</code>，要改外觀改 <code>css/studio.css</code>。
+          </div>
+        </div>
+      </div>
+    </section>
+
   </main>
 
   <aside class="rail-right" aria-label="監控面板">
@@ -937,6 +1002,7 @@
     <button class="tab" data-topic="pipe"><svg class="ic"><use href="#i-monitor"/></svg>管線</button>
     <button class="tab" data-topic="infra"><svg class="ic"><use href="#i-docker"/></svg>設施</button>
     <button class="tab" data-topic="oss"><svg class="ic"><use href="#i-git"/></svg>組件</button>
+    <button class="tab" data-topic="studio"><svg class="ic"><use href="#i-cube"/></svg>生成</button>
   </div>
 </nav>
 
@@ -987,6 +1053,8 @@
 
 <script defer src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js" integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r" crossorigin="anonymous"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/tippy.js@6.3.7/dist/tippy.umd.min.js" integrity="sha384-pjtv4LzKGI/lGxchW/wd/upB/HsGOP/Q2iPYyDU8qo2bp4JLbN34hQkdAArvidZX" crossorigin="anonymous"></script>
-<script defer src="js/index2.js?v=20261120"></script>
+<script defer src="js/index2.js?v=20261121"></script>
+<script defer src="js/wireframe.js?v=20261121"></script>
+<script defer src="js/studio.js?v=20261121"></script>
 </body>
 </html>

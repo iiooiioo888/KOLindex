@@ -1,0 +1,166 @@
+/* ============================================================
+   studio.css · 「UI 生成」分頁與線框圖樣式
+   只在 #topic-studio 內生效，不動其他分頁
+   ============================================================ */
+
+/* ---------- 版面 ---------- */
+.studio-grid{display:grid;grid-template-columns:minmax(270px,330px) minmax(0,1fr);gap:12px;align-items:start}
+@media (max-width:1080px){.studio-grid{grid-template-columns:minmax(0,1fr)}}
+
+.studio-form{border:1px solid var(--line);border-radius:5px;background:var(--surface-2);
+  padding:12px;display:flex;flex-direction:column;gap:9px;min-width:0}
+.studio-form label{display:flex;flex-direction:column;gap:4px;font-family:var(--mono);font-size:var(--fs-meta);color:var(--faint)}
+.studio-form input,.studio-form select,.studio-form textarea{
+  width:100%;border:1px solid var(--line);border-radius:4px;background:var(--bg);color:var(--text);
+  font-family:var(--body);font-size:var(--fs-ui);padding:7px 8px}
+.studio-form textarea{resize:vertical;min-height:104px;line-height:1.7;font-family:var(--mono);font-size:12px}
+.studio-form input:focus,.studio-form select:focus,.studio-form textarea:focus{outline:none;border-color:rgba(240,165,0,.7)}
+.studio-form textarea::placeholder{color:#5f686f}
+.studio-2col{display:grid;grid-template-columns:1fr 1fr;gap:8px;min-width:0}
+
+.studio-presets{display:flex;flex-wrap:wrap;gap:5px}
+.studio-presets button{font-family:var(--mono);font-size:var(--fs-meta);letter-spacing:.03em;color:var(--dim);
+  border:1px solid var(--line);border-radius:99px;padding:3px 9px;background:var(--surface);transition:.18s}
+.studio-presets button:hover{color:var(--amber);border-color:rgba(240,165,0,.45);background:rgba(240,165,0,.08)}
+.studio-form .mini-btn{align-self:flex-end}
+.studio-hint{font-family:var(--mono);font-size:var(--fs-meta);line-height:1.6;color:var(--faint);overflow-wrap:anywhere}
+.studio-hint b{color:var(--dim);font-weight:500}
+.studio-hint code{color:var(--amber);background:rgba(240,165,0,.09);padding:1px 4px;border-radius:3px}
+
+/* ---------- 右側工作區 ---------- */
+.studio-work{border:1px solid var(--line);border-radius:5px;background:var(--surface);overflow:hidden;min-width:0}
+.studio-view{position:relative;min-width:0}
+.studio-bar{display:flex;align-items:center;gap:8px;padding:7px 9px;border-bottom:1px solid var(--line-soft);
+  background:var(--surface-2);flex-wrap:wrap;min-width:0}
+.studio-seg{display:flex;border:1px solid var(--line);border-radius:4px;overflow:hidden;flex:0 0 auto}
+.studio-seg button{font-family:var(--mono);font-size:var(--fs-meta);letter-spacing:.04em;color:var(--faint);
+  padding:4px 10px;background:transparent;transition:.16s;white-space:nowrap}
+.studio-seg button[aria-pressed="true"]{color:var(--amber);background:rgba(240,165,0,.12)}
+.studio-seg button:hover{color:var(--text)}
+.studio-bar .spacer{flex:1 1 auto}
+.studio-bar .mini-btn{flex:0 0 auto}
+
+.studio-stage{position:relative;padding:14px;overflow:auto;max-height:min(64vh,620px);min-height:260px;
+  background:
+    linear-gradient(rgba(255,255,255,.022) 1px,transparent 1px) 0 0/100% 22px,
+    linear-gradient(90deg,rgba(255,255,255,.022) 1px,transparent 1px) 0 0/22px 100%,
+    var(--bg-deep)}
+#topic-studio .studio-stage{--wf-gap:8px}
+.studio-stage[data-density="loose"]{--wf-gap:12px}
+.studio-stage[data-density="tight"]{--wf-gap:5px}
+
+.studio-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+  min-height:220px;color:var(--faint);font-family:var(--mono);font-size:var(--fs-meta);text-align:center}
+.studio-empty b{font-family:var(--disp);font-size:var(--fs-title);color:var(--dim);letter-spacing:.04em}
+
+.studio-busy{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:10px;background:rgba(7,8,10,.82);z-index:3;font-family:var(--mono);font-size:var(--fs-meta);color:var(--amber);letter-spacing:.06em}
+.studio-busy .spin{width:26px;height:26px;border:2px solid rgba(240,165,0,.25);border-top-color:var(--amber);
+  border-radius:50%;animation:studioSpin .8s linear infinite}
+@keyframes studioSpin{to{transform:rotate(360deg)}}
+.studio-busy .el{color:var(--faint);letter-spacing:0}
+
+.studio-err{margin:10px 14px;padding:9px 11px;border-left:2px solid var(--red);background:rgba(238,92,76,.07);
+  color:var(--dim);font-size:var(--fs-ui);line-height:1.7;overflow-wrap:anywhere}
+.studio-err b{color:var(--red);font-weight:600}
+.studio-raw{max-height:180px;overflow:auto;margin-top:7px;padding:8px;border:1px solid var(--line);border-radius:4px;
+  background:var(--bg);font-family:var(--mono);font-size:11px;line-height:1.65;color:var(--faint);white-space:pre-wrap;overflow-wrap:anywhere}
+
+.studio-json{margin:0;padding:14px;max-height:min(64vh,620px);overflow:auto;font-family:var(--mono);font-size:12px;
+  line-height:1.7;color:#c9c4b9;background:var(--bg-deep);white-space:pre;tab-size:2}
+
+/* ---------- 線框圖 ---------- */
+.wf-page{animation:wfIn .28s ease both}
+@keyframes wfIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.wf-meta{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:10px;
+  font-family:var(--mono);font-size:var(--fs-meta);color:var(--faint);min-width:0}
+.wf-meta b{font-family:var(--disp);font-size:var(--fs-title);font-weight:600;color:var(--text);letter-spacing:.03em}
+.wf-meta em{font-style:normal;color:var(--amber);margin-left:auto;white-space:nowrap}
+
+.wf-canvas{width:100%;margin:0 auto;transition:max-width .25s}
+.wf-page[data-device="tablet"] .wf-canvas{max-width:834px}
+.wf-page[data-device="mobile"] .wf-canvas{max-width:390px}
+.wf-root{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:var(--wf-gap,8px)}
+
+.wf-node{position:relative;display:flex;flex-direction:column;gap:5px;min-width:0;
+  padding:9px 10px;border:1px dashed rgba(168,176,183,.3);border-radius:4px;
+  background:rgba(255,255,255,.018);transition:border-color .18s,background .18s}
+.wf-node:hover{border-color:rgba(240,165,0,.55);background:rgba(240,165,0,.045)}
+.wf-tag{position:absolute;top:-1px;right:-1px;padding:1px 5px;border-radius:0 4px 0 4px;
+  font-family:var(--mono);font-size:9px;letter-spacing:.08em;text-transform:uppercase;
+  color:#7d868d;background:var(--bg-deep);border-left:1px solid rgba(168,176,183,.22);border-bottom:1px solid rgba(168,176,183,.22)}
+.wf-node:hover .wf-tag{color:var(--amber);border-color:rgba(240,165,0,.4)}
+.wf-label{font-size:var(--fs-ui);font-weight:500;color:var(--text);padding-right:52px;line-height:1.5;overflow-wrap:anywhere}
+.wf-note{font-family:var(--mono);font-size:10px;letter-spacing:.02em;color:#79838b;overflow-wrap:anywhere}
+.wf-children{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:var(--wf-gap,8px);margin-top:3px;flex:1}
+.wf-children>.wf-node{padding:7px 8px;background:rgba(255,255,255,.028)}
+
+/* 骨架積木 */
+.wf-node i{display:block;border-radius:2px;background:rgba(200,208,216,.17)}
+.wf-lines{display:flex;flex-direction:column;gap:4px;width:100%}
+.wf-lines i{height:6px}
+.wf-node.t-text .wf-lines i:first-child{background:rgba(224,230,236,.28)}
+.wf-pills{display:flex;gap:4px;flex-wrap:wrap}
+.wf-pills i{height:14px;border-radius:99px;background:rgba(200,208,216,.14)}
+.wf-pills i.on{background:rgba(240,165,0,.4)}
+.wf-hdr{display:flex;align-items:center;gap:6px;width:100%;min-height:18px}
+.wf-sq{width:16px;height:16px;border-radius:3px;background:rgba(240,165,0,.45)!important}
+.wf-grow{flex:1 1 auto;min-width:6px}
+.wf-av{width:16px;height:16px;border-radius:50%;background:rgba(200,208,216,.3)!important;flex:0 0 auto}
+.wf-av.sm{width:13px;height:13px}
+.wf-av.lg{width:30px;height:30px}
+.wf-search{width:96px;height:14px;border-radius:99px;background:rgba(200,208,216,.12)!important;border:1px solid rgba(200,208,216,.2)}
+.wf-btn{width:44px;height:15px;border-radius:3px;background:rgba(240,165,0,.32)!important}
+.wf-btn.wide{width:100%;height:20px}
+.wf-center{display:flex;width:100%}
+.wf-in{width:100%;height:16px;background:rgba(200,208,216,.1)!important;border:1px solid rgba(200,208,216,.22)}
+.wf-div{width:100%;height:1px;background:rgba(200,208,216,.22)!important}
+.wf-side{display:flex;flex-direction:column;gap:5px}
+.wf-side i{height:9px;opacity:.85}
+
+.wf-kpi{display:flex;flex-direction:column;gap:5px;width:100%}
+.wf-kpi b{font-family:var(--disp);font-size:22px;line-height:1;color:rgba(240,165,0,.75);font-weight:600}
+.wf-kpi i{height:5px;width:44%;background:rgba(200,208,216,.2)!important}
+
+.wf-table{display:flex;flex-direction:column;gap:4px;width:100%}
+.wf-tr{display:flex;gap:5px}
+.wf-tr i{flex:1;height:9px;background:rgba(200,208,216,.12)!important}
+.wf-tr.wf-th i{height:11px;background:rgba(240,165,0,.26)!important}
+.wf-tr.wf-th i:first-child{flex:0 0 22px}
+
+.wf-list{display:flex;flex-direction:column;gap:6px;width:100%}
+.wf-li{display:flex;align-items:center;gap:7px}
+.wf-li .wf-lines{flex:1}
+
+.wf-form{display:flex;flex-direction:column;gap:7px;width:100%}
+.wf-f{display:flex;flex-direction:column;gap:4px}
+.wf-f>i:first-child{height:5px;width:34%;background:rgba(200,208,216,.24)!important}
+
+.wf-bars{display:flex;align-items:flex-end;gap:4px;width:100%;height:100%;min-height:56px;flex:1}
+.wf-bars i{flex:1;min-height:6px;border-radius:1px 1px 0 0;background:rgba(67,212,228,.3)!important}
+.wf-node:hover .wf-bars i{background:rgba(67,212,228,.45)!important}
+
+.wf-tabs{display:flex;gap:5px;width:100%}
+.wf-tabs i{flex:1;height:16px;border-radius:3px;background:rgba(200,208,216,.1)}
+.wf-tabs i.on{background:rgba(240,165,0,.3)}
+
+.wf-hatch{position:relative;display:flex;align-items:center;justify-content:center;flex:1;min-height:52px;width:100%;
+  border:1px solid rgba(200,208,216,.16);background:repeating-linear-gradient(45deg,transparent 0 7px,rgba(200,208,216,.05) 7px 8px);
+  border-radius:3px;color:rgba(200,208,216,.3);overflow:hidden}
+.wf-hatch svg{position:absolute;inset:0;width:100%;height:100%}
+.wf-hatch span{position:relative;font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:#6d767d}
+
+.wf-gal{display:grid;grid-template-columns:repeat(2,1fr);gap:5px;width:100%;flex:1}
+.wf-gal .wf-hatch{min-height:34px}
+
+.wf-tl{display:flex;flex-direction:column;gap:7px;width:100%}
+.wf-tl>div{display:flex;align-items:center;gap:7px}
+.wf-dot{width:7px;height:7px;border-radius:50%;background:rgba(164,147,255,.55)!important;flex:0 0 7px}
+.wf-tl .wf-lines{flex:1}
+
+.wf-foot{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;width:100%}
+
+@media (max-width:720px){
+  .wf-page[data-device="desktop"] .wf-canvas{max-width:100%}
+  .studio-stage{padding:10px}
+}
