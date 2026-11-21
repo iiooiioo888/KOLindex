@@ -301,7 +301,7 @@
     var prog='—';
     if (lane==='queue'){
       var sla=Math.round(t.sla||0);
-      bar='<div class="slabar" role="progressbar" aria-valuenow="'+sla+'" aria-valuemin="0" aria-valuemax="100"><i data-f="bar" data-mark="'+sla+'%" style="--pct:'+sla+'%;background:linear-gradient(90deg,#8c3a30,var(--red))"></i></div>';
+      bar='<div class="slabar" role="progressbar" aria-valuenow="'+sla+'" aria-valuemin="0" aria-valuemax="100"><i data-f="bar" data-mark="'+sla+'%" style="--pct:'+sla+'%;background:linear-gradient(90deg,#7a3730,var(--red))"></i></div>';
       prog='SLA '+sla+'% · 等待席位拉取';
     } else if (lane==='wait'){
       var waitN=Math.round(t.waitPct||0);
@@ -1160,10 +1160,10 @@
     var st=s.reserve?'保留':(s.state==='busy'?'佔用':'空閒');
     var who=slotWho(s);
     var pct=s.state==='busy'?Math.max(2,Math.min(100,(s.ttl/(s.max||1))*100)):100;
-    var color=s.reserve?'linear-gradient(90deg,#8c3a30,var(--red))':s.state==='busy'?'linear-gradient(90deg,#8c6a12,var(--amber))':'linear-gradient(90deg,#2f8a4c,var(--green))';
+    var color=s.reserve?'linear-gradient(90deg,#7a3730,var(--red))':s.state==='busy'?'linear-gradient(90deg,#7d5f2c,var(--amber))':'linear-gradient(90deg,#2e6b45,var(--green))';
     var meta=s.reserve?'保留給 P0 搶佔':(s.state==='busy'?'剩餘 '+fmtTtl(s.ttl):'空檔可派發');
     var sensePct=info.live?Math.max(2,Math.min(100,(s.ttl/(s.max||1))*100)):(s.reserve?100:0);
-    var senseColor=s.reserve?'linear-gradient(90deg,#8c3a30,var(--red))':info.live?'linear-gradient(90deg,#8c6a12,var(--amber))':'linear-gradient(90deg,#2f8a4c,var(--green))';
+    var senseColor=s.reserve?'linear-gradient(90deg,#7a3730,var(--red))':info.live?'linear-gradient(90deg,#7d5f2c,var(--amber))':'linear-gradient(90deg,#2e6b45,var(--green))';
     var compress=info.live
       ?('自有稿 '+info.tok+' / '+info.pack.raw+' tok · 留 '+info.keep+'%')
       :(s.reserve?'自備 P0 壓縮包 '+info.pack.raw+' tok，不併入其他槽':'無壓縮稿');
@@ -1294,7 +1294,7 @@
     el.innerHTML=store.alerts.map(function(a){
       var c=a.tone==='red'?'red':a.tone==='amber'?'amber':'orange';
       return '<div class="alert" data-alert="'+esc(a.id)+'">'+
-        '<div class="a-ic" style="color:var(--'+c+');border-color:rgba(238,92,76,.3);background:rgba(238,92,76,.07)"><svg><use href="#'+a.icon+'"/></svg></div>'+
+        '<div class="a-ic" style="color:var(--'+c+');border-color:rgba(220,95,87,.3);background:rgba(220,95,87,.07)"><svg><use href="#'+a.icon+'"/></svg></div>'+
         '<div class="a-main"><div class="a-t" style="color:var(--'+c+')">'+esc(a.title)+'</div>'+
         '<div class="a-d">'+esc(a.desc)+'</div></div>'+
         '<div class="a-side"><div class="a-time">'+esc(a.time)+'</div><button class="a-x" aria-label="消除告警">✕</button></div></div>';
@@ -1345,11 +1345,11 @@
     try{
       apply();
       if (Math.random()<0.12) throw new Error('simulated');
-      toast(okMsg,'ok'); pushEvent('#5fd97d','<b>ok</b> '+esc(okMsg));
+      toast(okMsg,'ok'); pushEvent('#63b880','<b>ok</b> '+esc(okMsg));
     }catch(err){
       rollback();
       toast(failMsg||'操作失敗，已回滾','err');
-      pushEvent('#ee5c4c','<b>rollback</b> '+esc(failMsg||'操作失敗'));
+      pushEvent('#dc5f57','<b>rollback</b> '+esc(failMsg||'操作失敗'));
     }
   }
 
@@ -1525,7 +1525,7 @@
     lt.innerHTML=store.paused?'<span class="dot" style="background:var(--amber);animation:none"></span>PAUSED':'<span class="dot"></span>LIVE';
     lt.style.color=store.paused?'var(--amber)':'';
     toast(store.paused?('暫停渲染（訂閱保留）· 最後同步 '+fmtTime(store.lastSync)):'已恢復渲染','ok');
-    pushEvent('#f0a500', store.paused?'<b>system</b> 渲染暫停 · 訂閱保留':'<b>system</b> 渲染已恢復');
+    pushEvent('#cfa04a', store.paused?'<b>system</b> 渲染暫停 · 訂閱保留':'<b>system</b> 渲染已恢復');
   }
   $('#pauseBtn').addEventListener('click',togglePause);
 
@@ -1537,7 +1537,7 @@
     b.setAttribute('aria-pressed',String(store.autoClaim));
     var chip=$('#autoChip');
     if (chip){ chip.textContent=store.autoClaim?'AUTO-CLAIM ON':'AUTO-CLAIM OFF'; chip.className='chip '+(store.autoClaim?'green':'red'); }
-    pushEvent(store.autoClaim?'#5fd97d':'#ee5c4c','<b>auto-claim</b> '+(store.autoClaim?'已啟用':'已停用'));
+    pushEvent(store.autoClaim?'#63b880':'#dc5f57','<b>auto-claim</b> '+(store.autoClaim?'已啟用':'已停用'));
     toast(store.autoClaim?'自動認領已啟用':'自動認領已停用','ok');
     audit('切換自動認領 → '+(store.autoClaim?'ON':'OFF'));
   }
@@ -1821,14 +1821,14 @@
     var thr=svg.getAttribute('data-threshold'),thrLine='';
     if (thr!==null){ var tv=parseFloat(thr);
       if (tv>=min&&tv<=max){ var ty=(h-pad-((tv-min)/span)*(h-pad*2)).toFixed(1);
-        thrLine='<line x1="0" y1="'+ty+'" x2="100" y2="'+ty+'" stroke="#ee5c4c" stroke-width="1" stroke-dasharray="3 3" opacity=".8"/>'; } }
+        thrLine='<line x1="0" y1="'+ty+'" x2="100" y2="'+ty+'" stroke="#dc5f57" stroke-width="1" stroke-dasharray="3 3" opacity=".8"/>'; } }
     svg.innerHTML=thrLine+
       '<polyline points="'+pts.join(' ')+'" fill="none" stroke="'+color+'" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" opacity=".9"/>'+
       '<polygon points="'+pad+','+(h-pad)+' '+pts.join(' ')+' '+(w-pad)+','+(h-pad)+'" fill="'+color+'" opacity=".1"/>'+
       '<circle cx="'+pts[pts.length-1].split(',')[0]+'" cy="'+pts[pts.length-1].split(',')[1]+'" r="2" fill="'+color+'"/>';
   }
   $$('svg[data-spark]').forEach(function(svg){
-    drawSpark(svg,svg.getAttribute('data-spark').split(',').map(Number),svg.getAttribute('data-color')||'#f0a500',svg.classList.contains('mspark')?17:32);
+    drawSpark(svg,svg.getAttribute('data-spark').split(',').map(Number),svg.getAttribute('data-color')||'#cfa04a',svg.classList.contains('mspark')?17:32);
   });
 
   /* ================= 感測模組 ================= */
@@ -1866,7 +1866,7 @@
     if (spark){ var data=cfg.win.slice(-14); spark.setAttribute('data-spark',data.join(','));
       drawSpark(spark,data,spark.getAttribute('data-color'),32); }
     if (changed&&st==='alarm'){
-      pushEvent('#ee5c4c','<b>'+esc(id)+'</b> 上下文壓力超過告警線');
+      pushEvent('#dc5f57','<b>'+esc(id)+'</b> 上下文壓力超過告警線');
       addAlert('alarm-'+id,id+' 超過告警線','壓縮或感知已進入告警，只建立候選');
     }
   }
@@ -1900,7 +1900,7 @@
     filterBtn.style.display='inline-block';
     filterBtn.textContent='✕ '+sid+'（'+related.length+'）';
     if (!quiet){
-      pushEvent('#43d4e4','<b>filter</b> '+esc(sid)+' 命中 '+(related.join('/')||'無'));
+      pushEvent('#7fb2c9','<b>filter</b> '+esc(sid)+' 命中 '+(related.join('/')||'無'));
       toast('已依 '+sid+' 過濾關聯項目','ok');
     }
   }
@@ -1919,7 +1919,7 @@
     if (ab){
       var sid=ab.getAttribute('data-alarm-log');
       audit('記錄異常 '+sid);
-      pushEvent('#f0a500','<b>alarm-log</b> '+esc(sid)+' 已記錄');
+      pushEvent('#cfa04a','<b>alarm-log</b> '+esc(sid)+' 已記錄');
       toast('異常已記錄並寫入審計','ok');
       return;
     }
@@ -1964,7 +1964,7 @@
           '核可失敗，已回滾'
         );
         audit('核准感知行動 閥位 62%→54%',who,reason);
-        pushEvent('#5fd97d','<b>guard</b> 核可感知行動 · 審批人 '+esc(who));
+        pushEvent('#63b880','<b>guard</b> 核可感知行動 · 審批人 '+esc(who));
       }
     });
   });
@@ -1992,7 +1992,7 @@
       t.lane='done';
       t.leftFrom='';
       store.metrics.done++;
-      pushEvent('#5fd97d','<b>step</b> '+esc(t.id)+' 此步完成 · 仍留在總任務進程');
+      pushEvent('#63b880','<b>step</b> '+esc(t.id)+' 此步完成 · 仍留在總任務進程');
       renderQueue();
       maybeCloseParent(t.parent);
     },560);
@@ -2003,7 +2003,7 @@
     if (!kids.length || kids.some(function(t){ return t.lane!=='done'||t.exiting; })) return;
     kids.forEach(function(t){ t.flowClosing=true; });
     renderQueue();
-    pushEvent('#f0a500','<b>task</b> '+esc(parent)+' 全部分拆步驟完成 · 進程即將移出');
+    pushEvent('#cfa04a','<b>task</b> '+esc(parent)+' 全部分拆步驟完成 · 進程即將移出');
     setTimeout(function(){
       store.tasks=store.tasks.filter(function(t){ return t.parent!==parent; });
       renderQueue();
@@ -2045,7 +2045,7 @@
       stamp:['席位角色 <b>'+role+'</b>','等待該席拉取']};
     store.tasks.push(task);
     renderQueue();
-    pushEvent('#f0a500','<b>decompose</b> '+esc(id)+' 分拆後交給 '+esc(role));
+    pushEvent('#cfa04a','<b>decompose</b> '+esc(id)+' 分拆後交給 '+esc(role));
   }
   setTimeout(decomposeOne,2800);
   every(14000, decomposeOne);
@@ -2061,7 +2061,7 @@
       t.meta='排位 <b>#1</b> · 等 LLM 空檔 · '+t.role;
       t.stamp=['拉取 <b>'+seatPick+' · '+t.role+'</b>','lock TTL 15m'];
     });
-    pushEvent('#5fd97d','<b>auto-claim</b> '+esc(seatPick)+' 拉取 '+esc(q.id)+' · 待空檔');
+    pushEvent('#63b880','<b>auto-claim</b> '+esc(seatPick)+' 拉取 '+esc(q.id)+' · 待空檔');
     dispatchFromWait();
   }
   every(5200, autoClaim);
@@ -2071,7 +2071,7 @@
     var slot=store.slots.filter(function(s){ return t.slot?s.id===t.slot:(s.who&&s.who.indexOf(t.id)>=0); })[0];
     if (slot && slot.state==='busy'){
       slot.state='free'; slot.who=null; slot.ttl=0;
-      pushEvent('#5fd97d','<b>slot</b> '+slot.id+' 空檔釋放');
+      pushEvent('#63b880','<b>slot</b> '+slot.id+' 空檔釋放');
     }
     t.slot='';
   }
@@ -2096,7 +2096,7 @@
       });
       var seat=store.seats.filter(function(s){ return s.id===seatId || s.task===w.id; })[0];
       if (seat){ seat.status='run'; seat.statusLabel='執行中'; seat.slot=taken; seat.prog=4; seat.pill='amber'; }
-      pushEvent('#5fd97d','<b>slot</b> '+esc(w.id)+' 取得空檔 '+esc(taken)+' · 與其他步驟並行');
+      pushEvent('#63b880','<b>slot</b> '+esc(w.id)+' 取得空檔 '+esc(taken)+' · 與其他步驟並行');
       n++;
     }
     if (n){ renderSlots(); renderRoster(); }
@@ -2126,7 +2126,7 @@
           '派發失敗，已回滾'
         );
         audit('強制派發 '+id,who,reason);
-        pushEvent('#f0a500','<b>force</b> '+esc(id)+' 強制派發 · 操作者 '+esc(who));
+        pushEvent('#cfa04a','<b>force</b> '+esc(id)+' 強制派發 · 操作者 '+esc(who));
         setTimeout(dispatchFromWait,900);
       }
     });
@@ -2149,12 +2149,12 @@
           t.tags=[{t:'再分拆',c:'t-split'},{t:'槽位已釋放',c:''}];
           t.stamp=['<b style="color:var(--violet)">回注完成</b>','即將移出'];
           store.metrics.split++;
-          pushEvent('#a493ff','<b>re-split</b> '+esc(t.id)+' 走向再分拆');
+          pushEvent('#9a93c9','<b>re-split</b> '+esc(t.id)+' 走向再分拆');
         } else {
           t.lane='gen';
           t.tags=[{t:'席位生成',c:'t-seat'},{t:'完成',c:''}];
           t.stamp=['席位池 <b>87/120</b>','即將移出'];
-          pushEvent('#5fd97d','<b>seat-gen</b> '+esc(t.id)+' 走向席位生成');
+          pushEvent('#63b880','<b>seat-gen</b> '+esc(t.id)+' 走向席位生成');
         }
         t.departAt=Date.now()+4500;
         touch(from);
@@ -2328,9 +2328,9 @@
     var svg=c.querySelector('svg.chart');
     if (!svg){
       c.innerHTML='<svg class="chart" viewBox="0 0 300 62" preserveAspectRatio="none" aria-hidden="true">'+
-        '<defs><linearGradient id="dg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#43d4e4" stop-opacity=".35"/><stop offset="100%" stop-color="#43d4e4" stop-opacity="0"/></linearGradient></defs>'+
-        '<polygon fill="url(#dg)"/><polyline fill="none" stroke="#43d4e4" stroke-width="1.7" stroke-linejoin="round"/>'+
-        '<circle r="2.6" fill="#43d4e4"/></svg>';
+        '<defs><linearGradient id="dg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#7fb2c9" stop-opacity=".35"/><stop offset="100%" stop-color="#7fb2c9" stop-opacity="0"/></linearGradient></defs>'+
+        '<polygon fill="url(#dg)"/><polyline fill="none" stroke="#7fb2c9" stroke-width="1.7" stroke-linejoin="round"/>'+
+        '<circle r="2.6" fill="#7fb2c9"/></svg>';
       svg=c.querySelector('svg.chart');
     }
     var area=pad+','+(h-pad)+' '+pts.join(' ')+' '+(w-pad)+','+(h-pad);
@@ -2366,11 +2366,11 @@
     }
     if (!donut || donut.querySelector('svg')) return;
     var parts=[
-      {n:'ECS',v:3240,c:'#ff8b3d'},
-      {n:'RDS',v:1880,c:'#43d4e4'},
-      {n:'OSS',v:420,c:'#a493ff'},
-      {n:'網路',v:380,c:'#f0a500'},
-      {n:'SLB',v:260,c:'#5fd97d'}
+      {n:'ECS',v:3240,c:'#cf8654'},
+      {n:'RDS',v:1880,c:'#7fb2c9'},
+      {n:'OSS',v:420,c:'#9a93c9'},
+      {n:'網路',v:380,c:'#cfa04a'},
+      {n:'SLB',v:260,c:'#63b880'}
     ];
     var total=0;
     parts.forEach(function(p){ total+=p.v; });
@@ -2537,7 +2537,7 @@
       var bar=row._barEl;
       if (bar){
         var pct=Math.max(0,Math.min(100,(ttl/max)*100)).toFixed(0)+'%';
-        var bg=ttl>300?'linear-gradient(90deg,#2f8a4c,var(--green))':ttl>90?'linear-gradient(90deg,#8c6a12,var(--amber))':'linear-gradient(90deg,#8c3a30,var(--red))';
+        var bg=ttl>300?'linear-gradient(90deg,#2e6b45,var(--green))':ttl>90?'linear-gradient(90deg,#7d5f2c,var(--amber))':'linear-gradient(90deg,#7a3730,var(--red))';
         if (bar.style.getPropertyValue('--pct')!==pct) bar.style.setProperty('--pct',pct);
         if (bar.style.background!==bg && bar.getAttribute('data-bg')!==bg){
           bar.style.background=bg;
@@ -2548,7 +2548,7 @@
     var changed=false;
     store.slots.forEach(function(s){
       if (s.state==='busy'&&s.ttl>0){ s.ttl-=1;
-        if (s.ttl<=0){ s.state='free'; s.who=null; changed=true; pushEvent('#5fd97d','<b>slot</b> '+s.id+' 空檔釋放'); dispatchFromWait(); } }
+        if (s.ttl<=0){ s.state='free'; s.who=null; changed=true; pushEvent('#63b880','<b>slot</b> '+s.id+' 空檔釋放'); dispatchFromWait(); } }
     });
     if (changed) renderSlots();
     else paintSlotValues();
@@ -2578,11 +2578,11 @@
 
   /* ================= 事件流自動（上限 200） ================= */
   var autoEvents=[
-    ['#5fd97d','<b>auto-claim</b> 席位自動拉取循環'],
-    ['#ff8b3d','<b>slot</b> 待空檔排位等待釋放'],
-    ['#a493ff','<b>re-split</b> 子任務回注佇列'],
-    ['#5fd97d','<b>slot</b> 空檔釋放 → 按排位派發'],
-    ['#43d4e4','<b>queue</b> FIFO 重排 · P0 優先']
+    ['#63b880','<b>auto-claim</b> 席位自動拉取循環'],
+    ['#cf8654','<b>slot</b> 待空檔排位等待釋放'],
+    ['#9a93c9','<b>re-split</b> 子任務回注佇列'],
+    ['#63b880','<b>slot</b> 空檔釋放 → 按排位派發'],
+    ['#7fb2c9','<b>queue</b> FIFO 重排 · P0 優先']
   ]; var ai=0;
   every(5800, function(){
     if (store.paused||store.evPaused||document.hidden) return;
@@ -2615,7 +2615,7 @@
       clearTimeout(btn._tm); btn.classList.remove('confirm');
       btn.textContent=btn.getAttribute('data-act');
       audit('Docker '+btn.getAttribute('data-act')+' 已排程');
-      pushEvent('#5fd97d','<b>docker</b> '+btn.getAttribute('data-act')+' 已排程（DEMO 不執行）');
+      pushEvent('#63b880','<b>docker</b> '+btn.getAttribute('data-act')+' 已排程（DEMO 不執行）');
       toast('已排程 '+btn.getAttribute('data-act')+'（DEMO）','ok');
       return;
     }
@@ -2783,7 +2783,7 @@
     renderOss();
     toast(a.name+' 已到沙箱邊界','ok');
     audit('并行開發 '+a.name+' 沙箱就緒');
-    pushEvent('#f0a500','<b>parallel</b> '+esc(a.name)+' 沙箱就緒 · 主棧拒絕');
+    pushEvent('#cfa04a','<b>parallel</b> '+esc(a.name)+' 沙箱就緒 · 主棧拒絕');
   }
   function advanceAll(){
     var moved=[];
@@ -2797,7 +2797,7 @@
     }
     toast('並行推進 '+moved.length+' 條到沙箱邊界','ok');
     audit('并行開發 一次推進 '+moved.join('、'));
-    pushEvent('#43d4e4','<b>parallel</b> '+moved.length+' 條同時到沙箱邊界');
+    pushEvent('#7fb2c9','<b>parallel</b> '+moved.length+' 條同時到沙箱邊界');
   }
   function renderAcq(){
     var host=$('#acqTable'); if (!host) return;
@@ -2909,7 +2909,7 @@
     if (!item) return;
     if (item.state==='blocked'){
       toast(item.name+' 不能在主棧加載','err');
-      pushEvent('#ee5c4c','<b>'+kind+'</b> '+esc(item.name)+' 主棧拒絕加載');
+      pushEvent('#dc5f57','<b>'+kind+'</b> '+esc(item.name)+' 主棧拒絕加載');
       return;
     }
     item.state=item.state==='loaded'?'idle':'loaded';
@@ -2917,7 +2917,7 @@
     var on=item.state==='loaded';
     toast((on?'已加載 ':'已卸下 ')+item.name, on?'ok':'');
     audit((on?'加載':'卸下')+(kind==='mcp'?' MCP ':' 技能 ')+item.name);
-    pushEvent(on?'#5fd97d':'#f0a500','<b>'+kind+'</b> '+(on?'加載':'卸下')+' '+esc(item.name));
+    pushEvent(on?'#63b880':'#cfa04a','<b>'+kind+'</b> '+(on?'加載':'卸下')+' '+esc(item.name));
   }
   function toggleOss(id){
     var item=ossById(id);
@@ -2925,7 +2925,7 @@
     var load=ossLoadOf(item);
     if (load==='block'){
       toast(item.name+' 不能在主棧加載','err');
-      pushEvent('#ee5c4c','<b>oss</b> '+esc(item.name)+' 主棧拒絕加載');
+      pushEvent('#dc5f57','<b>oss</b> '+esc(item.name)+' 主棧拒絕加載');
       return;
     }
     if (item.state==='wired'){
@@ -2946,7 +2946,7 @@
     var on=item.load==='on';
     toast((on?'已加載 ':'已卸下 ')+item.name, on?'ok':'');
     audit((on?'加載':'卸下')+' 開源組件 '+item.name);
-    pushEvent(on?'#5fd97d':'#f0a500','<b>oss</b> '+(on?'加載':'卸下')+' '+esc(item.name));
+    pushEvent(on?'#63b880':'#cfa04a','<b>oss</b> '+(on?'加載':'卸下')+' '+esc(item.name));
   }
   document.addEventListener('click',function(e){
     var f=e.target.closest('#ossFilters [data-oss]');
@@ -3077,7 +3077,7 @@
     renderCollect();
     toast(item.id+' 已入列 '+qid,'ok');
     audit('任務收集 '+item.id+' → '+qid);
-    pushEvent('#5fd97d','<b>collect</b> '+esc(item.id)+' 入列 '+esc(qid));
+    pushEvent('#63b880','<b>collect</b> '+esc(item.id)+' 入列 '+esc(qid));
   }
   function skipCollect(id){
     var item=collectById(id);
@@ -3115,7 +3115,7 @@
       var done=action==='claim'?('已認領 '+(res.data.taskId||'')):'已退回';
       toast(item.id+' '+done,'ok');
       audit('任務收集 '+item.id+' → '+done+'（'+(res.data.actor||who)+'）');
-      pushEvent(action==='claim'?'#5fd97d':'#9aa2a9','<b>collect</b> '+esc(item.id)+' '+esc(done));
+      pushEvent(action==='claim'?'#63b880':'#9aa2a9','<b>collect</b> '+esc(item.id)+' '+esc(done));
       return true;
     }).catch(function(err){
       toast('寫入失敗：'+err.message,'err');
@@ -3160,7 +3160,7 @@
     renderCollect();
     toast(item.id+' 已放入待收','ok');
     audit('任務收集新增 '+item.id);
-    pushEvent('#43d4e4','<b>collect</b> 新增 '+esc(item.id));
+    pushEvent('#7fb2c9','<b>collect</b> 新增 '+esc(item.id));
   }
   var collectRoot=$('#topic-collect');
   if (collectRoot) collectRoot.addEventListener('click', function(e){
@@ -3225,9 +3225,9 @@
   renderAudit();
   renderOss();
   renderCollect();
-  pushEvent('#5fd97d','<b>auto-claim</b> 席位自動拉取已啟用');
-  pushEvent('#43d4e4','<b>Q-118</b> 佔用槽位 A1 · call_llm 中');
-  pushEvent('#ff8b3d','<b>Q-119</b> 已拉取 · 待空檔 #1');
+  pushEvent('#63b880','<b>auto-claim</b> 席位自動拉取已啟用');
+  pushEvent('#7fb2c9','<b>Q-118</b> 佔用槽位 A1 · call_llm 中');
+  pushEvent('#cf8654','<b>Q-119</b> 已拉取 · 待空檔 #1');
   var peekEl=$('#peek');
   var PIPE_DETAIL={
     query:{kicker:'00 · 入口',title:'查詢',status:'POST /chat',lead:'使用者這一句先進入管線。這一步不選路、不佔槽、不寫任何庫。',rows:[['讀取','這一輪的問題'],['寫入','不寫'],['下一站','記憶注入']]},

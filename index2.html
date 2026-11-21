@@ -41,9 +41,9 @@
 <header class="topbar">
   <div class="brand">
     <svg class="brand-mark" viewBox="0 0 30 30" fill="none" aria-hidden="true">
-      <path d="M4 26V4h5.4l7 12.2V4H22v22h-5.2l-7.2-12.6V26z" fill="#f0a500" opacity=".92"/>
-      <path d="M2 2h26v26H2z" stroke="rgba(240,165,0,.38)" stroke-width="1.1"/>
-      <circle cx="25" cy="5" r="1.7" fill="#43d4e4"/>
+      <path d="M4 26V4h5.4l7 12.2V4H22v22h-5.2l-7.2-12.6V26z" fill="#cfa04a" opacity=".92"/>
+      <path d="M2 2h26v26H2z" stroke="rgba(207,160,74,.38)" stroke-width="1.1"/>
+      <circle cx="25" cy="5" r="1.7" fill="#7fb2c9"/>
     </svg>
     <div class="brand-name">靈境<em>·</em>Linkin</div>
     <div class="brand-sub">Auto-Claim × LLM Slot</div>
@@ -324,7 +324,7 @@
               </div>
               <div class="thr" role="img" aria-label="窗口占用：小於72充裕，72到88偏滿，大於88將截斷"><div class="marker" data-thr-marker="CTX-WIN" style="left:74%"></div></div>
               <div class="thr-legend"><span>&lt; 72 充裕</span><span>72–88 偏滿</span><span>&gt; 88 截斷</span></div>
-              <svg class="sc-spark" data-spark="61,64,66,68,70,71,73,74,75,76,76" data-color="#f0a500" data-threshold="72" role="img" aria-label="原文窗口占用走勢"></svg>
+              <svg class="sc-spark" data-spark="61,64,66,68,70,71,73,74,75,76,76" data-color="#cfa04a" data-threshold="72" role="img" aria-label="原文窗口占用走勢"></svg>
               <div class="sc-cons">
                 <div class="cw">壓縮後注入</div>
                 <div class="cons-row"><button class="cref" data-jump="Q-118">Q-118</button><span class="cwhat">趨勢分析吃的是壓縮窗</span></div>
@@ -351,7 +351,7 @@
               </div>
               <div class="thr" role="img" aria-label="保留率：小於48夠瘦，48到62偏肥，大於62幾乎沒壓"><div class="marker" data-thr-marker="CTX-CMP" style="left:38%"></div></div>
               <div class="thr-legend"><span>&lt; 48 夠瘦</span><span>48–62 偏肥</span><span>&gt; 62 沒壓</span></div>
-              <svg class="sc-spark" data-spark="41,39,38,36,35,34,33,34,32,33,34" data-color="#43d4e4" data-threshold="48" role="img" aria-label="壓縮保留率走勢"></svg>
+              <svg class="sc-spark" data-spark="41,39,38,36,35,34,33,34,32,33,34" data-color="#7fb2c9" data-threshold="48" role="img" aria-label="壓縮保留率走勢"></svg>
               <div class="sc-cons">
                 <div class="cw">摘要注入對象</div>
                 <div class="cons-row"><button class="cref" data-jump="Q-120">Q-120</button><span class="cwhat">複核吃壓縮摘要</span></div>
@@ -378,7 +378,7 @@
               </div>
               <div class="thr" role="img" aria-label="感知置信：小於0.62僅參考，0.62到0.85為候選，大於0.85必須守門"><div class="marker" data-thr-marker="TXT-SEE" style="left:68%"></div></div>
               <div class="thr-legend"><span>&lt; .62 參考</span><span>.62–.85 候選</span><span>&gt; .85 守門</span></div>
-              <svg class="sc-spark" data-spark="0.41,0.48,0.52,0.58,0.61,0.66,0.69,0.71,0.72,0.73,0.74" data-color="#a493ff" data-threshold="0.62" role="img" aria-label="文本感知置信走勢"></svg>
+              <svg class="sc-spark" data-spark="0.41,0.48,0.52,0.58,0.61,0.66,0.69,0.71,0.72,0.73,0.74" data-color="#9a93c9" data-threshold="0.62" role="img" aria-label="文本感知置信走勢"></svg>
               <div class="sc-write" id="writeBox">
                 <div class="swt"><span class="sig lock" style="vertical-align:-1px"></span> 感知行動句 · guard.py 審核中</div>
                 <div class="swd">看出一句行動：閥位 <b>62% → 54%</b> · 只是候選 · 觸發 <b>Q-121</b> · 未核可不得執行</div>
@@ -502,12 +502,12 @@
               <div class="kicker">席位圖 · 方向鍵移動 / Enter 選取</div>
               <div class="seats" id="seats" role="group" aria-label="80 席位圖（方向鍵移動焦點）"></div>
               <div class="legend" id="seatLegend" role="group" aria-label="席位狀態過濾">
-                <button class="legend-btn" data-filter="run" aria-pressed="false"><i style="background:rgba(240,165,0,.85)"></i>執行中</button>
-                <button class="legend-btn" data-filter="wait" aria-pressed="false"><i style="background:rgba(255,139,61,.8)"></i>待空檔</button>
-                <button class="legend-btn" data-filter="queue" aria-pressed="false"><i style="background:rgba(67,212,228,.55)"></i>待拉取</button>
-                <button class="legend-btn" data-filter="done" aria-pressed="false"><i style="background:rgba(95,217,125,.6)"></i>完成</button>
-                <button class="legend-btn" data-filter="gen" aria-pressed="false"><i style="background:rgba(164,147,255,.75)"></i>生成</button>
-                <button class="legend-btn" data-filter="lock" aria-pressed="false"><i style="background:rgba(238,92,76,.7)"></i>鎖定</button>
+                <button class="legend-btn" data-filter="run" aria-pressed="false"><i style="background:rgba(207,160,74,.85)"></i>執行中</button>
+                <button class="legend-btn" data-filter="wait" aria-pressed="false"><i style="background:rgba(207,134,84,.8)"></i>待空檔</button>
+                <button class="legend-btn" data-filter="queue" aria-pressed="false"><i style="background:rgba(127,178,201,.55)"></i>待拉取</button>
+                <button class="legend-btn" data-filter="done" aria-pressed="false"><i style="background:rgba(99,184,128,.6)"></i>完成</button>
+                <button class="legend-btn" data-filter="gen" aria-pressed="false"><i style="background:rgba(154,147,201,.75)"></i>生成</button>
+                <button class="legend-btn" data-filter="lock" aria-pressed="false"><i style="background:rgba(220,95,87,.7)"></i>鎖定</button>
               </div>
               <div class="note">席位圖為 roving tabindex：僅單一焦點可 Tab，方向鍵移動，Enter 選取並連動表列。</div>
               <div class="kicker" style="margin:14px 0 7px">成敗標準 · 依賴</div>
@@ -972,7 +972,7 @@
   <aside class="rail-right" aria-label="監控面板">
     <div class="rr">
       <div class="rr-head">
-        <div class="rr-ic tone-cyan" style="border-color:rgba(67,212,228,.35);background:rgba(67,212,228,.08)"><svg><use href="#i-pulse"/></svg></div>
+        <div class="rr-ic tone-cyan" style="border-color:rgba(127,178,201,.35);background:rgba(127,178,201,.08)"><svg><use href="#i-pulse"/></svg></div>
         <div class="rr-title"><b>佇列監控</b> · LIVE</div>
         <div class="range-row" id="rangeRow" role="group" aria-label="走勢圖範圍">
           <button class="range-btn" data-range="1H" aria-pressed="false">1H</button>
@@ -990,12 +990,12 @@
           <div class="hc-axis"><span id="rangeStart">-24H</span><span>-12H</span><span>NOW</span></div>
         </div>
         <div class="mgrid">
-          <div class="mtile"><div class="ml">自動拉取</div><div class="mv tone-green"><span data-num="claimRate">—</span><small>/min</small></div><svg class="mspark" data-spark="4,4.6,5,5.4,5.8,6.2,6,6.4,6.1,6.3,6.1" data-color="#5fd97d"></svg></div>
+          <div class="mtile"><div class="ml">自動拉取</div><div class="mv tone-green"><span data-num="claimRate">—</span><small>/min</small></div><svg class="mspark" data-spark="4,4.6,5,5.4,5.8,6.2,6,6.4,6.1,6.3,6.1" data-color="#63b880"></svg></div>
           <div class="mtile"><div class="ml">待空檔</div><div class="mv tone-orange"><span data-num="claimedWait">—</span><small>項</small></div><div class="mbar"><i class="fill-orange" data-pct="wait"></i></div></div>
-          <div class="mtile"><div class="ml">槽位利用</div><div class="mv"><span data-num="slotUsed">—</span><small>/8</small></div><svg class="mspark" data-spark="5,6,7,6,8,7,6,7,6,6,6" data-color="#f0a500"></svg></div>
-          <div class="mtile"><div class="ml">待空檔時間</div><div class="mv tone-cyan"><span data-num="slotWait">—</span><small>s</small></div><svg class="mspark" data-spark="3,4,5,4,3.8,4.6,4.2,5,4.4,4,4.2" data-color="#43d4e4"></svg></div>
-          <div class="mtile"><div class="ml">再分拆</div><div class="mv tone-violet"><span data-num="split">—</span><small>子任務</small></div><svg class="mspark" data-spark="1,2,2,3,4,3,5,6,5,7,8" data-color="#a493ff"></svg></div>
-          <div class="mtile"><div class="ml">吞吐</div><div class="mv tone-cyan"><span data-num="thru">—</span><small>/h</small></div><svg class="mspark" data-spark="22,26,24,29,27,31,28,33,30,32,31" data-color="#43d4e4"></svg></div>
+          <div class="mtile"><div class="ml">槽位利用</div><div class="mv"><span data-num="slotUsed">—</span><small>/8</small></div><svg class="mspark" data-spark="5,6,7,6,8,7,6,7,6,6,6" data-color="#cfa04a"></svg></div>
+          <div class="mtile"><div class="ml">待空檔時間</div><div class="mv tone-cyan"><span data-num="slotWait">—</span><small>s</small></div><svg class="mspark" data-spark="3,4,5,4,3.8,4.6,4.2,5,4.4,4,4.2" data-color="#7fb2c9"></svg></div>
+          <div class="mtile"><div class="ml">再分拆</div><div class="mv tone-violet"><span data-num="split">—</span><small>子任務</small></div><svg class="mspark" data-spark="1,2,2,3,4,3,5,6,5,7,8" data-color="#9a93c9"></svg></div>
+          <div class="mtile"><div class="ml">吞吐</div><div class="mv tone-cyan"><span data-num="thru">—</span><small>/h</small></div><svg class="mspark" data-spark="22,26,24,29,27,31,28,33,30,32,31" data-color="#7fb2c9"></svg></div>
         </div>
         <div class="note" style="margin-top:8px">最後同步 <span id="lastSync">—</span> · pause＝暫停渲染（訂閱保留）</div>
       </div>
@@ -1003,7 +1003,7 @@
 
     <div class="rr">
       <div class="rr-head">
-        <div class="rr-ic tone-amber" style="border-color:rgba(240,165,0,.35);background:rgba(240,165,0,.08)"><svg><use href="#i-slot"/></svg></div>
+        <div class="rr-ic tone-amber" style="border-color:rgba(207,160,74,.35);background:rgba(207,160,74,.08)"><svg><use href="#i-slot"/></svg></div>
         <div class="rr-title"><b>LLM 空檔排程</b> · 8 槽位</div>
         <div class="rr-live"><i></i><span data-num="slotUsed">—</span>/8 佔用</div>
       </div>
@@ -1021,7 +1021,7 @@
 
     <div class="rr">
       <div class="rr-head">
-        <div class="rr-ic tone-green" style="border-color:rgba(95,217,125,.35);background:rgba(95,217,125,.08)"><svg><use href="#i-clock"/></svg></div>
+        <div class="rr-ic tone-green" style="border-color:rgba(99,184,128,.35);background:rgba(99,184,128,.08)"><svg><use href="#i-clock"/></svg></div>
         <div class="rr-title"><b>Dispatcher</b> · 自動認領</div>
         <div class="rr-live"><i></i>TICK <span id="dispTick">04</span>s</div>
       </div>
@@ -1036,7 +1036,7 @@
 
     <div class="rr">
       <div class="rr-head">
-        <div class="rr-ic tone-cyan" style="border-color:rgba(67,212,228,.35);background:rgba(67,212,228,.08)"><svg><use href="#i-queue"/></svg></div>
+        <div class="rr-ic tone-cyan" style="border-color:rgba(127,178,201,.35);background:rgba(127,178,201,.08)"><svg><use href="#i-queue"/></svg></div>
         <div class="rr-title"><b>事件流</b> · 上限 200 條</div>
         <button class="mini-btn" id="evPause">PAUSE</button>
         <button class="mini-btn" id="evClear">CLEAR</button>
@@ -1048,7 +1048,7 @@
 
     <div class="rr">
       <div class="rr-head">
-        <div class="rr-ic tone-red" style="border-color:rgba(238,92,76,.35);background:rgba(238,92,76,.08)"><svg><use href="#i-warn"/></svg></div>
+        <div class="rr-ic tone-red" style="border-color:rgba(220,95,87,.35);background:rgba(220,95,87,.08)"><svg><use href="#i-warn"/></svg></div>
         <div class="rr-title"><b>告警</b></div>
         <div class="rr-live paused"><i></i><span id="alertCount">0</span> ACTIVE</div>
       </div>
@@ -1057,7 +1057,7 @@
 
     <div class="rr">
       <div class="rr-head">
-        <div class="rr-ic tone-violet" style="border-color:rgba(164,147,255,.35);background:rgba(164,147,255,.08)"><svg><use href="#i-shield"/></svg></div>
+        <div class="rr-ic tone-violet" style="border-color:rgba(154,147,201,.35);background:rgba(154,147,201,.08)"><svg><use href="#i-shield"/></svg></div>
         <div class="rr-title"><b>操作審計</b> · audit</div>
         <div class="rr-live paused"><i></i>審批記錄</div>
       </div>
@@ -1066,7 +1066,7 @@
 
     <div class="rr">
       <div class="rr-head">
-        <div class="rr-ic tone-orange" style="border-color:rgba(255,139,61,.35);background:rgba(255,139,61,.08)"><svg><use href="#i-cube"/></svg></div>
+        <div class="rr-ic tone-orange" style="border-color:rgba(207,134,84,.35);background:rgba(207,134,84,.08)"><svg><use href="#i-cube"/></svg></div>
         <div class="rr-title"><b>計費</b> · v6</div>
         <div class="rr-live paused"><i></i>READ ONLY</div>
       </div>
