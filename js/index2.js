@@ -1544,7 +1544,7 @@
   $('#autoClaimBtn').addEventListener('click',toggleAuto);
 
   /* ================= 路由 + 轉頁 ================= */
-  var TOPICS=['collect','queue','sense','out','seat','pipe','infra','oss','studio','person'];
+  var TOPICS=['collect','queue','sense','out','seat','pipe','infra','oss','studio','person','review'];
   var TOPIC_META={
     collect:{label:'任務收集',hint:'待收項確認後才進隊列 · 這頁不拉取外部內容'},
     queue:{label:'任務隊列',hint:'席位自動拉取任務 · 等 LLM 空檔才執行'},
@@ -1555,7 +1555,8 @@
     infra:{label:'基礎設施',hint:'Docker Compose · 阿里雲唯讀'},
     oss:{label:'開源組件',hint:'GitHub 鎖定版本 · 候選不進主棧'},
     studio:{label:'UI 生成',hint:'一句話需求 → 線框圖 · 只出結構不出像素'},
-    person:{label:'人物檔案',hint:'歸戶結果 · 貼文／AI 事件／告警合併時間軸'}
+    person:{label:'人物檔案',hint:'歸戶結果 · 貼文／AI 事件／告警合併時間軸'},
+    review:{label:'審核台',hint:'AI 只產候選 · 人工裁決寫回 review_task 並留審計'}
   };
   var INFRA_PANES=['docker','ecs','bill','cost'];
   var INFRA_LABEL={docker:'Docker',ecs:'ECS',bill:'帳單',cost:'成本預算'};
@@ -2338,6 +2339,7 @@
     if (e.code==='Space'&&!e.target.closest('button')){ e.preventDefault(); togglePause(); return; }
     if ((e.metaKey||e.ctrlKey)&&e.shiftKey&&e.key.toLowerCase()==='a'){ e.preventDefault(); toggleAuto(); return; }
     if ((e.metaKey||e.ctrlKey)&&e.key>='1'&&e.key<='9'){ var kb=TOPICS[parseInt(e.key,10)-1]; if (kb){ e.preventDefault(); setTopic(kb); } return; }
+    if ((e.metaKey||e.ctrlKey)&&e.shiftKey&&e.code==='Digit0'){ var kbr=TOPICS[10]; if (kbr){ e.preventDefault(); setTopic(kbr); } return; }
     if ((e.metaKey||e.ctrlKey)&&e.key==='0'){ var kb0=TOPICS[9]; if (kb0){ e.preventDefault(); setTopic(kb0); } return; }
     if (!e.metaKey && !e.ctrlKey && !e.altKey && (e.key==='ArrowLeft'||e.key==='ArrowRight')){
       if (overlay.classList.contains('on') || ($('#dlgMask') && !$('#dlgMask').hidden)) return;
@@ -3714,7 +3716,11 @@
       return true;
     },
     /* 目前頁面上的收集項 / 告警數，方便測試腳本檢查 */
-    counts:function(){ return {collect:COLLECT.length, alerts:store.alerts.length}; }
+    counts:function(){ return {collect:COLLECT.length, alerts:store.alerts.length}; },
+    /* 給審核台用：同一套二次確認（原因必填）與 toast */
+    confirm:function(opt){ openDialog(opt||{}); },
+    toast:function(msg,tone){ toast(msg,tone); },
+    topic:function(){ return routeState.topic; }
   };
 
   bootRouter();

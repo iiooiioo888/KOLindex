@@ -10,6 +10,7 @@
 <link rel="stylesheet" href="css/index2.css?v=20261120">
 <link rel="stylesheet" href="css/studio.css?v=20261121">
 <link rel="stylesheet" href="css/person.css?v=20261121">
+<link rel="stylesheet" href="css/review.css?v=20261121">
 </head>
 <body>
 
@@ -79,6 +80,7 @@
       <button class="nav-item" data-topic="oss"><svg class="ic"><use href="#i-git"/></svg><span class="nm">開源組件</span><span class="bd">16</span></button>
       <button class="nav-item" data-topic="studio"><svg class="ic"><use href="#i-cube"/></svg><span class="nm">UI 生成</span><span class="bd">NEW</span></button>
       <button class="nav-item" data-topic="person"><svg class="ic"><use href="#i-pulse"/></svg><span class="nm">人物檔案</span><span class="bd">API</span></button>
+      <button class="nav-item" data-topic="review"><svg class="ic"><use href="#i-shield"/></svg><span class="nm">審核台</span><span class="bd">LIVE</span></button>
     </div>
 
     <div class="micro-card">
@@ -108,7 +110,7 @@
       <h4>快捷鍵</h4>
       <div class="kv"><span>搜尋</span><b>⌘K / Ctrl+K</b></div>
       <div class="kv"><span>清除</span><b>ESC</b></div>
-      <div class="kv"><span>切換分頁</span><b>⌘1–9 · ⌘0 / ←→</b></div>
+      <div class="kv"><span>切換分頁</span><b>⌘1–9 · ⌘0 · ⌘⇧0 · ←→</b></div>
       <div class="kv"><span>深連結</span><b>#/頁/編號</b></div>
       <div class="kv"><span>暫停渲染</span><b>SPACE</b></div>
       <div class="kv"><span>自動認領</span><b>⌘⇧A</b></div>
@@ -136,6 +138,7 @@
       <button class="topic-btn" id="tab-oss" role="tab" aria-selected="false" aria-controls="topic-oss" data-topic="oss">開源組件</button>
       <button class="topic-btn" id="tab-studio" role="tab" aria-selected="false" aria-controls="topic-studio" data-topic="studio">UI 生成</button>
       <button class="topic-btn" id="tab-person" role="tab" aria-selected="false" aria-controls="topic-person" data-topic="person">人物檔案</button>
+      <button class="topic-btn" id="tab-review" role="tab" aria-selected="false" aria-controls="topic-review" data-topic="review">審核台</button>
       <span class="topic-hint" id="topicHint">#/queue  ·  席位自動拉取任務 · 等 LLM 空檔才執行</span>
     </div>
 
@@ -906,6 +909,35 @@
           </div>
         </div>
       </div>
+    <!-- ═══ 審核台 ═══ -->
+    <section class="waterfall" id="topic-review" role="tabpanel" aria-labelledby="tab-review" aria-hidden="true">
+      <div class="panel">
+        <div class="panel-head">
+          <div class="panel-title">審核台<span class="en">review queue · human in the loop</span></div>
+          <div class="panel-tools">
+            <span class="chip or" id="reviewStatus">待連線</span>
+            <span class="chip cyan" id="reviewCounts">—</span>
+          </div>
+        </div>
+        <div class="panel-body">
+          <div class="review-grid">
+            <aside class="review-side">
+              <div class="review-seg" id="reviewModes" role="group" aria-label="待辦來源">
+                <button type="button" data-mode="review" aria-pressed="true">複核單<b id="reviewOpenN">0</b></button>
+                <button type="button" data-mode="ai" aria-pressed="false">AI 事件<b id="reviewAiN">0</b></button>
+              </div>
+              <div class="review-list" id="reviewList"></div>
+            </aside>
+            <div class="review-main">
+              <div class="review-detail" id="reviewDetail"></div>
+              <div class="review-log" id="reviewLog"></div>
+            </div>
+          </div>
+          <div class="p-cap">
+            <b>AI 只產候選，人來裁決。</b>三個動作會寫回 <code>review_task</code> 並留一筆 <code>audit_log</code>（誰、什麼時候、原因）；AI 事件只能「標記已處理」。這是這站第一條寫入路徑，其餘分頁仍是唯讀。
+          </div>
+        </div>
+      </div>
     </section>
   </main>
 
@@ -1041,6 +1073,7 @@
     <button class="tab" data-topic="oss"><svg class="ic"><use href="#i-git"/></svg>組件</button>
     <button class="tab" data-topic="studio"><svg class="ic"><use href="#i-cube"/></svg>生成</button>
     <button class="tab" data-topic="person"><svg class="ic"><use href="#i-pulse"/></svg>人物</button>
+    <button class="tab" data-topic="review"><svg class="ic"><use href="#i-shield"/></svg>審核</button>
   </div>
 </nav>
 
@@ -1096,5 +1129,6 @@
 <script defer src="js/studio.js?v=20261121"></script>
 <script defer src="js/api.js?v=20261121"></script>
 <script defer src="js/person.js?v=20261121"></script>
+<script defer src="js/review.js?v=20261121"></script>
 </body>
 </html>
