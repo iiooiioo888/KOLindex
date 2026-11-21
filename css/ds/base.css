@@ -1,37 +1,36 @@
 /* ============================================================================
    ds/base.css — 基礎層
-   只管「所有頁面都一樣」的東西：畫布、文字、焦點、滾動條、圖示。
-   不含任何版面骨架（那些在 components.css / pages.css）。
+   畫布（細網格）、文字、焦點、表單、滾動條。不含版面骨架與元件。
    ============================================================================ */
 
-/* ── 畫布 ──────────────────────────────────────────────────── */
+/* ── 畫布：1px 工程網格，取代原本的兩層彩光與顆粒 ─────────────── */
 body{
   font-family:var(--body);
   font-size:var(--fs-body);
   line-height:var(--lh-body);
   color:var(--text);
-  background:
-    radial-gradient(880px 560px at 6% -12%, rgba(240,165,0,.07), transparent 60%),
-    radial-gradient(820px 520px at 98% 110%, rgba(67,212,228,.055), transparent 58%),
-    var(--bg);
+  background-color:var(--bg);
+  background-image:
+    linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size:32px 32px;
+  background-position:-1px -1px;
   -webkit-font-smoothing:antialiased;
   text-rendering:optimizeLegibility;
   font-kerning:normal;
 }
-body::before{
-  opacity:.038;
-  background-size:56px 56px;
-  z-index:var(--z-grain);
-}
+/* 舊版的 grain.png 圖層一律關掉 */
+body::before{display:none}
 
 /* ── 文字 ──────────────────────────────────────────────────── */
-h1,h2,h3,h4,h5{font-weight:600;line-height:var(--lh-tight);letter-spacing:.01em}
+h1,h2,h3,h4,h5{font-weight:600;line-height:var(--lh-tight);letter-spacing:0}
 p{line-height:var(--lh-body)}
 b,strong{font-weight:600}
 small{font-size:var(--fs-meta)}
 a{color:inherit;text-decoration:none}
-::selection{background:rgba(240,165,0,.26);color:var(--text)}
-mark{background:rgba(240,165,0,.3);color:var(--text);border-radius:var(--r-xs);padding:0 2px}
+hr{border:0;border-top:1px solid var(--line);margin:var(--s-6) 0}
+::selection{background:rgba(230,237,242,.18);color:var(--text)}
+mark{background:transparent;color:var(--text);box-shadow:inset 0 -1px 0 var(--accent);padding:0}
 
 /* 數字一律等寬，表格與 KPI 才不會跳動 */
 .mono,.clock,.search-count,.kv b,.kpi .kv2,.stat b,.table td,.table th,
@@ -41,39 +40,40 @@ mark{background:rgba(240,165,0,.3);color:var(--text);border-radius:var(--r-xs);p
 .ic{width:14px;height:14px;flex:0 0 14px;stroke-width:1.5}
 svg.ic{vertical-align:-2px}
 
-/* ── 焦點：全站一個樣式，青色內外雙環 ─────────────────────── */
+/* ── 焦點：全站一種樣式，單色細環 ─────────────────────────── */
 :focus{outline:none}
 :focus-visible{
   outline:2px solid var(--focus);
   outline-offset:2px;
-  border-radius:var(--r-xs);
+  border-radius:0;
 }
 input:focus-visible,select:focus-visible,textarea:focus-visible{
-  outline:2px solid var(--focus);
-  outline-offset:1px;
+  outline:1px solid var(--focus);
+  outline-offset:0;
+  border-color:var(--focus);
 }
 button:focus-visible{outline-offset:2px}
 
 /* ── 表單元素基準 ─────────────────────────────────────────── */
 input,select,textarea,button{font-family:inherit;font-size:var(--fs-ui);color:inherit}
 input,select,textarea{
-  background:var(--bg);
+  background:var(--surface);
   border:1px solid var(--line);
   border-radius:var(--r-ctl);
-  padding:6px 9px;
+  padding:5px 8px;
   transition:border-color var(--dur-2) var(--ease),background var(--dur-2) var(--ease);
 }
 input::placeholder,textarea::placeholder{color:var(--faint)}
 input:hover,select:hover,textarea:hover{border-color:var(--line-strong)}
-input:focus,select:focus,textarea:focus{border-color:var(--accent-line);background:var(--bg-deep)}
+input:focus,select:focus,textarea:focus{border-color:var(--accent-line);background:var(--bg-deep);outline:none}
 button:disabled,input:disabled,select:disabled{opacity:.45;cursor:not-allowed}
 
-/* ── 滾動條：細、暗、hover 才亮 ────────────────────────────── */
-*{scrollbar-width:thin;scrollbar-color:var(--surface-4) transparent}
-*::-webkit-scrollbar{width:8px;height:8px}
+/* ── 滾動條：方角、細、hover 才亮 ──────────────────────────── */
+*{scrollbar-width:thin;scrollbar-color:var(--line-strong) transparent}
+*::-webkit-scrollbar{width:10px;height:10px}
 *::-webkit-scrollbar-track{background:transparent}
-*::-webkit-scrollbar-thumb{background:var(--surface-3);border-radius:var(--r-pill);border:2px solid transparent;background-clip:padding-box}
-*::-webkit-scrollbar-thumb:hover{background:var(--surface-4);background-clip:padding-box}
+*::-webkit-scrollbar-thumb{background:var(--line);border-radius:0;border:2px solid transparent;background-clip:padding-box}
+*::-webkit-scrollbar-thumb:hover{background:var(--line-strong);background-clip:padding-box}
 
 /* ── 可存取性小工具 ───────────────────────────────────────── */
 .sr-only{

@@ -1,71 +1,74 @@
 /* ============================================================================
    ds/tokens.css — 設計權杖（Design Tokens）
-   只放「值」，不放選擇器。任何顏色、間距、圓角、動效都從這裡取。
+   方向：工程藍圖／技術文件。冷灰藍底、髮絲線、直角、無漸層、無發光。
+   顏色只保留給「狀態語意」（ok / warn / bad / info），介面本身是無彩度的。
    載入順序：index2.css → ds/tokens → ds/base → ds/components → ds/pages → 各頁 CSS
-   舊變數名（--surface / --line / --text …）在這裡重新定義為同一組語意值，
-   因此 100KB 的舊版 index2.css 不必改一行就能吃到新色。
+   舊變數名（--surface / --line / --text …）在這裡重新定義，因此 100KB 的舊版
+   index2.css 不必改一行就能吃到新色。
    ============================================================================ */
 
 :root{
   color-scheme:dark;
 
-  /* ── 1. 底色層 ───────────────────────────────────────────── */
-  --bg:#0a0c0f;
-  --bg-deep:#06080a;
-  --surface:#101317;
-  --surface-2:#15191d;
-  --surface-3:#1b2127;
-  --surface-4:#242c33;
+  /* ── 1. 底色層（冷灰藍，靠近紙上的藍晒圖） ───────────────── */
+  --bg:#0b0e11;
+  --bg-deep:#080a0d;
+  --surface:#0f1317;
+  --surface-2:#131920;
+  --surface-3:#19212a;
+  --surface-4:#212c36;
 
-  /* ── 2. 描邊層 ───────────────────────────────────────────── */
-  --line-soft:#181e23;
-  --line:#222a31;
-  --line-strong:#33404a;
+  /* ── 2. 描邊層：全部 1px 髮絲線 ───────────────────────────── */
+  --line-soft:#1a232c;
+  --line:#243039;
+  --line-strong:#3a4b56;
 
   /* ── 3. 文字層 ───────────────────────────────────────────── */
-  --text:#ece7dd;
-  --dim:#a4acb3;
-  --faint:#79828a;
+  --text:#e6edf2;
+  --dim:#9fadba;
+  --faint:#71808c;
 
-  /* ── 4. 色相（只用於語意，不用於裝飾） ─────────────────────── */
-  --amber:#f0a500;
-  --amber-hot:#ffc043;
-  --cyan:#43d4e4;
-  --green:#5fd97d;
-  --red:#ee5c4c;
-  --violet:#a493ff;
-  --orange:#ff8b3d;
+  /* ── 4. 狀態色（唯一的彩色，降飽和以配合冷底） ─────────────── */
+  --amber:#cfa04a;
+  --amber-hot:#e2b968;
+  --cyan:#7fb2c9;
+  --green:#63b880;
+  --red:#dc5f57;
+  --violet:#9a93c9;
+  --orange:#cf8654;
 
-  /* ── 5. 語意色 ───────────────────────────────────────────── */
-  --accent:var(--amber);
-  --accent-soft:rgba(240,165,0,.12);
-  --accent-line:rgba(240,165,0,.42);
-  --focus:var(--cyan);
-  --track:#12171d;
+  /* ── 5. 語意 ─────────────────────────────────────────────── */
+  --ice:#e6edf2;
+  --accent:var(--ice);
+  --accent-soft:rgba(230,237,242,.07);
+  --accent-line:rgba(230,237,242,.26);
+  --focus:#8fb6cc;
+  --track:#0d1216;
+  --grid:rgba(255,255,255,.022);
   --ok:var(--green);
   --warn:var(--amber);
   --bad:var(--red);
 
-  /* ── 6. 字族 ─────────────────────────────────────────────── */
+  /* ── 6. 字族：標題與數字一律等寬，中文用黑體 ───────────────── */
   --cjk:'PingFang TC','Microsoft JhengHei UI','Microsoft JhengHei','Noto Sans CJK TC','Source Han Sans TC',sans-serif;
   --mono:'IBM Plex Mono',ui-monospace,'Sarasa Mono TC',var(--cjk);
-  --disp:'Chakra Petch',var(--cjk);
+  --disp:var(--mono);
   --body:var(--cjk);
 
-  /* ── 7. 字級 ─────────────────────────────────────────────── */
-  --fs-micro:11px;
-  --fs-meta:12px;
-  --fs-ui:13px;
+  /* ── 7. 字級：整體降一級，靠字距與大小寫建立層級 ───────────── */
+  --fs-micro:10px;
+  --fs-meta:11px;
+  --fs-ui:12px;
   --fs-body:13px;
-  --fs-title:15px;
-  --fs-lg:18px;
-  --fs-xl:24px;
-  --fs-2xl:28px;
-  --lh-tight:1.2;
-  --lh-ui:1.45;
-  --lh-body:1.62;
-  --tr-cap:.1em;
-  --tr-mono:.055em;
+  --fs-title:14px;
+  --fs-lg:17px;
+  --fs-xl:22px;
+  --fs-2xl:26px;
+  --lh-tight:1.15;
+  --lh-ui:1.4;
+  --lh-body:1.58;
+  --tr-cap:.12em;
+  --tr-mono:.06em;
 
   /* ── 8. 間距（4 的倍數為主，2px 只給圖示對齊） ─────────────── */
   --s-1:2px;
@@ -80,35 +83,35 @@
   --s-10:24px;
   --s-11:32px;
 
-  /* ── 9. 圓角 ─────────────────────────────────────────────── */
-  --r-xs:3px;
-  --r-sm:5px;
-  --r-md:7px;
-  --r-lg:10px;
-  --r-pill:999px;
-  --r-panel:var(--r-md);
-  --r-card:var(--r-sm);
-  --r-ctl:6px;
+  /* ── 9. 圓角：幾何一律直角，2px 只留給控制項避免割手 ───────── */
+  --r-xs:1px;
+  --r-sm:2px;
+  --r-md:2px;
+  --r-lg:3px;
+  --r-pill:2px;
+  --r-panel:0;
+  --r-card:0;
+  --r-ctl:2px;
 
-  /* ── 10. 陰影 ────────────────────────────────────────────── */
-  --e-1:inset 0 1px 0 rgba(255,255,255,.03);
-  --e-2:0 10px 24px -18px #000;
-  --e-3:0 26px 60px -34px #000;
+  /* ── 10. 陰影：文件不做投影，只有浮層用一次深影 ─────────────── */
+  --e-1:inset 0 1px 0 rgba(255,255,255,.02);
+  --e-2:none;
+  --e-3:0 18px 48px -24px #000;
 
-  /* ── 11. 動效 ────────────────────────────────────────────── */
-  --dur-1:120ms;
-  --dur-2:200ms;
-  --dur-3:320ms;
+  /* ── 11. 動效：短、只用於狀態，不用於轉場 ─────────────────── */
+  --dur-1:90ms;
+  --dur-2:140ms;
+  --dur-3:220ms;
   --ease:cubic-bezier(.2,.6,.3,1);
 
   /* ── 12. 版面尺吋 ────────────────────────────────────────── */
-  --rail-w:272px;
-  --rail-right-w:clamp(360px,25vw,480px);
-  --topbar-h:52px;
-  --statusbar-h:38px;
-  --ctl-h:28px;
-  --ctl-h-sm:24px;
-  --row-h:34px;
+  --rail-w:264px;
+  --rail-right-w:clamp(340px,23vw,460px);
+  --topbar-h:48px;
+  --statusbar-h:34px;
+  --ctl-h:26px;
+  --ctl-h-sm:22px;
+  --row-h:30px;
 
   /* ── 13. 圖層 ────────────────────────────────────────────── */
   --z-sticky:20;
@@ -117,15 +120,10 @@
   --z-grain:999;
 }
 
-/* ── 每頁主題色：只驅動「選中分頁、面板豎條、側欄 active、頁首索引」 ── */
-body[data-topic="collect"]{--accent:var(--amber);--accent-soft:rgba(240,165,0,.12);--accent-line:rgba(240,165,0,.42)}
-body[data-topic="queue"]  {--accent:var(--cyan);--accent-soft:rgba(67,212,228,.12);--accent-line:rgba(67,212,228,.42)}
-body[data-topic="sense"]  {--accent:var(--violet);--accent-soft:rgba(164,147,255,.13);--accent-line:rgba(164,147,255,.42)}
-body[data-topic="out"]    {--accent:var(--violet);--accent-soft:rgba(164,147,255,.13);--accent-line:rgba(164,147,255,.42)}
-body[data-topic="seat"]   {--accent:var(--green);--accent-soft:rgba(95,217,125,.12);--accent-line:rgba(95,217,125,.4)}
-body[data-topic="pipe"]   {--accent:var(--orange);--accent-soft:rgba(255,139,61,.12);--accent-line:rgba(255,139,61,.42)}
-body[data-topic="infra"]  {--accent:var(--cyan);--accent-soft:rgba(67,212,228,.12);--accent-line:rgba(67,212,228,.42)}
-body[data-topic="oss"]    {--accent:var(--amber);--accent-soft:rgba(240,165,0,.12);--accent-line:rgba(240,165,0,.42)}
-body[data-topic="studio"] {--accent:var(--amber);--accent-soft:rgba(240,165,0,.12);--accent-line:rgba(240,165,0,.42)}
-body[data-topic="person"] {--accent:var(--green);--accent-soft:rgba(95,217,125,.12);--accent-line:rgba(95,217,125,.4)}
-body[data-topic="review"] {--accent:var(--red);--accent-soft:rgba(238,92,76,.13);--accent-line:rgba(238,92,76,.45)}
+/* 分頁不再分色：辨識交給編號（01–11）與標籤，顏色只留給狀態。
+   保留這一條是為了讓 body 上的 data-topic 有明確語意，而不是拿來換色相。 */
+body[data-topic]{
+  --accent:var(--ice);
+  --accent-soft:rgba(230,237,242,.07);
+  --accent-line:rgba(230,237,242,.26);
+}

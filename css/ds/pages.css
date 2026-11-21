@@ -1,96 +1,135 @@
 /* ============================================================================
    ds/pages.css — 版面層
-   骨架（三欄）、頁面節奏、斷點。只動「位置與間距」，不重畫元件。
-   斷點與舊版 index2.css 對齊：1680 / 1439 / 1279 / 767。
+   骨架、頁面節奏、斷點，以及「舊版裝飾收斂」：把 100KB 舊 CSS 裡的
+   漸層、發光、懸浮位移壓成單色與細線，讓藍圖語言在每一頁都成立。
+   斷點與舊版對齊：1680 / 1439 / 1279 / 767。
    ============================================================================ */
 
-/* ── 1. 骨架 ───────────────────────────────────────────────── */
+/* ── 1. 骨架：三欄之間用 1px 線分隔，舞台透明讓網格透出來 ───── */
 .shell{
   grid-template-columns:var(--rail-w) minmax(0,1fr) var(--rail-right-w);
-  gap:1px;
-  background:var(--line-soft);
+  gap:0;
+  background:transparent;
 }
-.rail,.stage,.rail-right{background:var(--bg)}
-.stage{
-  padding:0 0 var(--s-6);
-  container:stage / inline-size;
-}
-.waterfall{padding:var(--s-7) var(--s-8) 0;gap:var(--s-6)}
-.waterfall.on{animation:ds-fade var(--dur-3) var(--ease)}
-@keyframes ds-fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.rail{background:var(--bg);border-right:1px solid var(--line)}
+.rail-right{background:var(--bg);border-left:1px solid var(--line)}
+.stage{padding:0 0 var(--s-6);container:stage / inline-size;background:transparent}
+.waterfall{padding:var(--s-5) var(--s-5) 0;gap:var(--s-3)}
+/* 切頁不淡入：任何 .on 上的動畫都會讓「無感切頁」破功 */
+.waterfall.on{animation:none}
 
-/* 分頁頭：內容捲動時保留一條底部投影 */
-.topic-bar{box-shadow:0 18px 26px -26px #000}
-
-/* ── 2. 各頁節奏（只補間距，不改內容結構） ─────────────────── */
-#topic-collect .collect-stats{gap:var(--s-3)}
+/* ── 2. 各頁節奏 ───────────────────────────────────────────── */
+#topic-collect .collect-stats{gap:var(--s-2)}
 #topic-collect .collect-stat{
-  border:1px solid var(--line);border-radius:var(--r-sm);
-  background:var(--surface-2);padding:var(--s-4) var(--s-5);
+  border:1px solid var(--line);border-radius:0;
+  background:var(--surface);padding:var(--s-3) var(--s-4);
 }
 #topic-collect .collect-stat b{font-size:var(--fs-lg);margin-top:1px}
 #topic-collect .collect-form{
-  border:1px solid var(--line);border-radius:var(--r-md);
-  background:var(--surface-2);padding:var(--s-6);gap:var(--s-4);
+  border:1px solid var(--line);border-radius:0;
+  background:var(--surface);padding:var(--s-4) var(--s-5);gap:var(--s-3);
 }
-#topic-collect .collect-form label{font-size:10px;letter-spacing:.06em;gap:var(--s-2)}
+#topic-collect .collect-form label{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;gap:var(--s-1)}
 #topic-collect .ccard{
-  border:1px solid var(--line);border-radius:var(--r-md);
-  background:var(--surface-2);padding:var(--s-5) var(--s-6);
+  border:1px solid var(--line);border-radius:0;
+  background:var(--surface);padding:var(--s-3) var(--s-4);
 }
 #topic-collect .ccard:hover{border-color:var(--line-strong)}
-#topic-queue .lane{gap:var(--s-3)}
+#topic-queue .lane{gap:var(--s-2)}
 
-/* ── 3. 容器查詢：舞台變窄時先收說明，不壓縮資料 ───────────── */
+/* ── 3. 容器查詢：舞台變窄先收說明，不壓縮資料 ─────────────── */
 @container stage (max-width:980px){
-  .topic-head{padding:var(--s-5) var(--s-6) var(--s-3)}
-  .topic-tabs{padding:0 var(--s-6) var(--s-3)}
+  .topic-head{padding:var(--s-4) var(--s-4) var(--s-2)}
+  .topic-tabs{padding:0 var(--s-4)}
   .topic-hint{display:none}
-  .waterfall{padding:var(--s-6) var(--s-6) 0}
-  .panel-body{padding:var(--s-6)}
-  .kpis{grid-template-columns:repeat(auto-fit,minmax(136px,1fr))}
+  .waterfall{padding:var(--s-4) var(--s-4) 0}
+  .panel-body{padding:var(--s-3) var(--s-4)}
+  .kpis{grid-template-columns:repeat(auto-fit,minmax(128px,1fr))}
 }
 @container stage (max-width:680px){
-  #topicTitle{font-size:17px}
+  #topicTitle{font-size:16px}
   .th-kicker{font-size:9px}
-  .waterfall{padding:var(--s-5) var(--s-4) 0;gap:var(--s-4)}
-  .panel-head{padding:var(--s-2) var(--s-5)}
-  .panel-body{padding:var(--s-4)}
+  .waterfall{padding:var(--s-3) var(--s-3) 0;gap:var(--s-2)}
+  .panel-head{padding:var(--s-1) var(--s-3)}
+  .panel-body{padding:var(--s-3)}
   .collect-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 
-/* ── 4. 斷點（與舊版一致，改用權杖） ───────────────────────── */
+/* ── 4. 舊版裝飾收斂 ───────────────────────────────────────── */
+/* 4.1 彩色漸層 → 平面 */
+.kb-panel.task,.kb-panel.world,
+.sync-card.busy,.sync-card.free,.sync-card.reserve,
+.scard[data-state="warn"],.scard[data-state="alarm"],
+.pipe-path.company,.flow-src,.par-now,.flow-wave.is-par,
+.load-panel,.load-panel.mcp{
+  background:var(--surface-2);
+}
+.ide-welcome{background:var(--surface-2)}
+.ide-find{background:var(--surface-3);border-bottom-color:var(--line)}
+.ide-tool{background:var(--surface-3);border-color:var(--line-strong);color:var(--text)}
+.ide-tool:hover{border-color:var(--line-strong);color:var(--text)}
+.ide-tab.on{background:var(--surface);color:var(--text);box-shadow:inset 0 2px 0 var(--accent)}
+.peek{background:var(--surface);box-shadow:-8px 0 24px rgba(0,0,0,.5);animation:none}
+
+/* 4.2 發光與浮起 → 細線；選中改用 accent 細線 */
+.scard:hover,.qcard:hover,.seat:hover{transform:none}
+.scard:hover,.qcard:hover,.seat:hover,.role-card.selected,.qcard.linked,
+.flow-node.linked,.oss-card.selected,.par-lane.sel,.ccard.linked,
+.ms.run .node-dot,.dot{box-shadow:none}
+.role-card.selected,.qcard.linked,.oss-card.selected,
+.par-lane.sel,.ccard.linked{border-color:var(--line-strong)}
+.scard.selected{outline:1px solid var(--accent);outline-offset:-1px}
+.flow-node[data-state="wait"]{box-shadow:inset 2px 0 0 var(--orange)}
+.flow-node[data-state="proc"]{box-shadow:inset 2px 0 0 var(--amber)}
+.dot{animation:none}
+
+/* 4.3 進度条與計量：單色、方角 */
+.mini-progress .mp-fill{background:var(--amber)}
+.mini-progress .mp-fill.gr{background:var(--green)}
+.mini-progress .mp-fill.cy{background:var(--cyan)}
+.mini-progress .mp-fill.vi{background:var(--violet)}
+.qbar i,.waitbar i,.fall-row i,.pulse-strip i.cool{background:var(--cyan)}
+.fall-row.hot i{background:var(--amber)}
+.pulse-strip i.hot{background:var(--amber)}
+.bar-fill{background:var(--accent)}
+.peek-meter i::before{background:var(--accent)}
+.flow-join::before{background:var(--line-strong)}
+.gauge{background:conic-gradient(var(--accent) calc(var(--pct) * 1%), var(--track) 0)}
+.gauge-hole{background:var(--surface)}
+.thr{background:linear-gradient(90deg,rgba(99,184,128,.3) 0 55%,rgba(207,160,74,.3) 55% 82%,rgba(220,95,87,.32) 82% 100%)}
+
+/* ── 5. 斷點 ───────────────────────────────────────────────── */
 @media(max-width:1680px){
-  .shell{grid-template-columns:256px minmax(0,1fr) 440px}
+  .shell{grid-template-columns:252px minmax(0,1fr) 420px}
 }
 @media(max-width:1439px){
-  .shell{grid-template-columns:248px minmax(0,1fr) 404px}
+  .shell{grid-template-columns:244px minmax(0,1fr) 388px}
 }
 @media(max-width:1279px){
-  .shell{grid-template-columns:260px minmax(0,1fr)}
-  .rail-right{grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--s-4);padding:var(--s-5) var(--s-6) var(--s-9)}
-  /* 產出庫的 IDE 版面：舊版用 100dvh - 108px 硬扣，分頁頭長高後會溢出，改回彈性填滿 */
+  .shell{grid-template-columns:248px minmax(0,1fr)}
+  .rail-right{border-left:0;border-top:1px solid var(--line);grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--s-2);padding:var(--s-4) var(--s-4) var(--s-9)}
   #topic-out.on{height:auto;min-height:0}
 }
 @media(max-width:767px){
   .shell{grid-template-columns:minmax(0,1fr)}
-  .topbar{padding:var(--s-3) var(--s-4);gap:var(--s-3)}
-  .topic-head{padding:var(--s-4) var(--s-5) var(--s-2)}
-  .topic-tabs{padding:0 var(--s-5) var(--s-2)}
+  .rail{border-right:0}
+  .topbar{padding:var(--s-2) var(--s-3);gap:var(--s-2)}
+  .topic-head{padding:var(--s-3) var(--s-3) var(--s-1)}
+  .topic-tabs{padding:0 var(--s-3)}
   #topicTitle{font-size:16px}
   .topic-hint{display:none}
-  .waterfall{padding:var(--s-4) var(--s-4) 0}
+  .waterfall{padding:var(--s-3) var(--s-3) 0}
 
-  /* 底部導覽：11 個分頁改成可橫向捲動，不再硬塞 11 欄 */
+  /* 底部導覽：11 個分頁橫向捲動 */
   .tabs .inner{
-    display:flex;justify-content:flex-start;gap:2px;
+    display:flex;justify-content:flex-start;gap:0;
     overflow-x:auto;overflow-y:hidden;
     scrollbar-width:none;-webkit-overflow-scrolling:touch;
   }
   .tabs .inner::-webkit-scrollbar{height:0}
-  .tab{flex:0 0 auto;min-width:62px;padding:6px 8px;border-radius:var(--r-ctl)}
-  .tab.active{background:var(--accent-soft)}
+  .tab{flex:0 0 auto;min-width:60px;padding:5px 6px;border-radius:0}
+  .tab.active{background:var(--surface-3)}
 
-  .rail-right{grid-template-columns:minmax(0,1fr);padding:0 var(--s-4) var(--s-8)}
+  .rail-right{grid-template-columns:minmax(0,1fr);padding:0 var(--s-3) var(--s-8)}
   .statusbar{display:none}
 }

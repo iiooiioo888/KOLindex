@@ -3,7 +3,7 @@
    只作用在這個子分頁，不動全域 .table / .pill。
    ============================================================ */
 .conn-bar{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;padding:10px 14px;border-bottom:1px solid var(--line-soft);font-family:var(--mono);font-size:var(--fs-meta);color:var(--dim)}
-.conn-kv{display:inline-flex;align-items:center;gap:5px;padding:2px 9px;border-radius:99px;border:1px solid var(--line);background:var(--surface-2);white-space:nowrap}
+.conn-kv{display:inline-flex;align-items:center;gap:5px;padding:2px 9px;border-radius:2px;border:1px solid var(--line);background:var(--surface-2);white-space:nowrap}
 .conn-kv b{color:var(--text);font-weight:600;font-variant-numeric:tabular-nums}
 .conn-kv.ok{color:var(--green);border-color:rgba(95,217,125,.3)}
 .conn-kv.ok b{color:var(--green)}
@@ -17,7 +17,7 @@
 .conn-row[data-status="cooling"]{background:rgba(240,165,0,.045)}
 .conn-row[data-status="disabled"]{opacity:.7}
 .conn-jobs{display:inline-flex;flex-wrap:wrap;gap:4px}
-.job-chip{font-family:var(--mono);font-size:11px;line-height:1.6;padding:0 6px;border-radius:4px;border:1px solid var(--line);color:var(--faint);white-space:nowrap}
+.job-chip{font-family:var(--mono);font-size:11px;line-height:1.6;padding:0 6px;border-radius:2px;border:1px solid var(--line);color:var(--faint);white-space:nowrap}
 .job-chip.j-queued{color:var(--cyan);border-color:rgba(67,212,228,.3)}
 .job-chip.j-running{color:var(--amber-hot);border-color:rgba(255,192,67,.35)}
 .job-chip.j-backoff{color:var(--amber);border-color:rgba(240,165,0,.3)}
