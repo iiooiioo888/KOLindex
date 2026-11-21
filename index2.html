@@ -17,6 +17,7 @@
 <link rel="stylesheet" href="css/person.css?v=20261121">
 <link rel="stylesheet" href="css/review.css?v=20261121">
 <link rel="stylesheet" href="css/connectors.css?v=20261121">
+<link rel="stylesheet" href="css/jobs.css?v=20261121">
 </head>
 <body data-topic="queue">
 
@@ -617,6 +618,7 @@
           <button class="tab-btn" id="itab-bill" role="tab" aria-selected="false" aria-controls="pane-bill" data-pane="bill">帳單 6</button>
           <button class="tab-btn" id="itab-cost" role="tab" aria-selected="false" aria-controls="pane-cost" data-pane="cost">成本預算</button>
           <button class="tab-btn" id="itab-conn" role="tab" aria-selected="false" aria-controls="pane-conn" data-pane="conn">連接器 <span id="connTabN">—</span></button>
+          <button class="tab-btn" id="itab-jobs" role="tab" aria-selected="false" aria-controls="pane-jobs" data-pane="jobs">排程工作 <span id="jobsTabN">—</span></button>
           <div class="tabs-meta">
             <span>CPU 34%</span><span>MEM 2.8/8GB</span><span>本月 218h</span><span class="tone-orange">¥6,180/¥8,000</span>
           </div>
@@ -712,6 +714,25 @@
             </table>
           </div>
           <div class="conn-foot"><span id="connStatus" class="chip or">只讀 · 正在連後端</span><span>這裡不會改任何憑證；輪換留在 vault，頁面只反映後端回報的健康狀態。</span></div>
+        </div>
+        <div class="tab-pane" id="pane-jobs" role="tabpanel" aria-labelledby="itab-jobs">
+          <div class="jobs-bar" id="jobsSummary" aria-live="polite"><span class="jobs-kv">排程工作 <b>—</b></span></div>
+          <div class="jobs-filters" id="jobsFilters" role="group" aria-label="依狀態篩選工作">
+            <button type="button" class="mini-btn" data-state="all" aria-pressed="true">全部</button>
+            <button type="button" class="mini-btn" data-state="queued" aria-pressed="false">待跑</button>
+            <button type="button" class="mini-btn" data-state="running" aria-pressed="false">跑中</button>
+            <button type="button" class="mini-btn" data-state="backoff" aria-pressed="false">退避</button>
+            <button type="button" class="mini-btn" data-state="blocked" aria-pressed="false">受阻</button>
+            <button type="button" class="mini-btn" data-state="failed" aria-pressed="false">失敗</button>
+            <button type="button" class="mini-btn" data-state="succeeded" aria-pressed="false">完成</button>
+          </div>
+          <div class="roster-wrap plain">
+            <table class="table tbl-lg" id="jobsTable">
+              <thead><tr><th>#</th><th>連接器</th><th data-col="low">類型</th><th>狀態</th><th data-col="low">嘗試</th><th data-col="low">優先</th><th>帳號</th><th>時間</th><th data-col="low">錯誤</th></tr></thead>
+              <tbody id="jobsBody"><tr><td colspan="9" class="jobs-empty">正在連 kolindex-api…</td></tr></tbody>
+            </table>
+          </div>
+          <div class="jobs-foot"><span id="jobsStatus" class="chip or">只讀 · 正在連後端</span><span>GET /api/jobs · 只反映 crawl_job 現況，這裡不改排程也不重試。</span></div>
         </div>
       </div>
     </section>
@@ -1159,5 +1180,6 @@
 <script defer src="js/person.js?v=20261121"></script>
 <script defer src="js/review.js?v=20261121"></script>
 <script defer src="js/infra.js?v=20261121"></script>
+<script defer src="js/jobs.js?v=20261121"></script>
 </body>
 </html>
