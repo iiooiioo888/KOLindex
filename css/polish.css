@@ -1,0 +1,205 @@
+/* ============================================================
+   polish.css — 排版統一層（最後載入：只調呈現，不動結構）
+   1 基礎  2 頁框  3 面板  4 按鈕  5 表格  6 卡片
+   7 各分頁  8 捲軸  9 容器查詢  10 減少動態
+   ============================================================ */
+
+/* ---------- 1 基礎 ---------- */
+:root{
+  --r-panel:7px;
+  --r-card:6px;
+  --line-strong:#2a333a;
+  --shadow-panel:0 1px 0 rgba(255,255,255,.025) inset,0 18px 40px -34px #000;
+}
+body{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+::selection{background:rgba(240,165,0,.28);color:#fff}
+:focus-visible{outline:2px solid rgba(67,212,228,.7);outline-offset:2px;border-radius:3px}
+input::placeholder,textarea::placeholder{color:#5f686f}
+
+/* ---------- 2 頁框 ---------- */
+.stage{container-type:inline-size;container-name:stage}
+.waterfall{gap:14px;padding:16px 16px 6px}
+.topic-bar{padding:9px 11px;gap:5px}
+.topic-btn{padding:6px 10px;border-radius:5px;letter-spacing:.03em}
+.topic-btn[aria-selected="true"]{box-shadow:inset 0 0 0 1px rgba(240,165,0,.12)}
+.topic-hint{letter-spacing:.05em}
+
+/* ---------- 3 面板 ---------- */
+.panel{
+  border-color:var(--line-strong);
+  border-radius:var(--r-panel);
+  background:linear-gradient(180deg,#12171b 0%,#0f1316 100%);
+  box-shadow:var(--shadow-panel);
+}
+.panel-head{min-height:46px;padding:10px 14px;background:linear-gradient(180deg,rgba(255,255,255,.02),transparent)}
+.panel-title{position:relative;display:flex;align-items:center;min-height:18px;padding-left:11px}
+.panel-title::before{
+  content:"";position:absolute;left:0;top:50%;transform:translateY(-50%);
+  width:3px;height:14px;border-radius:2px;
+  background:linear-gradient(180deg,var(--amber),rgba(240,165,0,.25));
+  box-shadow:0 0 10px rgba(240,165,0,.35);
+}
+.panel-title .en{margin-left:9px}
+.panel-tools{gap:6px;padding:2px 0}
+.panel-body{padding:14px}
+.kicker{letter-spacing:.08em}
+.note{line-height:1.8}
+.p-cap{border-radius:0 6px 6px 0;padding:10px 12px;line-height:1.8}
+
+/* ---------- 4 按鈕 / 頁籤 ---------- */
+.mini-btn,.act-btn,.tab-btn{border-radius:5px}
+.mini-btn{
+  height:27px;display:inline-flex;align-items:center;justify-content:center;
+  padding:0 11px;letter-spacing:.05em;
+  transition:color .18s,border-color .18s,background .18s,transform .12s;
+}
+.mini-btn:active,.act-btn:active{transform:translateY(1px)}
+.mini-btn[aria-pressed="true"]{
+  color:var(--amber-hot);border-color:rgba(240,165,0,.5);background:rgba(240,165,0,.12);
+}
+.mini-btn[disabled]{pointer-events:none}
+.tab-btn{padding:6px 13px;letter-spacing:.05em}
+.tab-btn[aria-selected="true"]{box-shadow:inset 0 0 0 1px rgba(240,165,0,.12)}
+.tabs-row{padding:8px 14px;gap:4px;background:rgba(255,255,255,.008)}
+
+/* ---------- 5 表格 ---------- */
+.roster-wrap{border-color:#242c33;border-radius:var(--r-card);background:var(--surface)}
+.table th{
+  padding:9px 11px;letter-spacing:.07em;
+  background:#14191e;border-bottom:1px solid #2a323a;
+}
+.table th:first-child{background:#14191e}
+.table td{padding:9px 11px;line-height:1.5;border-bottom:1px solid #1b2127}
+.table tbody tr:nth-child(even) td:not(:first-child){background:rgba(255,255,255,.012)}
+.table tbody tr:hover td:not(:first-child){background:rgba(255,255,255,.04)}
+.table tbody tr:hover td:first-child{background:#1c2329}
+.table tbody tr:last-child td{border-bottom:0}
+.table td.mono,.table td.num,.kpi .kv2,.collect-stat b,.sc-val,.conn-kv b{font-variant-numeric:tabular-nums}
+
+/* 小節標題與鍵值列：統一節奏 */
+.angle-head{margin:0 0 9px;padding-bottom:6px;border-bottom:1px solid var(--line-soft)}
+.angle-head .ah{letter-spacing:.09em}
+.kv{line-height:1.7}
+.note{line-height:1.85}
+
+/* ---------- 6 卡片 ---------- */
+.ccard,.collect-form,.micro-card,.kind-card,.scard,.lane,.qcard,.oss-card,.oss-detail,
+.person-side,.person-head,.person-timeline,.review-side,.review-detail,.review-log,
+.tl-item,.studio-form,.studio-work,.rr{border-radius:var(--r-card)}
+.ccard,.oss-card,.tl-item{transition:border-color .2s,background .2s,box-shadow .2s}
+.ccard:hover,.oss-card:hover,.tl-item:hover{border-color:#2e3940;box-shadow:0 12px 28px -26px #000}
+
+/* ---------- 7 各分頁 ---------- */
+/* 任務收集 */
+.collect-stats{gap:9px;margin-bottom:12px}
+.collect-stat{
+  position:relative;overflow:hidden;
+  padding:10px 12px 10px 14px;border-color:#242c33;
+  background:linear-gradient(180deg,#181d22,#12161a);
+}
+.collect-stat::before{
+  content:"";position:absolute;left:0;top:10px;bottom:10px;width:2px;border-radius:2px;
+  background:rgba(240,165,0,.55);
+}
+.collect-stat span{letter-spacing:.06em}
+.collect-stat b{font-size:21px;margin-top:3px}
+.collect-form{
+  padding:14px;gap:10px;border-color:#242c33;
+  background:linear-gradient(180deg,#171c21,#12161a);
+}
+.collect-form label{letter-spacing:.05em}
+.collect-form input,.collect-form select{
+  border-color:#242c33;border-radius:5px;padding:8px 10px;background:#0b0f12;
+  transition:border-color .16s,box-shadow .16s;
+}
+.collect-form input:focus,.collect-form select:focus{
+  outline:none;border-color:rgba(240,165,0,.75);
+  box-shadow:0 0 0 3px rgba(240,165,0,.12);
+}
+.ccard{padding:12px 14px;border-color:#242c33;background:linear-gradient(180deg,#171c21,#13171b)}
+.ccard h4{margin-top:6px;line-height:1.3}
+.ccard .cmeta{line-height:1.6}
+.ccard-actions{margin-top:10px;padding-top:9px;border-top:1px dashed #1f262c}
+.collect-empty{padding:26px 10px;text-align:center}
+
+/* 任務隊列 */
+.kpis{border-radius:var(--r-panel);border-color:#242c33}
+.kpi{padding:11px 12px 10px;transition:background .2s}
+.kpi:hover{background:#151b20}
+.kpi .kv2{font-size:26px}
+.kpi .kbar{margin-top:8px}
+.lanes{gap:10px}
+.lane{background:linear-gradient(180deg,#171c21,#12161a)}
+.lane-head{padding:9px 11px;background:rgba(255,255,255,.015)}
+.lane-count{font-variant-numeric:tabular-nums}
+
+/* 基礎設施 */
+.conn-bar{gap:8px}
+.conn-kv{padding:3px 9px}
+
+/* 人物檔案 */
+.person-grid,.review-grid{gap:14px}
+.person-side,.review-side{padding:14px;background:linear-gradient(180deg,#171c21,#12161a)}
+.person-head,.review-detail,.review-log{padding:14px;background:linear-gradient(180deg,#171c21,#12161a)}
+.person-timeline{background:#101418}
+.tl-item{background:#151a1f;padding:9px 11px;margin-bottom:8px}
+.pl-item{padding:9px 10px}
+
+/* 開源組件 */
+.oss-list{gap:8px}
+.oss-card{padding:12px 13px}
+.oss-kpi{padding:10px 12px;background:linear-gradient(180deg,#171c21,#12161a)}
+.oss-detail{padding:16px 16px 18px}
+
+/* UI 生成 */
+.studio-form{padding:14px;gap:10px;background:linear-gradient(180deg,#171c21,#12161a)}
+.studio-stage{
+  background-image:radial-gradient(rgba(232,226,214,.05) 1px,transparent 1px);
+  background-size:15px 15px;background-position:-1px -1px;
+}
+
+/* ---------- 8 捲軸 ---------- */
+.stage::-webkit-scrollbar,.rail::-webkit-scrollbar,.rail-right::-webkit-scrollbar,
+.person-list::-webkit-scrollbar,.review-list::-webkit-scrollbar,.person-timeline::-webkit-scrollbar,
+.oss-list::-webkit-scrollbar,.oss-detail::-webkit-scrollbar{width:9px;height:9px}
+.stage::-webkit-scrollbar-thumb,.rail::-webkit-scrollbar-thumb,.rail-right::-webkit-scrollbar-thumb,
+.person-list::-webkit-scrollbar-thumb,.review-list::-webkit-scrollbar-thumb,.person-timeline::-webkit-scrollbar-thumb,
+.oss-list::-webkit-scrollbar-thumb,.oss-detail::-webkit-scrollbar-thumb{
+  background:#2c353d;border-radius:99px;border:2px solid transparent;background-clip:content-box;
+}
+.stage::-webkit-scrollbar-thumb:hover,.person-list::-webkit-scrollbar-thumb:hover,
+.review-list::-webkit-scrollbar-thumb:hover,.person-timeline::-webkit-scrollbar-thumb:hover{background:#3c4852}
+
+/* ---------- 9 容器查詢：以「舞台實際寬度」排版，不以視窗寬度 ---------- */
+@container stage (max-width:900px){
+  .waterfall{padding:12px 13px 4px;gap:12px}
+  .panel-head{padding:9px 12px}
+  .panel-body{padding:12px}
+  .collect-layout{grid-template-columns:minmax(0,1fr)}
+  .collect-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .collect-form .mini-btn{align-self:stretch}
+  .studio-grid{grid-template-columns:minmax(0,1fr)}
+  .person-grid,.review-grid{grid-template-columns:minmax(0,1fr)}
+  .kb-duo{grid-template-columns:minmax(0,1fr)}
+  .person-side,.review-side{padding:12px}
+}
+@container stage (max-width:600px){
+  .collect-stats{grid-template-columns:minmax(0,1fr)}
+  .panel-title{white-space:normal}
+  .panel-title .en{display:none}
+  .panel-tools{gap:4px}
+}
+
+/* ---------- 10 減少動態 ---------- */
+/* ---------- 11 版面寬度：右軌改彈性，把寬度讓給舞台 ---------- */
+@media (min-width:1440px) and (max-width:1680px){
+  .shell{grid-template-columns:260px minmax(0,1fr) clamp(380px,26vw,460px)}
+}
+@media (min-width:1681px){
+  .shell{grid-template-columns:280px minmax(0,1fr) clamp(380px,26vw,500px)}
+}
+
+@media (prefers-reduced-motion:reduce){
+  .ccard,.oss-card,.tl-item{transition:none}
+  .ccard:hover,.oss-card:hover,.tl-item:hover{box-shadow:none}
+}
