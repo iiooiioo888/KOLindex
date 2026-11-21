@@ -144,11 +144,11 @@ mark{background:rgba(207,160,74,.35);color:var(--text);border-radius:2px;padding
 .topic-btn:hover{color:var(--text);border-color:#2e3a41}
 .topic-btn[aria-selected="true"]{color:var(--amber);border-color:rgba(207,160,74,.5);background:rgba(207,160,74,.1)}
 .topic-hint{margin-left:auto;font-family:var(--mono);font-size:var(--fs-meta);letter-spacing:.04em;color:var(--faint);white-space:nowrap;flex:0 0 auto}
-.collect-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:10px}
+.collect-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--col-gap);margin-bottom:var(--frame-y)}
 .collect-stat{border:1px solid var(--line);border-radius:2px;background:var(--surface-2);padding:8px 10px;min-width:0}
 .collect-stat span{display:block;font-family:var(--mono);font-size:var(--fs-meta);letter-spacing:.04em;color:var(--faint)}
 .collect-stat b{display:block;margin-top:2px;font-family:var(--disp);font-size:var(--fs-lg);font-weight:700;color:var(--text)}
-.collect-layout{display:grid;grid-template-columns:minmax(200px,280px) minmax(0,1fr);gap:10px;align-items:start;min-width:0;max-width:100%}
+.collect-layout{display:grid;grid-template-columns:var(--side-w) minmax(0,1fr);gap:var(--col-gap);align-items:start;min-width:0;max-width:100%}
 .collect-form{border:1px solid var(--line);border-radius:2px;background:var(--surface-2);padding:12px;display:flex;flex-direction:column;gap:8px}
 .collect-form label{display:flex;flex-direction:column;gap:4px;font-family:var(--mono);font-size:var(--fs-meta);color:var(--faint)}
 .collect-form input,.collect-form select{width:100%;border:1px solid var(--line);border-radius:2px;background:var(--bg);color:var(--text);font-family:var(--body);font-size:var(--fs-ui);padding:7px 8px}
@@ -661,7 +661,7 @@ mark{background:rgba(207,160,74,.35);color:var(--text);border-radius:2px;padding
 .cost-row .cpct{font-family:var(--mono);font-size:var(--fs-meta);color:var(--faint);text-align:right;white-space:nowrap}
 
 /* ===== INFRA ===== */
-.tabs-row{display:flex;gap:3px;padding:7px 12px;border-bottom:1px solid var(--line-soft);flex-wrap:nowrap;overflow-x:auto;align-items:center;white-space:nowrap}
+.tabs-row{display:flex;gap:var(--s-3);padding:0 var(--frame-x);min-height:var(--bar-h);border-bottom:1px solid var(--line-soft);flex-wrap:nowrap;overflow-x:auto;align-items:center;white-space:nowrap}
 .tab-btn{font-family:var(--mono);font-size:var(--fs-meta);letter-spacing:.04em;text-transform:uppercase;
   padding:5px 12px;border:1px solid var(--line);border-radius:2px;background:var(--surface-2);color:var(--dim);transition:all .2s;white-space:nowrap;flex:0 0 auto}
 .tab-btn:hover{color:var(--text);border-color:#2e3a41}
@@ -669,6 +669,8 @@ mark{background:rgba(207,160,74,.35);color:var(--text);border-radius:2px;padding
 .tabs-meta{margin-left:auto;display:flex;gap:13px;font-family:var(--mono);font-size:var(--fs-meta);letter-spacing:.04em;color:var(--faint);flex:0 0 auto;padding-left:10px}
 .tab-pane{display:none}
 .tab-pane.on{display:block}
+/* 基礎設施子分頁的表格與其他分頁同一個內縮，不再貼齊面板邊 */
+#topic-infra .tab-pane > .roster-wrap{margin:var(--frame-y) var(--frame-x)}
 .act-btn{font-family:var(--mono);font-size:var(--fs-meta);letter-spacing:.08em;text-transform:uppercase;
   padding:4px 8px;border:1px solid var(--line);border-radius:2px;background:var(--surface-3);color:var(--dim);transition:all .18s;white-space:nowrap}
 .act-btn:hover{color:var(--amber-hot);border-color:rgba(207,160,74,.45);background:rgba(207,160,74,.1)}
@@ -856,7 +858,7 @@ body.reduce-motion .tab-pane{
 .oss-kpi{border:1px solid var(--line);border-radius:2px;background:var(--surface-2);padding:8px 10px;min-width:0}
 .oss-kpi .ok-l{font-family:var(--mono);font-size:var(--fs-meta);letter-spacing:.06em;color:var(--faint)}
 .oss-kpi .ok-v{font-family:var(--disp);font-size:var(--fs-lg);font-weight:700;margin-top:2px}
-.oss-layout{flex:1 1 auto;min-height:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:10px}
+.oss-layout{flex:1 1 auto;min-height:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:var(--col-gap)}
 .load-duo{flex:1 1 auto;min-height:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));gap:10px}
 .src-board{flex:0 0 auto;border:1px solid var(--line);border-radius:2px;background:var(--surface-2);overflow:hidden}
 .src-board .roster-wrap{border:0;border-radius:0;max-height:240px}

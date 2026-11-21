@@ -4,11 +4,11 @@
    ============================================================ */
 
 /* ---------- 版面 ---------- */
-.studio-grid{display:grid;grid-template-columns:minmax(270px,330px) minmax(0,1fr);gap:12px;align-items:start}
+.studio-grid{display:grid;grid-template-columns:var(--side-w) minmax(0,1fr);gap:var(--col-gap);align-items:start}
 @media (max-width:1080px){.studio-grid{grid-template-columns:minmax(0,1fr)}}
 
 .studio-form{border:1px solid var(--line);border-radius:2px;background:var(--surface-2);
-  padding:12px;display:flex;flex-direction:column;gap:9px;min-width:0}
+  padding:var(--frame-y) var(--frame-x);display:flex;flex-direction:column;gap:var(--s-4);min-width:0}
 .studio-form label{display:flex;flex-direction:column;gap:4px;font-family:var(--mono);font-size:var(--fs-meta);color:var(--faint)}
 .studio-form input,.studio-form select,.studio-form textarea{
   width:100%;border:1px solid var(--line);border-radius:2px;background:var(--bg);color:var(--text);
@@ -30,7 +30,7 @@
 /* ---------- 右側工作區 ---------- */
 .studio-work{border:1px solid var(--line);border-radius:2px;background:var(--surface);overflow:hidden;min-width:0}
 .studio-view{position:relative;min-width:0}
-.studio-bar{display:flex;align-items:center;gap:8px;padding:7px 9px;border-bottom:1px solid var(--line-soft);
+.studio-bar{display:flex;align-items:center;gap:8px;padding:0 var(--frame-x);min-height:var(--bar-h);border-bottom:1px solid var(--line-soft);
   background:var(--surface-2);flex-wrap:wrap;min-width:0}
 .studio-seg{display:flex;border:1px solid var(--line);border-radius:2px;overflow:hidden;flex:0 0 auto}
 .studio-seg button{font-family:var(--mono);font-size:var(--fs-meta);letter-spacing:.04em;color:var(--faint);
@@ -40,7 +40,7 @@
 .studio-bar .spacer{flex:1 1 auto}
 .studio-bar .mini-btn{flex:0 0 auto}
 
-.studio-stage{position:relative;padding:14px;overflow:auto;max-height:min(64vh,620px);min-height:260px;
+.studio-stage{position:relative;padding:var(--frame-x);overflow:auto;max-height:min(64vh,620px);min-height:260px;
   background:
     linear-gradient(rgba(255,255,255,.022) 1px,transparent 1px) 0 0/100% 22px,
     linear-gradient(90deg,rgba(255,255,255,.022) 1px,transparent 1px) 0 0/22px 100%,
@@ -60,13 +60,13 @@
 @keyframes studioSpin{to{transform:rotate(360deg)}}
 .studio-busy .el{color:var(--faint);letter-spacing:0}
 
-.studio-err{margin:10px 14px;padding:9px 11px;border-left:2px solid var(--red);background:rgba(220,95,87,.07);
+.studio-err{margin:var(--frame-y) var(--frame-x);padding:var(--frame-y) var(--frame-x);border-left:2px solid var(--red);background:rgba(220,95,87,.07);
   color:var(--dim);font-size:var(--fs-ui);line-height:1.7;overflow-wrap:anywhere}
 .studio-err b{color:var(--red);font-weight:600}
 .studio-raw{max-height:180px;overflow:auto;margin-top:7px;padding:8px;border:1px solid var(--line);border-radius:2px;
   background:var(--bg);font-family:var(--mono);font-size:11px;line-height:1.65;color:var(--faint);white-space:pre-wrap;overflow-wrap:anywhere}
 
-.studio-json{margin:0;padding:14px;max-height:min(64vh,620px);overflow:auto;font-family:var(--mono);font-size:12px;
+.studio-json{margin:0;padding:var(--frame-x);max-height:min(64vh,620px);overflow:auto;font-family:var(--mono);font-size:12px;
   line-height:1.7;color:#c9c4b9;background:var(--bg-deep);white-space:pre;tab-size:2}
 
 /* ---------- 線框圖 ---------- */

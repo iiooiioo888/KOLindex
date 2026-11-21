@@ -176,7 +176,7 @@
   background:var(--surface);overflow:hidden;box-shadow:none;
 }
 .panel-head{
-  min-height:36px;padding:var(--s-2) var(--s-4);gap:var(--s-3);
+  min-height:var(--frame-h);padding:0 var(--frame-x);gap:var(--s-3);
   background:transparent;
   border-bottom:1px solid var(--line);
 }
@@ -193,7 +193,14 @@
   color:var(--faint);margin-left:7px;font-weight:400;
 }
 .panel-tools{gap:var(--s-1)}
-.panel-body{padding:var(--s-4)}
+.panel-body{padding:var(--frame-y) var(--frame-x)}
+/* 工具列：篩選、頁籤、統計條一律放在這裡，高度與內縮跟標題列一致 */
+.panel-bar{
+  display:flex;align-items:center;gap:var(--s-3);
+  min-height:var(--bar-h);padding:0 var(--frame-x);
+  border-bottom:1px solid var(--line-soft);
+  overflow-x:auto;overflow-y:hidden;white-space:nowrap;
+}
 .kicker{
   font-family:var(--mono);font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;
   color:var(--faint);
@@ -293,7 +300,7 @@
 .ks{font-size:9.5px;color:var(--faint);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
 /* ── 8. 右軌 ───────────────────────────────────────────────── */
-.rail-right{padding:var(--s-4) var(--s-3) var(--s-10);gap:var(--s-3)}
+.rail-right{padding:var(--frame-y) var(--frame-x) var(--s-10);gap:var(--col-gap)}
 .rr{border:1px solid var(--line);border-radius:0;background:var(--surface);overflow:hidden}
 .rr-head{min-height:32px;padding:var(--s-2) var(--s-4);border-bottom:1px solid var(--line)}
 .rr-title{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase}

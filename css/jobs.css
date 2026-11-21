@@ -2,7 +2,7 @@
    jobs.css · 基礎設施 → 排程工作（#pane-jobs）
    只作用在這個子分頁；表格與 pill 沿用全域樣式。
    ============================================================ */
-.jobs-bar{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;padding:10px 14px;border-bottom:1px solid var(--line-soft);font-family:var(--mono);font-size:var(--fs-meta);color:var(--dim)}
+.jobs-bar{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;padding:0 var(--frame-x);min-height:var(--bar-h);border-bottom:1px solid var(--line-soft);font-family:var(--mono);font-size:var(--fs-meta);color:var(--dim)}
 .jobs-kv{display:inline-flex;align-items:center;gap:5px;padding:2px 9px;border-radius:2px;border:1px solid var(--line);background:var(--surface-2);white-space:nowrap}
 .jobs-kv b{color:var(--text);font-weight:600;font-variant-numeric:tabular-nums}
 .jobs-kv.ok,.jobs-kv.ok b{color:var(--green)}
@@ -12,11 +12,11 @@
 .jobs-kv.bad,.jobs-kv.bad b{color:var(--red)}
 .jobs-kv.bad{border-color:rgba(220,95,87,.35)}
 
-.jobs-filters{display:flex;flex-wrap:wrap;gap:6px;padding:9px 14px;border-bottom:1px solid var(--line-soft)}
+.jobs-filters{display:flex;flex-wrap:wrap;align-items:center;gap:var(--s-3);padding:0 var(--frame-x);min-height:var(--bar-h);border-bottom:1px solid var(--line-soft)}
 .jobs-filters .mini-btn{font-family:var(--mono);font-size:11px;letter-spacing:.02em}
 .jobs-filters .mini-btn[aria-pressed="true"]{color:var(--text);border-color:var(--line-strong);background:var(--surface-3)}
 
-#pane-jobs .table td{padding:8px 12px;vertical-align:middle}
+#pane-jobs .table td{padding:7px 9px;vertical-align:middle}
 #pane-jobs .table th{white-space:nowrap;font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--faint)}
 .jobs-row[data-state="running"]{background:rgba(207,160,74,.045)}
 .jobs-row[data-state="backoff"]{background:rgba(207,160,74,.03)}
@@ -25,6 +25,6 @@
 .jobs-row .pill{font-family:var(--mono);font-size:11px}
 .jobs-err{color:var(--red);font-size:11px}
 .jobs-empty{color:var(--faint);text-align:center;padding:26px 14px;line-height:1.9}
-.jobs-foot{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;padding:9px 14px;border-top:1px solid var(--line-soft);font-size:var(--fs-meta);color:var(--faint)}
+.jobs-foot{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;padding:var(--frame-y) var(--frame-x);min-height:var(--bar-h);border-top:1px solid var(--line-soft);font-size:var(--fs-meta);color:var(--faint)}
 .jobs-foot .chip{font-family:var(--mono)}
-@media(max-width:720px){.jobs-bar{font-size:11px;gap:5px 7px}.jobs-filters{padding:8px 10px}}
+@media(max-width:720px){.jobs-bar{font-size:11px;gap:5px 7px}.jobs-filters{padding:0 var(--s-4)}}

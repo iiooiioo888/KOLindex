@@ -162,12 +162,12 @@
       <div class="panel">
         <div class="panel-head">
           <div class="panel-title">任務收集<span class="en">inbox · before queue</span></div>
-          <div class="panel-tools" id="collectFilters" role="group" aria-label="收集狀態過濾">
-            <button type="button" class="mini-btn" data-collect="inbox" aria-pressed="true">待收</button>
-            <button type="button" class="mini-btn" data-collect="queued" aria-pressed="false">已入列</button>
-            <button type="button" class="mini-btn" data-collect="skip" aria-pressed="false">已略過</button>
-            <button type="button" class="mini-btn" data-collect="all" aria-pressed="false">全部</button>
-          </div>
+        </div>
+        <div class="panel-bar" id="collectFilters" role="group" aria-label="收集狀態過濾">
+          <button type="button" class="mini-btn" data-collect="inbox" aria-pressed="true">待收</button>
+          <button type="button" class="mini-btn" data-collect="queued" aria-pressed="false">已入列</button>
+          <button type="button" class="mini-btn" data-collect="skip" aria-pressed="false">已略過</button>
+          <button type="button" class="mini-btn" data-collect="all" aria-pressed="false">全部</button>
         </div>
         <div class="panel-body">
           <div class="collect-stats" id="collectKpis"></div>
@@ -205,17 +205,6 @@
 
     <!-- ═══ 任務隊列 ═══ -->
     <section class="waterfall on" id="topic-queue" role="tabpanel" aria-labelledby="tab-queue">
-      <div class="kpis" id="kpiBand">
-        <div class="kpi"><div class="kl">Auto-claim</div><div class="kv2 tone-green"><span data-num="claimRate">—</span><small>/min</small></div><div class="ks">席位自動拉取</div><div class="kbar"><i class="fill-green" data-pct="claimRate"></i></div></div>
-        <div class="kpi"><div class="kl">Queue depth</div><div class="kv2 tone-cyan"><span data-num="queueDepth">—</span></div><div class="ks">待拉取（佇列中）</div><div class="kbar"><i class="fill-cyan" data-pct="queue"></i></div></div>
-        <div class="kpi"><div class="kl">Claimed / 待空檔</div><div class="kv2 tone-orange"><span data-num="claimedWait">—</span></div><div class="ks">已拉取 · 等 LLM 空檔</div><div class="kbar"><i class="fill-orange" data-pct="wait"></i></div></div>
-        <div class="kpi"><div class="kl">Executing</div><div class="kv2 tone-amber"><span data-num="executing">—</span></div><div class="ks">執行中 · 佔用槽位</div><div class="kbar"><i class="fill-amber" data-pct="exec"></i></div></div>
-        <div class="kpi"><div class="kl">Slot util</div><div class="kv2"><span data-num="slotUsed">—</span><small>/8</small></div><div class="ks">LLM 併發槽位</div><div class="kbar"><i class="fill-amber" data-pct="slot"></i></div></div>
-        <div class="kpi"><div class="kl">Avg slot wait</div><div class="kv2"><span data-num="slotWait">—</span><small>s</small></div><div class="ks">平均待空檔時間</div><div class="kbar"><i class="fill-amber" data-pct="slotWait"></i></div></div>
-        <div class="kpi"><div class="kl">Re-split</div><div class="kv2 tone-violet"><span data-num="split">—</span></div><div class="ks">回注子任務</div><div class="kbar"><i class="fill-violet" data-pct="split"></i></div></div>
-        <div class="kpi"><div class="kl">Throughput</div><div class="kv2"><span data-num="thru">—</span><small>/h</small></div><div class="ks">完成 <span data-num="done">—</span> · 失敗 <span data-num="fail">—</span></div><div class="kbar"><i class="fill-cyan" data-pct="thru"></i></div></div>
-      </div>
-
       <div class="panel">
         <div class="panel-head">
           <div class="panel-title">任務看板<span class="en">狀態 × 總任務進程</span></div>
@@ -226,6 +215,16 @@
           </div>
         </div>
         <div class="panel-body">
+          <div class="kpis" id="kpiBand">
+            <div class="kpi"><div class="kl">Auto-claim</div><div class="kv2 tone-green"><span data-num="claimRate">—</span><small>/min</small></div><div class="ks">席位自動拉取</div><div class="kbar"><i class="fill-green" data-pct="claimRate"></i></div></div>
+            <div class="kpi"><div class="kl">Queue depth</div><div class="kv2 tone-cyan"><span data-num="queueDepth">—</span></div><div class="ks">待拉取（佇列中）</div><div class="kbar"><i class="fill-cyan" data-pct="queue"></i></div></div>
+            <div class="kpi"><div class="kl">Claimed / 待空檔</div><div class="kv2 tone-orange"><span data-num="claimedWait">—</span></div><div class="ks">已拉取 · 等 LLM 空檔</div><div class="kbar"><i class="fill-orange" data-pct="wait"></i></div></div>
+            <div class="kpi"><div class="kl">Executing</div><div class="kv2 tone-amber"><span data-num="executing">—</span></div><div class="ks">執行中 · 佔用槽位</div><div class="kbar"><i class="fill-amber" data-pct="exec"></i></div></div>
+            <div class="kpi"><div class="kl">Slot util</div><div class="kv2"><span data-num="slotUsed">—</span><small>/8</small></div><div class="ks">LLM 併發槽位</div><div class="kbar"><i class="fill-amber" data-pct="slot"></i></div></div>
+            <div class="kpi"><div class="kl">Avg slot wait</div><div class="kv2"><span data-num="slotWait">—</span><small>s</small></div><div class="ks">平均待空檔時間</div><div class="kbar"><i class="fill-amber" data-pct="slotWait"></i></div></div>
+            <div class="kpi"><div class="kl">Re-split</div><div class="kv2 tone-violet"><span data-num="split">—</span></div><div class="ks">回注子任務</div><div class="kbar"><i class="fill-violet" data-pct="split"></i></div></div>
+            <div class="kpi"><div class="kl">Throughput</div><div class="kv2"><span data-num="thru">—</span><small>/h</small></div><div class="ks">完成 <span data-num="done">—</span> · 失敗 <span data-num="fail">—</span></div><div class="kbar"><i class="fill-cyan" data-pct="thru"></i></div></div>
+          </div>
           <div class="angle">
             <div class="angle-head">
               <div class="ah">總任務進程 <b>同一波上下並行，波與波才有先後</b></div>
@@ -783,11 +782,11 @@
       <div class="panel oss-panel">
         <div class="panel-head">
           <div class="panel-title">開源組件<span class="en">github · pinned integration</span></div>
-          <div class="panel-tools" id="ossFilters" role="group" aria-label="組件狀態過濾">
-            <button class="mini-btn" data-oss="all" aria-pressed="true">全部</button>
-            <button class="mini-btn" data-oss="wired" aria-pressed="false">已接入</button>
-            <button class="mini-btn" data-oss="candidate" aria-pressed="false">候選</button>
-          </div>
+        </div>
+        <div class="panel-bar" id="ossFilters" role="group" aria-label="組件狀態過濾">
+          <button class="mini-btn" data-oss="all" aria-pressed="true">全部</button>
+          <button class="mini-btn" data-oss="wired" aria-pressed="false">已接入</button>
+          <button class="mini-btn" data-oss="candidate" aria-pressed="false">候選</button>
         </div>
         <div class="panel-body oss-body">
           <div class="oss-kpis" id="ossKpis"></div>

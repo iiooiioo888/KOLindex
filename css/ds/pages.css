@@ -14,12 +14,12 @@
 .rail{background:var(--bg);border-right:1px solid var(--line)}
 .rail-right{background:var(--bg);border-left:1px solid var(--line)}
 .stage{padding:0 0 var(--s-6);container:stage / inline-size;background:transparent}
-.waterfall{padding:var(--s-5) var(--s-5) 0;gap:var(--s-3)}
+.waterfall{padding:var(--frame-y) var(--frame-x) 0;gap:var(--frame-y)}
 /* 切頁不淡入：任何 .on 上的動畫都會讓「無感切頁」破功 */
 .waterfall.on{animation:none}
 
 /* ── 2. 各頁節奏 ───────────────────────────────────────────── */
-#topic-collect .collect-stats{gap:var(--s-2)}
+#topic-collect .collect-stats{gap:var(--col-gap)}
 #topic-collect .collect-stat{
   border:1px solid var(--line);border-radius:0;
   background:var(--surface);padding:var(--s-3) var(--s-4);
@@ -27,7 +27,7 @@
 #topic-collect .collect-stat b{font-size:var(--fs-lg);margin-top:1px}
 #topic-collect .collect-form{
   border:1px solid var(--line);border-radius:0;
-  background:var(--surface);padding:var(--s-4) var(--s-5);gap:var(--s-3);
+  background:var(--surface);padding:var(--frame-y) var(--frame-x);gap:var(--s-4);
 }
 #topic-collect .collect-form label{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;gap:var(--s-1)}
 #topic-collect .ccard{
@@ -42,16 +42,16 @@
   .topic-head{padding:var(--s-4) var(--s-4) var(--s-2)}
   .topic-tabs{padding:0 var(--s-4)}
   .topic-hint{display:none}
-  .waterfall{padding:var(--s-4) var(--s-4) 0}
-  .panel-body{padding:var(--s-3) var(--s-4)}
+  .waterfall{padding:var(--frame-y) var(--s-4) 0}
+  .panel-body{padding:var(--frame-y) var(--s-4)}
   .kpis{grid-template-columns:repeat(auto-fit,minmax(128px,1fr))}
 }
 @container stage (max-width:680px){
   #topicTitle{font-size:16px}
   .th-kicker{font-size:9px}
   .waterfall{padding:var(--s-3) var(--s-3) 0;gap:var(--s-2)}
-  .panel-head{padding:var(--s-1) var(--s-3)}
-  .panel-body{padding:var(--s-3)}
+  .panel-head{padding:0 var(--s-3)}
+  .panel-body{padding:var(--s-3) var(--s-3)}
   .collect-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 

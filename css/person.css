@@ -3,11 +3,11 @@
    只在 #topic-person 內生效，不動其他分頁
    ============================================================ */
 
-.person-grid{display:grid;grid-template-columns:minmax(210px,264px) minmax(0,1fr);gap:12px;align-items:start}
+.person-grid{display:grid;grid-template-columns:var(--side-w) minmax(0,1fr);gap:var(--col-gap);align-items:start}
 @media (max-width:1040px){.person-grid{grid-template-columns:minmax(0,1fr)}}
 
 /* ---------- 左：人物清單 ---------- */
-.person-side{border:1px solid var(--line);border-radius:2px;background:var(--surface-2);padding:9px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.person-side{border:1px solid var(--line);border-radius:2px;background:var(--surface-2);padding:var(--frame-y) var(--frame-x);display:flex;flex-direction:column;gap:var(--s-4);min-width:0}
 .person-search{display:flex;flex-direction:column;gap:4px;font-family:var(--mono);font-size:var(--fs-meta);color:var(--faint)}
 .person-search input{width:100%;border:1px solid var(--line);border-radius:2px;background:var(--bg);color:var(--text);
   font-family:var(--body);font-size:var(--fs-ui);padding:6px 8px}
@@ -35,8 +35,8 @@
 .pstat.tiktok{color:#9ff0e2;border-color:rgba(130,190,175,.3)}
 
 /* ---------- 右：人物檔頭 ---------- */
-.person-main{display:flex;flex-direction:column;gap:9px;min-width:0}
-.person-head{border:1px solid var(--line);border-radius:2px;background:var(--surface-2);padding:11px 12px;min-width:0}
+.person-main{display:flex;flex-direction:column;gap:var(--frame-y);min-width:0}
+.person-head{border:1px solid var(--line);border-radius:2px;background:var(--surface-2);padding:var(--frame-y) var(--frame-x);min-width:0}
 .ph-top{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
 .ph-name{font-family:var(--disp);font-size:var(--fs-lg);letter-spacing:.02em;color:var(--text)}
 .ph-sub{font-family:var(--mono);font-size:var(--fs-meta);color:var(--faint)}
@@ -65,7 +65,7 @@
 .person-filters button[aria-pressed="true"]{color:var(--amber);border-color:rgba(207,160,74,.45);background:rgba(207,160,74,.1)}
 
 /* ---------- 統一時間軸 ---------- */
-.person-timeline{border:1px solid var(--line);border-radius:2px;background:var(--surface);padding:12px 12px 12px 22px;
+.person-timeline{border:1px solid var(--line);border-radius:2px;background:var(--surface);padding:var(--frame-x) var(--frame-x) var(--frame-x) 22px;
   position:relative;min-height:160px;max-height:min(56vh,560px);overflow:auto}
 .person-timeline::before{content:'';position:absolute;left:11px;top:14px;bottom:14px;width:1px;background:var(--line)}
 .tl-item{position:relative;border:1px solid var(--line-soft);border-radius:2px;background:var(--surface-2);
