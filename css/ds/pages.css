@@ -1,0 +1,96 @@
+/* ============================================================================
+   ds/pages.css — 版面層
+   骨架（三欄）、頁面節奏、斷點。只動「位置與間距」，不重畫元件。
+   斷點與舊版 index2.css 對齊：1680 / 1439 / 1279 / 767。
+   ============================================================================ */
+
+/* ── 1. 骨架 ───────────────────────────────────────────────── */
+.shell{
+  grid-template-columns:var(--rail-w) minmax(0,1fr) var(--rail-right-w);
+  gap:1px;
+  background:var(--line-soft);
+}
+.rail,.stage,.rail-right{background:var(--bg)}
+.stage{
+  padding:0 0 var(--s-6);
+  container:stage / inline-size;
+}
+.waterfall{padding:var(--s-7) var(--s-8) 0;gap:var(--s-6)}
+.waterfall.on{animation:ds-fade var(--dur-3) var(--ease)}
+@keyframes ds-fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+/* 分頁頭：內容捲動時保留一條底部投影 */
+.topic-bar{box-shadow:0 18px 26px -26px #000}
+
+/* ── 2. 各頁節奏（只補間距，不改內容結構） ─────────────────── */
+#topic-collect .collect-stats{gap:var(--s-3)}
+#topic-collect .collect-stat{
+  border:1px solid var(--line);border-radius:var(--r-sm);
+  background:var(--surface-2);padding:var(--s-4) var(--s-5);
+}
+#topic-collect .collect-stat b{font-size:var(--fs-lg);margin-top:1px}
+#topic-collect .collect-form{
+  border:1px solid var(--line);border-radius:var(--r-md);
+  background:var(--surface-2);padding:var(--s-6);gap:var(--s-4);
+}
+#topic-collect .collect-form label{font-size:10px;letter-spacing:.06em;gap:var(--s-2)}
+#topic-collect .ccard{
+  border:1px solid var(--line);border-radius:var(--r-md);
+  background:var(--surface-2);padding:var(--s-5) var(--s-6);
+}
+#topic-collect .ccard:hover{border-color:var(--line-strong)}
+#topic-queue .lane{gap:var(--s-3)}
+
+/* ── 3. 容器查詢：舞台變窄時先收說明，不壓縮資料 ───────────── */
+@container stage (max-width:980px){
+  .topic-head{padding:var(--s-5) var(--s-6) var(--s-3)}
+  .topic-tabs{padding:0 var(--s-6) var(--s-3)}
+  .topic-hint{display:none}
+  .waterfall{padding:var(--s-6) var(--s-6) 0}
+  .panel-body{padding:var(--s-6)}
+  .kpis{grid-template-columns:repeat(auto-fit,minmax(136px,1fr))}
+}
+@container stage (max-width:680px){
+  #topicTitle{font-size:17px}
+  .th-kicker{font-size:9px}
+  .waterfall{padding:var(--s-5) var(--s-4) 0;gap:var(--s-4)}
+  .panel-head{padding:var(--s-2) var(--s-5)}
+  .panel-body{padding:var(--s-4)}
+  .collect-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+
+/* ── 4. 斷點（與舊版一致，改用權杖） ───────────────────────── */
+@media(max-width:1680px){
+  .shell{grid-template-columns:256px minmax(0,1fr) 440px}
+}
+@media(max-width:1439px){
+  .shell{grid-template-columns:248px minmax(0,1fr) 404px}
+}
+@media(max-width:1279px){
+  .shell{grid-template-columns:260px minmax(0,1fr)}
+  .rail-right{grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--s-4);padding:var(--s-5) var(--s-6) var(--s-9)}
+  /* 產出庫的 IDE 版面：舊版用 100dvh - 108px 硬扣，分頁頭長高後會溢出，改回彈性填滿 */
+  #topic-out.on{height:auto;min-height:0}
+}
+@media(max-width:767px){
+  .shell{grid-template-columns:minmax(0,1fr)}
+  .topbar{padding:var(--s-3) var(--s-4);gap:var(--s-3)}
+  .topic-head{padding:var(--s-4) var(--s-5) var(--s-2)}
+  .topic-tabs{padding:0 var(--s-5) var(--s-2)}
+  #topicTitle{font-size:16px}
+  .topic-hint{display:none}
+  .waterfall{padding:var(--s-4) var(--s-4) 0}
+
+  /* 底部導覽：11 個分頁改成可橫向捲動，不再硬塞 11 欄 */
+  .tabs .inner{
+    display:flex;justify-content:flex-start;gap:2px;
+    overflow-x:auto;overflow-y:hidden;
+    scrollbar-width:none;-webkit-overflow-scrolling:touch;
+  }
+  .tabs .inner::-webkit-scrollbar{height:0}
+  .tab{flex:0 0 auto;min-width:62px;padding:6px 8px;border-radius:var(--r-ctl)}
+  .tab.active{background:var(--accent-soft)}
+
+  .rail-right{grid-template-columns:minmax(0,1fr);padding:0 var(--s-4) var(--s-8)}
+  .statusbar{display:none}
+}

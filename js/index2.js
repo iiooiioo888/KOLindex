@@ -1695,6 +1695,13 @@
       b.setAttribute('aria-selected',String(on));
       b.tabIndex=on?0:-1;
     });
+    var tabs=$('.topic-tabs');
+    var onTab=tabs && tabs.querySelector('.topic-btn[aria-selected="true"]');
+    if (tabs && onTab && onTab.getBoundingClientRect){
+      var tbr=tabs.getBoundingClientRect(), obr=onTab.getBoundingClientRect();
+      if (obr.left<tbr.left) tabs.scrollLeft-=tbr.left-obr.left+8;
+      else if (obr.right>tbr.right) tabs.scrollLeft+=obr.right-tbr.right+8;
+    }
     $$('.nav-item[data-topic]').forEach(function(n){
       var on=n.getAttribute('data-topic')===t;
       n.classList.toggle('active',on);
@@ -1713,6 +1720,13 @@
     else if (r.focus) hintText=meta.label+' / '+r.focus;
     var hint=$('#topicHint');
     if (hint) hint.textContent='#/'+routePath(r)+'  ·  '+hintText;
+    var tTitle=$('#topicTitle');
+    if (tTitle) tTitle.textContent=meta.label;
+    var tIndex=$('#topicIndex');
+    if (tIndex){
+      var ord=TOPICS.indexOf(t)+1, total=TOPICS.length;
+      tIndex.textContent=(ord<10?'0':'')+ord+' / '+(total<10?'0':'')+total;
+    }
     var bar=$('#topicBar');
     if (bar) bar.setAttribute('data-route',routePath(r));
     document.title='靈境·Linkin · '+meta.label+(t==='infra'&&r.pane?' / '+INFRA_LABEL[r.pane]:r.focus?' / '+r.focus:'');
