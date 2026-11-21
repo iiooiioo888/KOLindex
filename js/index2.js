@@ -1562,7 +1562,6 @@
   var INFRA_LABEL={docker:'Docker',ecs:'ECS',bill:'帳單',cost:'成本預算'};
   var routeState={topic:'',pane:null,focus:null};
   var lastInfra='docker';
-  var routeAnimToken=0;
   if ('scrollRestoration' in history) history.scrollRestoration='manual';
 
   function sameRoute(a,b){
@@ -1605,68 +1604,26 @@
       location.hash=hash;
     }
   }
-  function clearLeave(el){
-    el.classList.remove('is-leave','dir-fwd','dir-back');
-    el.style.top='';
-    el.removeAttribute('data-leave-token');
-  }
-  function pulseSweep(dir){
-    if (document.body.classList.contains('reduce-motion')) return;
-    var bar=$('#topicBar'); if (!bar) return;
-    bar.classList.remove('sweep','sweep-back');
-    void bar.offsetWidth;
-    bar.classList.add(dir<0?'sweep-back':'sweep');
-  }
-  function scrollPanelsTop(){
+  /* 分頁切換刻意不做轉場：同一個 frame 直接換掉 .on，使用者只看到結果。
+     舊的滑動／淡出／掃光動畫已移除——方向感的成本大於收益。 */
+  var topicScroll={};
+  function showTopic(topic,prevTopic){
     var stage=$('.stage');
-    if (stage) stage.scrollTop=0;
-    if (window.scrollY>0) window.scrollTo(0,0);
-  }
-  function showTopic(topic,dir,animate){
-    scrollPanelsTop();
-    $$('.waterfall.is-leave').forEach(clearLeave);
+    if (prevTopic) topicScroll[prevTopic]={stage:stage?stage.scrollTop:0,win:window.scrollY||0};
     var to=document.getElementById('topic-'+topic);
-    var from=$('.waterfall.on');
     if (!to) return;
-    var motion=!!(animate && from && from!==to && dir!==0 && !document.body.classList.contains('reduce-motion'));
-    if (!motion){
-      $$('.waterfall').forEach(function(w){
-        clearLeave(w);
-        w.classList.remove('on');
-        w.setAttribute('aria-hidden','true');
-      });
-      to.classList.add('on');
-      to.setAttribute('aria-hidden','false');
-      return;
-    }
-    var token=++routeAnimToken;
-    var dirClass=dir>0?'dir-fwd':'dir-back';
-    var top=from.offsetTop;
-    to.classList.remove('is-leave','dir-fwd','dir-back');
-    to.classList.add('on');
-    from.classList.remove('on','dir-fwd','dir-back');
-    from.classList.add('is-leave',dirClass);
-    from.style.top=top+'px';
-    from.setAttribute('data-leave-token',String(token));
-    from.setAttribute('aria-hidden','true');
-    void to.offsetWidth;
-    to.classList.add(dirClass);
-    to.setAttribute('aria-hidden','false');
-    pulseSweep(dir);
-    var finish=function(){
-      if (from.getAttribute('data-leave-token')!==String(token)) return;
-      if (from.classList.contains('on')) return;
-      clearLeave(from);
-      from.setAttribute('aria-hidden','true');
-    };
-    from.addEventListener('animationend',function onEnd(ev){
-      if (ev.target!==from) return;
-      from.removeEventListener('animationend',onEnd);
-      finish();
+    $$('.waterfall').forEach(function(w){
+      if (w===to || !w.classList.contains('on')) return;
+      w.classList.remove('on');
+      w.setAttribute('aria-hidden','true');
     });
-    setTimeout(finish,560);
+    to.classList.add('on');
+    to.setAttribute('aria-hidden','false');
+    var saved=topicScroll[topic];
+    if (stage) stage.scrollTop=saved?saved.stage:0;
+    if (window.scrollY||(saved&&saved.win)) window.scrollTo(0,saved?saved.win:0);
   }
-  function showInfraPane(pane,animate){
+  function showInfraPane(pane){
     $$('#infraTabs .tab-btn').forEach(function(x){
       var on=x.getAttribute('data-pane')===pane;
       x.setAttribute('aria-selected',on?'true':'false');
@@ -1674,18 +1631,12 @@
     });
     var next=document.getElementById('pane-'+pane);
     $$('.tab-pane').forEach(function(p){
-      p.classList.remove('on','pane-in');
+      p.classList.remove('on');
       p.setAttribute('aria-hidden','true');
     });
     if (!next) return;
     next.classList.add('on');
     next.setAttribute('aria-hidden','false');
-    if (animate && !document.body.classList.contains('reduce-motion')){
-      void next.offsetWidth;
-      next.classList.add('pane-in');
-    }
-    var stage=$('.stage');
-    if (animate && stage) scrollPanelsTop();
     if (pane==='cost') ensureCostCharts();
   }
   function syncChrome(r){
@@ -1738,7 +1689,7 @@
     $$('.qcard.linked,.flow-node.linked,.ccard.linked').forEach(function(q){ q.classList.remove('linked'); });
     }
     if (!r.focus) return;
-    var behave=document.body.classList.contains('reduce-motion')?'auto':'smooth';
+    var behave='auto';
     if (r.topic==='collect'){
       renderCollect();
       var inbox=document.querySelector('.ccard[data-id="'+r.focus+'"]');
@@ -1790,11 +1741,9 @@
     syncChrome(next);
     var topicChanged=!prev || prev.topic!==next.topic;
     var paneChanged=next.topic==='infra' && (!prev || prev.pane!==next.pane);
-    var dir=prev ? TOPICS.indexOf(next.topic)-TOPICS.indexOf(prev.topic) : 0;
-    if (topicChanged) showTopic(next.topic,dir,!!prev && prev.topic!=='');
-    else $$('.waterfall.is-leave').forEach(clearLeave);
+    if (topicChanged) showTopic(next.topic,prev?prev.topic:null);
     if (next.topic==='infra' && (topicChanged || paneChanged)){
-      showInfraPane(next.pane,!!(prev && prev.topic==='infra' && paneChanged));
+      showInfraPane(next.pane);
     }
     revealFocus(next,!!(next.focus || (prev && prev.topic)));
     if (next.topic==='out'){

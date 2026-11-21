@@ -673,8 +673,6 @@ mark{background:rgba(240,165,0,.35);color:var(--text);border-radius:2px;padding:
 .tabs-meta{margin-left:auto;display:flex;gap:13px;font-family:var(--mono);font-size:var(--fs-meta);letter-spacing:.04em;color:var(--faint);flex:0 0 auto;padding-left:10px}
 .tab-pane{display:none}
 .tab-pane.on{display:block}
-.tab-pane.on.pane-in{animation:paneIn .34s cubic-bezier(.22,.8,.3,1)}
-@keyframes paneIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
 .act-btn{font-family:var(--mono);font-size:var(--fs-meta);letter-spacing:.08em;text-transform:uppercase;
   padding:4px 8px;border:1px solid var(--line);border-radius:3px;background:var(--surface-3);color:var(--dim);transition:all .18s;white-space:nowrap}
 .act-btn:hover{color:var(--amber-hot);border-color:rgba(240,165,0,.45);background:rgba(240,165,0,.1)}
@@ -831,29 +829,10 @@ mark{background:rgba(240,165,0,.35);color:var(--text);border-radius:2px;padding:
 .tabs{display:none}
 
 /* ===== ANIM ===== */
+/* 分頁切換刻意不做轉場（見 index2.js 的 showTopic）；只保留資料載入的微動效。 */
 .rise{animation:rise .4s ease}
 @keyframes rise{from{opacity:.35}to{opacity:1}}
-.topic-bar::after{
-  content:'';position:absolute;left:0;right:0;bottom:0;height:2px;pointer-events:none;opacity:0;transform:scaleX(0);
-  background:linear-gradient(90deg,transparent,var(--amber-hot),var(--cyan),transparent);
-  box-shadow:0 0 12px rgba(240,165,0,.45);
-}
-.topic-bar.sweep::after{animation:routeSweep .48s cubic-bezier(.22,.8,.3,1);transform-origin:left center}
-.topic-bar.sweep-back::after{animation:routeSweep .48s cubic-bezier(.22,.8,.3,1);transform-origin:right center}
-@keyframes routeSweep{0%{opacity:0;transform:scaleX(0)}28%{opacity:1}100%{opacity:0;transform:scaleX(1)}}
 .waterfall.on{position:relative;z-index:2}
-.waterfall.on.dir-fwd,
-.waterfall.on.dir-back{background:var(--bg)}
-.waterfall.is-leave{
-  display:flex;position:absolute;left:0;right:0;z-index:1;pointer-events:none;
-  background:var(--bg);
-}
-.waterfall.on.dir-fwd,
-.waterfall.on.dir-back{animation:pageFade .28s ease}
-.waterfall.is-leave.dir-fwd,
-.waterfall.is-leave.dir-back{animation:pageFadeOut .22s ease forwards}
-@keyframes pageFade{from{opacity:0}to{opacity:1}}
-@keyframes pageFadeOut{to{opacity:0}}
 @media(prefers-reduced-motion:reduce){
   *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
   .flow{stroke-dasharray:none;opacity:.6}
