@@ -9,7 +9,7 @@
 (function () {
   'use strict';
 
-  var POLL_MS = 60000;            // 一分鐘對一次；後端是唯讀，成本可忽略
+  var POLL_MS = 60000;            // 一分鐘對一次；收集頁的認領／退回由 index2.js 自己送，這裡只負責重抓
   var firstPaint = true;
   var failures = 0;
 
@@ -63,8 +63,8 @@
       if (!items.length) return;
       // 只帶要用的欄位；srcName/srcCat/srcLicense 讓卡片顯示正確的來源名
       var slim = items.map(function (x) {
-        return { id: x.id, title: x.title, source: x.source, pri: x.pri, priLabel: x.priLabel,
-          role: x.role, state: x.state, note: x.note,
+        return { id: x.id, accountId: x.accountId, title: x.title, source: x.source, pri: x.pri, priLabel: x.priLabel,
+          role: x.role, state: x.state, note: x.note, taskId: x.taskId, decidedBy: x.decidedBy,
           srcName: x.srcName, srcCat: x.srcCat, srcLicense: x.srcLicense };
       });
       if (bridge.setCollect(slim)) hits.collect = slim.length;

@@ -3080,9 +3080,12 @@
     var shown=COLLECT.filter(function(x){ return collectFilter==='all'||x.state===collectFilter; });
     list.innerHTML=shown.map(function(x){
       var s=collectSourceOf(x.source);
+      var isApi=!!x.accountId;
       var actions=x.state==='inbox'
-        ? '<button type="button" class="mini-btn" data-collect-take="'+esc(x.id)+'">收入隊列</button><button type="button" class="mini-btn" data-collect-skip="'+esc(x.id)+'">略過</button>'
-        : '<span class="pill '+(x.state==='queued'?'green':'')+'">'+(x.state==='queued'?'已入列 '+(x.taskId||''):'已略過')+'</span>';
+        ? (isApi
+          ? '<button type="button" class="mini-btn" data-collect-claim="'+esc(x.id)+'">認領</button><button type="button" class="mini-btn" data-collect-return="'+esc(x.id)+'">退回</button>'
+          : '<button type="button" class="mini-btn" data-collect-take="'+esc(x.id)+'">收入隊列</button><button type="button" class="mini-btn" data-collect-skip="'+esc(x.id)+'">略過</button>')
+        : '<span class="pill '+(x.state==='queued'?'green':'')+'">'+(x.state==='queued'?(isApi?'已認領 ':'已入列 ')+(x.taskId||''):(isApi?'已退回':'已略過'))+'</span>';
       return '<article class="ccard'+(routeState.focus===x.id&&routeState.topic==='collect'?' linked':'')+'" data-id="'+esc(x.id)+'" data-search>'+
         '<div class="ccard-top"><span class="qid">'+esc(x.id)+'</span><span class="pri '+esc(x.pri)+'">'+esc(x.priLabel)+'</span><span class="pill">'+esc(s.cat)+'</span></div>'+
         '<h4>'+esc(x.title)+'</h4>'+
@@ -3122,6 +3125,60 @@
     audit('任務收集略過 '+item.id);
     pushEvent('#9aa2a9','<b>collect</b> '+esc(item.id)+' 略過');
   }
+  /* 接後端的兩條寫入：認領 → collect_decision(claim) + audit_log；退回 → collect_decision(return) */
+  function apiCollectWrite(item, action, who, reason){
+    var body={actor:who, note:reason};
+    if (action==='return') body.reason=reason;
+    return fetch('/api/collect/'+encodeURIComponent(item.accountId)+'/'+action,{
+      method:'POST',
+      headers:{'content-type':'application/json',accept:'application/json'},
+      body:JSON.stringify(body)
+    }).then(function(r){
+      return r.json().catch(function(){return {};}).then(function(j){ return {ok:r.ok,status:r.status,data:j||{}}; });
+    }).then(function(res){
+      if (!res.ok){
+        toast('後端拒絕：'+(res.data.error||('HTTP '+res.status)),'err');
+        return false;
+      }
+      if (action==='claim'){
+        item.state='queued';
+        item.taskId=String(res.data.taskId||'');
+        item.note='已由 '+(res.data.actor||who)+' 認領'+(item.taskId?'（'+item.taskId+'）':'');
+      } else {
+        item.state='skip';
+        item.note='已退回：'+reason;
+      }
+      renderCollect();
+      var done=action==='claim'?('已認領 '+(res.data.taskId||'')):'已退回';
+      toast(item.id+' '+done,'ok');
+      audit('任務收集 '+item.id+' → '+done+'（'+(res.data.actor||who)+'）');
+      pushEvent(action==='claim'?'#5fd97d':'#9aa2a9','<b>collect</b> '+esc(item.id)+' '+esc(done));
+      return true;
+    }).catch(function(err){
+      toast('寫入失敗：'+err.message,'err');
+      return false;
+    });
+  }
+  function claimCollect(id){
+    var item=collectById(id);
+    if (!item||item.state!=='inbox') return;
+    if (!item.accountId) return admitCollect(id);
+    openDialog({
+      title:'認領 '+item.id,
+      desc:item.title+'。認領會寫入 collect_decision 與 audit_log，並取得隊列編號。',
+      onConfirm:function(who,reason){ apiCollectWrite(item,'claim',who,reason); }
+    });
+  }
+  function returnCollect(id){
+    var item=collectById(id);
+    if (!item||item.state!=='inbox') return;
+    if (!item.accountId) return skipCollect(id);
+    openDialog({
+      title:'退回 '+item.id,
+      desc:item.title+'。退回後不再進隊列，原因會留在 audit_log。',
+      onConfirm:function(who,reason){ apiCollectWrite(item,'return',who,reason); }
+    });
+  }
   function addCollect(fields){
     var title=(fields.title||'').trim();
     if (!title){ toast('標題不能是空的','err'); return; }
@@ -3155,6 +3212,10 @@
     if (take){ admitCollect(take.getAttribute('data-collect-take')); return; }
     var skip=e.target.closest('[data-collect-skip]');
     if (skip){ skipCollect(skip.getAttribute('data-collect-skip')); return; }
+    var claim=e.target.closest('[data-collect-claim]');
+    if (claim){ claimCollect(claim.getAttribute('data-collect-claim')); return; }
+    var back=e.target.closest('[data-collect-return]');
+    if (back){ returnCollect(back.getAttribute('data-collect-return')); return; }
     var card=e.target.closest('.ccard');
     if (!card||e.target.closest('button')) return;
     var id=card.getAttribute('data-id');
@@ -3690,15 +3751,18 @@
     /* 用 kolindex-api 的收集清單換掉 COLLECT 並重繪 */
     setCollect:function(items){
       if (!Array.isArray(items)||!items.length) return false;
+      var STATE_MAP={inbox:'inbox',claimed:'queued',returned:'skip'};
       COLLECT=items.map(function(x){
         if (x.srcName) COLLECT_SRC[String(x.source)]={name:String(x.srcName),cat:String(x.srcCat||'—'),license:String(x.srcLicense||'—')};
         return {
-          id:String(x.id), title:String(x.title||''), source:String(x.source||'manual'),
+          id:String(x.id), accountId:x.accountId?Number(x.accountId):null,
+          title:String(x.title||''), source:String(x.source||'manual'),
           pri:String(x.pri||'p2'), priLabel:String(x.priLabel||'P2'),
-          role:String(x.role||'審核席'), state:String(x.state||'inbox'), note:String(x.note||'')
+          role:String(x.role||'審核席'), state:String(STATE_MAP[x.state]||x.state||'inbox'),
+          note:String(x.note||''), taskId:String(x.taskId||''), decidedBy:String(x.decidedBy||'')
         };
       });
-      collectFilter='inbox';
+      if (['inbox','queued','skip','all'].indexOf(collectFilter)<0) collectFilter='inbox';
       renderCollect();
       return true;
     },
