@@ -167,7 +167,7 @@
 .topic-btn:hover{background:var(--surface-2);color:var(--text)}
 .topic-btn[aria-selected="true"]{
   background:transparent;color:var(--text);
-  border-bottom-color:var(--accent);font-weight:600;
+  border-bottom-color:var(--accent);
 }
 
 /* ── 4. 面板：一張紙，四邊 1px，標題帶一條短豎線 ────────────── */

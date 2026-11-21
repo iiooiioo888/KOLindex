@@ -1558,8 +1558,8 @@
     person:{label:'人物檔案',hint:'歸戶結果 · 貼文／AI 事件／告警合併時間軸'},
     review:{label:'審核台',hint:'AI 只產候選 · 人工裁決寫回 review_task 並留審計'}
   };
-  var INFRA_PANES=['docker','ecs','bill','cost'];
-  var INFRA_LABEL={docker:'Docker',ecs:'ECS',bill:'帳單',cost:'成本預算'};
+  var INFRA_PANES=['docker','ecs','bill','cost','conn','jobs'];
+  var INFRA_LABEL={docker:'Docker',ecs:'ECS',bill:'帳單',cost:'成本預算',conn:'連接器',jobs:'排程工作'};
   var routeState={topic:'',pane:null,focus:null};
   var lastInfra='docker';
   if ('scrollRestoration' in history) history.scrollRestoration='manual';
@@ -1639,6 +1639,16 @@
     next.setAttribute('aria-hidden','false');
     if (pane==='cost') ensureCostCharts();
   }
+  /* 分頁籤捲到可見處：量測成本放在下一帧，不佔切頁那一帧。 */
+  function scrollActiveTab(){
+    var tabs=$('.topic-tabs');
+    if (!tabs || !tabs.getBoundingClientRect) return;
+    var onTab=tabs.querySelector('.topic-btn[aria-selected="true"]');
+    if (!onTab) return;
+    var tbr=tabs.getBoundingClientRect(), obr=onTab.getBoundingClientRect();
+    if (obr.left<tbr.left) tabs.scrollLeft-=tbr.left-obr.left+8;
+    else if (obr.right>tbr.right) tabs.scrollLeft+=obr.right-tbr.right+8;
+  }
   function syncChrome(r){
     var t=r.topic;
     $$('#topicBar .topic-btn').forEach(function(b){
@@ -1646,13 +1656,6 @@
       b.setAttribute('aria-selected',String(on));
       b.tabIndex=on?0:-1;
     });
-    var tabs=$('.topic-tabs');
-    var onTab=tabs && tabs.querySelector('.topic-btn[aria-selected="true"]');
-    if (tabs && onTab && onTab.getBoundingClientRect){
-      var tbr=tabs.getBoundingClientRect(), obr=onTab.getBoundingClientRect();
-      if (obr.left<tbr.left) tabs.scrollLeft-=tbr.left-obr.left+8;
-      else if (obr.right>tbr.right) tabs.scrollLeft+=obr.right-tbr.right+8;
-    }
     $$('.nav-item[data-topic]').forEach(function(n){
       var on=n.getAttribute('data-topic')===t;
       n.classList.toggle('active',on);
@@ -1752,6 +1755,7 @@
     }
     var gs=$('#globalSearch');
     runSearch(gs?gs.value:'');
+    if (window.requestAnimationFrame) requestAnimationFrame(scrollActiveTab);
   }
   function go(partial,mode){
     var next=normalizeRoute(partial);
