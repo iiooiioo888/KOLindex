@@ -14,12 +14,11 @@
 <link rel="stylesheet" href="css/ds/components.css?v=20261121">
 <link rel="stylesheet" href="css/ds/pages.css?v=20261121">
 <link rel="stylesheet" href="css/studio.css?v=20261121">
-<link rel="stylesheet" href="css/person.css?v=20261121">
 <link rel="stylesheet" href="css/review.css?v=20261121">
 <link rel="stylesheet" href="css/connectors.css?v=20261121">
 <link rel="stylesheet" href="css/jobs.css?v=20261121">
 <link rel="stylesheet" href="css/library.css?v=20261122">
-<link rel="stylesheet" href="css/authors.css?v=20261122">
+<link rel="stylesheet" href="css/person.css?v=20261122">
 </head>
 <body data-topic="queue">
 
@@ -88,11 +87,10 @@
       <button class="nav-item" data-topic="infra"><svg class="ic"><use href="#i-docker"/></svg><span class="nm">基礎設施</span><span class="bd">6/6</span></button>
       <button class="nav-item" data-topic="oss"><svg class="ic"><use href="#i-git"/></svg><span class="nm">開源組件</span><span class="bd">16</span></button>
       <button class="nav-item" data-topic="studio"><svg class="ic"><use href="#i-cube"/></svg><span class="nm">UI 生成</span><span class="bd">NEW</span></button>
-      <button class="nav-item" data-topic="person"><svg class="ic"><use href="#i-pulse"/></svg><span class="nm">人物檔案</span><span class="bd">API</span></button>
+      <button class="nav-item" data-topic="person"><svg class="ic"><use href="#i-pulse"/></svg><span class="nm">人物檔案</span><span class="bd" id="navPersonBd">18.9k</span></button>
       <button class="nav-item" data-topic="review"><svg class="ic"><use href="#i-shield"/></svg><span class="nm">審核台</span><span class="bd">LIVE</span></button>
 <button class="nav-item" data-topic="library"><svg class="ic"><use href="#i-cube"/></svg><span class="nm">素材庫</span><span class="bd" id="navLibraryBd">30.7k</span></button>
-      <button class="nav-item" data-topic="authors"><svg class="ic"><use href="#i-pulse"/></svg><span class="nm">作者</span><span class="bd" id="navAuthorsBd">18.9k</span></button>
-    </div>
+          </div>
 
     <div class="micro-card">
       <h4>自動認領 · Auto-Claim</h4>
@@ -121,7 +119,7 @@
       <h4>快捷鍵</h4>
       <div class="kv"><span>搜尋</span><b>⌘K / Ctrl+K</b></div>
       <div class="kv"><span>清除</span><b>ESC</b></div>
-      <div class="kv"><span>切換分頁</span><b>⌘1–9 · ⌘0 · ⌘⇧0 · ⌘⇧1 · ⌘⇧2 · ←→</b></div>
+      <div class="kv"><span>切換分頁</span><b>⌘1–9 · ⌘0 · ⌘⇧0 · ⌘⇧1 · ←→</b></div>
       <div class="kv"><span>深連結</span><b>#/頁/編號</b></div>
       <div class="kv"><span>暫停渲染</span><b>SPACE</b></div>
       <div class="kv"><span>自動認領</span><b>⌘⇧A</b></div>
@@ -159,8 +157,7 @@
         <button class="topic-btn" id="tab-person" role="tab" aria-selected="false" aria-controls="topic-person" data-topic="person">人物檔案</button>
         <button class="topic-btn" id="tab-review" role="tab" aria-selected="false" aria-controls="topic-review" data-topic="review">審核台</button>
 <button class="topic-btn" id="tab-library" role="tab" aria-selected="false" aria-controls="topic-library" data-topic="library">素材庫</button>
-        <button class="topic-btn" id="tab-authors" role="tab" aria-selected="false" aria-controls="topic-authors" data-topic="authors">作者</button>
-      </div>
+              </div>
     </div>
 
     <!-- ═══ 任務收集 ═══ -->
@@ -931,33 +928,35 @@
     <section class="waterfall" id="topic-person" role="tabpanel" aria-labelledby="tab-person" aria-hidden="true">
       <div class="panel">
         <div class="panel-head">
-          <div class="panel-title">人物檔案<span class="en">person · unified timeline</span></div>
+          <div class="panel-title">人物檔案<span class="en">douyin authors · 18.9k</span></div>
           <div class="panel-tools">
-            <span class="chip or" id="personStatus">待連線</span>
-            <span class="chip cyan" id="personCount">—</span>
+            <span class="chip or" id="pnStatus">待連線</span>
+            <span class="chip cyan" id="pnCount">—</span>
           </div>
         </div>
         <div class="panel-body">
-          <div class="person-grid">
-            <aside class="person-side">
-              <label class="person-search" for="personSearch">搜尋人物
-                <input id="personSearch" type="search" placeholder="姓名 或 @handle" autocomplete="off">
-              </label>
-              <div class="person-list" id="personList"></div>
-            </aside>
-            <div class="person-main">
-              <div class="person-head" id="personHead"></div>
-              <div class="person-filters" id="personFilters" role="group" aria-label="時間軸篩選">
-                <button type="button" data-kind="all" aria-pressed="true">全部</button>
-                <button type="button" data-kind="post" aria-pressed="false">貼文</button>
-                <button type="button" data-kind="ai_event" aria-pressed="false">AI 事件</button>
-                <button type="button" data-kind="alert" aria-pressed="false">告警</button>
-              </div>
-              <div class="person-timeline" id="personTimeline"></div>
+          <div class="pn-kpis" id="pnKpis"></div>
+          <div class="pn-bar">
+            <input type="search" id="pnSearch" class="pn-input" placeholder="搜尋人物名…" aria-label="搜尋人物">
+            <div class="pn-seg" id="pnSort" role="group" aria-label="人物排序">
+              <button type="button" data-sort="count" aria-pressed="true">作品最多</button>
+              <button type="button" data-sort="recent" aria-pressed="false">最近有作品</button>
+              <button type="button" data-sort="name" aria-pressed="false">名稱</button>
             </div>
+            <button type="button" class="mini-btn" id="pnReset">重置</button>
+          </div>
+          <div class="pn-split">
+            <div class="pn-col">
+              <div class="pn-list" id="pnList"></div>
+              <div class="pn-more">
+                <button type="button" class="mini-btn primary" id="pnMore">載入更多</button>
+                <span class="pn-foot-text" id="pnFoot">—</span>
+              </div>
+            </div>
+            <aside class="pn-side" id="pnSide"></aside>
           </div>
           <div class="p-cap">
-            <b>這一頁只讀。</b>左邊是 <code>/api/persons</code> 的歸戶結果，右邊把 <code>/api/persons/:id/timeline</code> 回來的貼文、AI 事件、告警按時間合併。AI 事件只產候選，要人工複核；後端不在時這頁留空，其他分頁照常。
+            <b>抖音作者就是這裡的人物。</b>清單是 <code>douyin_item</code> 依 <code>author</code> 聚合出來的 18,883 位；點一位進<b>人物檔案</b>，看作品時間軸（<code>/api/library/months</code>）、作品牆與容量，左上「← 人物清單」回來。縮圖開的是素材庫那個檢視器。這頁只讀，不會回抖音抓東西。
           </div>
         </div>
       </div>
@@ -1066,42 +1065,6 @@
       </div>
     </section>
     <!-- ═══ 作者 ═══ -->
-    <section class="waterfall" id="topic-authors" role="tabpanel" aria-labelledby="tab-authors" aria-hidden="true">
-      <div class="panel">
-        <div class="panel-head">
-          <div class="panel-title">作者<span class="en">douyin authors · index</span></div>
-          <div class="panel-tools">
-            <span class="chip or" id="auStatus">待連線</span>
-            <span class="chip cyan" id="auCount">—</span>
-          </div>
-        </div>
-        <div class="panel-body">
-          <div class="au-kpis" id="auKpis"></div>
-          <div class="au-bar">
-            <input type="search" id="auSearch" class="au-input" placeholder="搜尋作者名…" aria-label="搜尋作者">
-            <div class="au-seg" id="auSort" role="group" aria-label="作者排序">
-              <button type="button" data-sort="count" aria-pressed="true">作品最多</button>
-              <button type="button" data-sort="recent" aria-pressed="false">最近有作品</button>
-              <button type="button" data-sort="name" aria-pressed="false">名稱</button>
-            </div>
-            <button type="button" class="mini-btn" id="auReset">重置</button>
-          </div>
-          <div class="au-split">
-            <div class="au-col">
-              <div class="au-list" id="auList"></div>
-              <div class="au-more">
-                <button type="button" class="mini-btn primary" id="auMore">載入更多</button>
-                <span class="au-foot-text" id="auFoot">—</span>
-              </div>
-            </div>
-            <aside class="au-side" id="auSide"></aside>
-          </div>
-          <div class="p-cap">
-            <b>作者索引。</b>分成兩個檢視：<b>作者清單</b>是全寬的作者卡，<b>作者檔案</b>點一位進去，看他的作品牆、容量與最近發佈，左上「← 作者清單」回來。資料是 <code>douyin_item</code> 的 <code>GROUP BY author</code>；縮圖開的是素材庫那個檢視器。這頁只讀，不會回抖音抓東西。
-          </div>
-        </div>
-      </div>
-    </section>
   </main>
 
   <aside class="rail-right" aria-label="監控面板">
@@ -1238,8 +1201,7 @@
     <button class="tab" data-topic="person"><svg class="ic"><use href="#i-pulse"/></svg>人物</button>
     <button class="tab" data-topic="review"><svg class="ic"><use href="#i-shield"/></svg>審核</button>
 <button class="tab" data-topic="library"><svg class="ic"><use href="#i-cube"/></svg>素材</button>
-    <button class="tab" data-topic="authors"><svg class="ic"><use href="#i-pulse"/></svg>作者</button>
-  </div>
+      </div>
 </nav>
 
 <div class="toast-wrap" id="toastWrap" aria-live="polite"></div>
@@ -1293,11 +1255,10 @@
 <script defer src="js/wireframe.js?v=20261121"></script>
 <script defer src="js/studio.js?v=20261121"></script>
 <script defer src="js/api.js?v=20261121"></script>
-<script defer src="js/person.js?v=20261121"></script>
 <script defer src="js/review.js?v=20261121"></script>
 <script defer src="js/infra.js?v=20261121"></script>
 <script defer src="js/jobs.js?v=20261121"></script>
 <script defer src="js/library.js?v=20261122"></script>
-<script defer src="js/authors.js?v=20261122"></script>
+<script defer src="js/person.js?v=20261122"></script>
 </body>
 </html>
