@@ -19,6 +19,7 @@
 <link rel="stylesheet" href="css/connectors.css?v=20261121">
 <link rel="stylesheet" href="css/jobs.css?v=20261121">
 <link rel="stylesheet" href="css/library.css?v=20261122">
+<link rel="stylesheet" href="css/authors.css?v=20261122">
 </head>
 <body data-topic="queue">
 
@@ -90,6 +91,7 @@
       <button class="nav-item" data-topic="person"><svg class="ic"><use href="#i-pulse"/></svg><span class="nm">人物檔案</span><span class="bd">API</span></button>
       <button class="nav-item" data-topic="review"><svg class="ic"><use href="#i-shield"/></svg><span class="nm">審核台</span><span class="bd">LIVE</span></button>
 <button class="nav-item" data-topic="library"><svg class="ic"><use href="#i-cube"/></svg><span class="nm">素材庫</span><span class="bd" id="navLibraryBd">30.7k</span></button>
+      <button class="nav-item" data-topic="authors"><svg class="ic"><use href="#i-pulse"/></svg><span class="nm">作者</span><span class="bd" id="navAuthorsBd">18.9k</span></button>
     </div>
 
     <div class="micro-card">
@@ -119,7 +121,7 @@
       <h4>快捷鍵</h4>
       <div class="kv"><span>搜尋</span><b>⌘K / Ctrl+K</b></div>
       <div class="kv"><span>清除</span><b>ESC</b></div>
-      <div class="kv"><span>切換分頁</span><b>⌘1–9 · ⌘0 · ⌘⇧0 · ⌘⇧1 · ←→</b></div>
+      <div class="kv"><span>切換分頁</span><b>⌘1–9 · ⌘0 · ⌘⇧0 · ⌘⇧1 · ⌘⇧2 · ←→</b></div>
       <div class="kv"><span>深連結</span><b>#/頁/編號</b></div>
       <div class="kv"><span>暫停渲染</span><b>SPACE</b></div>
       <div class="kv"><span>自動認領</span><b>⌘⇧A</b></div>
@@ -157,6 +159,7 @@
         <button class="topic-btn" id="tab-person" role="tab" aria-selected="false" aria-controls="topic-person" data-topic="person">人物檔案</button>
         <button class="topic-btn" id="tab-review" role="tab" aria-selected="false" aria-controls="topic-review" data-topic="review">審核台</button>
 <button class="topic-btn" id="tab-library" role="tab" aria-selected="false" aria-controls="topic-library" data-topic="library">素材庫</button>
+        <button class="topic-btn" id="tab-authors" role="tab" aria-selected="false" aria-controls="topic-authors" data-topic="authors">作者</button>
       </div>
     </div>
 
@@ -1062,6 +1065,43 @@
         </div>
       </div>
     </section>
+    <!-- ═══ 作者 ═══ -->
+    <section class="waterfall" id="topic-authors" role="tabpanel" aria-labelledby="tab-authors" aria-hidden="true">
+      <div class="panel">
+        <div class="panel-head">
+          <div class="panel-title">作者<span class="en">douyin authors · index</span></div>
+          <div class="panel-tools">
+            <span class="chip or" id="auStatus">待連線</span>
+            <span class="chip cyan" id="auCount">—</span>
+          </div>
+        </div>
+        <div class="panel-body">
+          <div class="au-kpis" id="auKpis"></div>
+          <div class="au-bar">
+            <input type="search" id="auSearch" class="au-input" placeholder="搜尋作者名…" aria-label="搜尋作者">
+            <div class="au-seg" id="auSort" role="group" aria-label="作者排序">
+              <button type="button" data-sort="count" aria-pressed="true">作品最多</button>
+              <button type="button" data-sort="recent" aria-pressed="false">最近有作品</button>
+              <button type="button" data-sort="name" aria-pressed="false">名稱</button>
+            </div>
+            <button type="button" class="mini-btn" id="auReset">重置</button>
+          </div>
+          <div class="au-split">
+            <div class="au-col">
+              <div class="au-list" id="auList"></div>
+              <div class="au-more">
+                <button type="button" class="mini-btn primary" id="auMore">載入更多</button>
+                <span class="au-foot-text" id="auFoot">—</span>
+              </div>
+            </div>
+            <aside class="au-side" id="auSide"></aside>
+          </div>
+          <div class="p-cap">
+            <b>作者索引。</b>一位一列，資料是 <code>douyin_item</code> 的 <code>GROUP BY author</code>；點一位在右側看他的作品、容量與最近發佈，縮圖開的是素材庫那個檢視器。這頁只讀，不會回抖音抓東西。
+          </div>
+        </div>
+      </div>
+    </section>
   </main>
 
   <aside class="rail-right" aria-label="監控面板">
@@ -1198,6 +1238,7 @@
     <button class="tab" data-topic="person"><svg class="ic"><use href="#i-pulse"/></svg>人物</button>
     <button class="tab" data-topic="review"><svg class="ic"><use href="#i-shield"/></svg>審核</button>
 <button class="tab" data-topic="library"><svg class="ic"><use href="#i-cube"/></svg>素材</button>
+    <button class="tab" data-topic="authors"><svg class="ic"><use href="#i-pulse"/></svg>作者</button>
   </div>
 </nav>
 
@@ -1257,5 +1298,6 @@
 <script defer src="js/infra.js?v=20261121"></script>
 <script defer src="js/jobs.js?v=20261121"></script>
 <script defer src="js/library.js?v=20261122"></script>
+<script defer src="js/authors.js?v=20261122"></script>
 </body>
 </html>
