@@ -6,7 +6,7 @@
 
 12 個分頁各自是一塊真實介面，其中六塊（任務收集、人物檔案、審核台、基礎設施的連接器與排程工作、素材庫）加上右欄監控面板，接本機的 `kolindex-api`（SQLite）真實資料；其餘分頁仍是示範資料。
 
-![素材庫與右欄監控面板](docs/screenshot-library.jpg)
+![素材庫與右欄監控面板](screenshots/screenshot-library.jpg)
 
 ## 分頁與資料來源
 
@@ -27,7 +27,7 @@
 
 右欄監控面板（佇列深度、連接器槽位、Dispatcher、事件流、審計、儲存）也接真資料：`GET /api/rail`，15 秒輪詢。
 
-![任務收集](docs/screenshot-collect.jpg)
+![任務收集](screenshots/screenshot-collect.jpg)
 
 ## 快速開始
 
