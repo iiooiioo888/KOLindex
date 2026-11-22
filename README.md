@@ -4,6 +4,8 @@
 
 網紅索引與監控平台的介面原型，照《KOL-Index 項目計劃書／架構書／驗收規格 v2.2》做的「自動認領 × LLM 空檔排程」執行時畫面。純靜態：HTML + CSS + 原生 JS，沒有框架、沒有建置步驟、沒有 npm 依賴。
 
+> 本原型對齊規格 **v2.2 的 UX 語意**；資料模型與治理模型以 **v4.0** 為準（治理層、31 張表、Sandbox／Egress 分離、F14／F15）。原型尚未實作治理層，落差列在 ROADMAP。
+
 12 個分頁各自是一塊真實介面，其中七塊（任務收集、席位執行的 worker pool、人物檔案、審核台、基礎設施的連接器與排程工作、素材庫）加上右欄監控面板，接本機的 `kolindex-api`（SQLite）真實資料；其餘分頁仍是示範資料。
 
 哪些頁面接真資料、哪些還是示範、規格書（v2.2）還缺哪些表與端點，都列在 **[ROADMAP.md](ROADMAP.md)**（2026-11-23）。
@@ -25,7 +27,7 @@
 | 09 | UI 生成 | 一句話畫線框圖，走 OpenAI 相容 API | 需要代理（見下） |
 | 10 | 人物檔案 | 抖音作者索引，清單與檔案兩個檢視、作品時間軸、平台互動數 | 真（`/api/library/authors` 等） |
 | 11 | 審核台 | F2 歸戶佇列，人工裁決寫回 `review_task` 並留 `audit_log` | 真（含兩支寫入） |
-| 12 | 素材庫 | 抖音點讚／收藏 3 萬件作品、18.9k 位作者、本機檔案與下載、無損／有損壓縮 | 真（`/api/library`、`/api/mylike`、`/api/library/optimize`、`/api/library/lossy`） |
+| 12 | 素材庫 | 本機抖音作品索引（圖集／影片）、作者檢視、下載缺檔、無損清理、衍生層 | 真（`/api/library`、`/api/mylike`、`/api/library/optimize`、`/api/library/derivative`） |
 
 右欄監控面板（佇列深度、連接器槽位、Dispatcher、事件流、審計、儲存）也接真資料：`GET /api/rail`，15 秒輪詢。
 
@@ -43,7 +45,7 @@ node tests/dev-server.mjs . 5200
 
 ### 配後端
 
-後端 `kolindex-api`（Node + `node:sqlite`，18 張表）不在這個 repo，跑起來後：
+後端 `kolindex-api`（Node + `node:sqlite`，24 張表）在另一個 repo，跑起來後：
 
 ```
 node server.mjs                       # API 127.0.0.1:5210
@@ -65,7 +67,7 @@ node tests/test-ds.mjs         # 設計系統四層、權杖、單一 accent、�
 node tests/test-balance.mjs    # HTML 標籤開閉配對（少一個 </section> 會整頁空白）
 ```
 
-四支都只打 `127.0.0.1:5200`，不需要後端；`check` job 在每次 `push`／`PR` 跑這組。更完整的十六支（含寫入端點、離線、瀏覽器截圖）在私有開發資料夾 `KOLindex-dev`，不在這個 repo。
+四支都只打 `127.0.0.1:5200`，不需要後端；`check` job 在每次 `push`／`PR` 跑這組。更完整的十九支（含寫入端點、離線、瀏覽器截圖）在私有開發資料夾 `KOLindex-dev`，不在這個 repo。
 
 ## 部署
 
@@ -87,12 +89,12 @@ js/seats.js            席位編隊 → /api/seats（派工、自動派工、工
 js/*.js                各分頁邏輯（studio／person／review／infra／jobs／library／wireframe）
 fonts/                 自架 woff2（Chakra Petch、IBM Plex Mono）
 tests/                 四支靜態檢查 + 零依賴 dev-server
-docs/                  README 用的截圖
+screenshots/           README 用的截圖
 ```
 
 ## 已知限制
 
-- 仍是原型：任務隊列、感測上下文、產出庫、席位執行、統一管線、開源組件是示範資料，動畫用 `requestAnimationFrame` 產生。
-- 素材庫依賴本機已經抓下來的抖音媒體（約 86.8 GB / 95,023 檔），repo 裡沒有任何媒體檔。
-- 只有六組寫入路徑（審核裁決、收集認領／退回、素材庫補檔、圖片無損壓縮、圖片有損壓縮、席位派工與工單結果），其餘分頁唯讀。「有損壓縮」會改像素且不可逆，預設不在 UI 自動執行，要自己按。
-- 外部依賴只有 jsdelivr 的 tippy.js／popper.js（有 SRI）與 highlight.js（無 SRI），離線時失效但頁面仍可載入。
+- 仍是原型：任務隊列、感測上下文、產出庫、統一管線、開源組件是示範資料，動畫用 `requestAnimationFrame` 產生。席位執行的 8 席 worker pool 是真的，但下方的 80 席角色表仍是示範。
+- 素材庫依賴本機已經抓下來的抖音媒體（數萬件作品、數十 GB），repo 裡沒有任何媒體檔；索引與媒體都只在本機。
+- 只有六組寫入路徑（審核裁決、收集認領／退回、素材庫補檔、圖片無損清理、席位派工與工單結果、圖片衍生層），其餘分頁唯讀。「產生衍生層」只新增 `<原檔>.q50.webp` 並記血緣，**原檔與 sha256 不動**，所以不會釋放空間；要省空間得另外決定原檔的保留政策。
+- 外部依賴只有 jsdelivr 的 tippy.js／popper.js 與 highlight.js，三者都帶 sha384 SRI；離線時失效但頁面仍可載入。

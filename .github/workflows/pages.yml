@@ -54,20 +54,36 @@ jobs:
       url: ${{ steps.deploy.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
-      # GITHUB_TOKEN 沒有管理員權限，開不了 Pages；已經在 Settings → Pages
-      # 把 Source 設成「GitHub Actions」時這步會直接成功，所以讓它可失敗。
-      - name: 啟用 Pages（如果還沒開）
-        continue-on-error: true
-        uses: actions/configure-pages@v5
-        with:
-          enablement: true
+      # GITHUB_TOKEN 沒有管理員權限，開不了 Pages。這裡先問 API，沒開就跳過發佈並留 notice，
+      # 讓 CI 保持綠色；到 Settings → Pages → Source 選「GitHub Actions」後重跑即可發佈。
+      - name: 檢查 Pages 是否已啟用
+        id: pages
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          code=$(curl -s -o /dev/null -w '%{http_code}' \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "${{ github.api_url }}/repos/${{ github.repository }}/pages")
+          echo "Pages API: $code"
+          if [ "$code" = "200" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::GitHub Pages 還沒啟用（Settings → Pages → Source 選 GitHub Actions），這次只跑檢查、不發佈。"
+          fi
       - name: 整理要發佈的檔案
+        if: steps.pages.outputs.enabled == 'true'
         run: |
           mkdir -p _site
           cp index2.html _site/
           cp -r css js fonts _site/
-      - uses: actions/upload-pages-artifact@v3
+      - name: 上傳 artifact
+        if: steps.pages.outputs.enabled == 'true'
+        uses: actions/upload-pages-artifact@v3
         with:
           path: _site
-      - id: deploy
+      - name: 發佈
+        if: steps.pages.outputs.enabled == 'true'
+        id: deploy
         uses: actions/deploy-pages@v4
