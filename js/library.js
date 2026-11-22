@@ -424,6 +424,233 @@ function step(delta){
   paintViewer();
 }
 
+/* ---------- MyLike 同步面板 ---------- */
+var M={open:false,loading:false,data:null,job:null,polling:0,busy:false};
+
+function toast(msg){ if(window.KOLINDEX_UI&&window.KOLINDEX_UI.toast) window.KOLINDEX_UI.toast(msg); }
+
+function post(path,body){
+  return fetch(BASE+path,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body||{})}).then(function(r){
+    return r.text().then(function(t){
+      var j={};
+      try { j=t?JSON.parse(t):{}; } catch(e){ j={raw:t}; }
+      return {ok:r.ok,status:r.status,data:j};
+    });
+  });
+}
+
+function ago(ts){
+  if(!ts) return '—';
+  var t=Date.parse(String(ts).replace(' ','T')+(/Z$/.test(String(ts))?'':'Z'));
+  if(!t) return '—';
+  var s=Math.max(0,Math.round((Date.now()-t)/1000));
+  if(s<60) return '剛剛';
+  if(s<3600) return Math.round(s/60)+'m';
+  if(s<86400) return Math.round(s/3600)+'h';
+  return Math.round(s/86400)+'d';
+}
+
+function mlCards(d){
+  var box=$('mlCards');
+  if(!box) return;
+  if(!d){ box.innerHTML='<div class="ml-card"><span class="mc-k">狀態</span><b>讀取中…</b></div>'; return; }
+  var db=d.db||{}, disk=d.disk||{};
+  var cdpOk=!!(d.cdp&&d.cdp.ok), pageOk=!!(d.page&&d.page.ok);
+  var h='';
+  h+='<div class="ml-card"><span class="mc-k">CDP</span><b class="'+(cdpOk?'ok':'bad')+'">'+(cdpOk?'已連線':'未連線')+'</b>'+
+     '<span class="mc-v">'+esc(cdpOk?(d.cdp.browser||'—'):((d.cdp&&d.cdp.error)||'—'))+'</span></div>';
+  h+='<div class="ml-card"><span class="mc-k">抖音頁</span><b class="'+(pageOk?'ok':'bad')+'">'+(pageOk?'就緒':'已關閉')+'</b>'+
+     '<span class="mc-v">'+esc(pageOk?(d.page.title||''):((d.page&&d.page.error)||'需要喚醒'))+'</span></div>';
+  h+='<div class="ml-card"><span class="mc-k">帳號</span><b>'+esc((d.account&&d.account.name)||'—')+'</b>'+
+     '<span class="mc-v">'+esc(String((d.account&&d.account.id)||'').slice(0,8))+'</span></div>';
+  h+='<div class="ml-card"><span class="mc-k">索引</span><b>'+nfmt(db.items)+' 件</b>'+
+     '<span class="mc-v">本機 '+nfmt(db.localItems)+' · '+bytes(db.bytes)+'</span></div>';
+  h+='<div class="ml-card"><span class="mc-k">磁碟</span><b class="'+(disk.ok&&disk.freeGb<20?'bad':'ok')+'">'+(disk.ok?disk.freeGb+' GB':'—')+'</b>'+
+     '<span class="mc-v">'+esc((disk.drive||'')+' 可用')+'</span></div>';
+  h+='<div class="ml-card"><span class="mc-k">收藏夾</span><b>'+nfmt((d.folders||[]).length)+' 個</b>'+
+     '<span class="mc-v">已標記 '+nfmt(db.folderTagged)+' 件</span></div>';
+  box.innerHTML=h;
+}
+
+function mlConn(d){
+  var c=$('mlConn'), dot=$('libMyLikeDot');
+  var pageOk=!!(d&&d.page&&d.page.ok), cdpOk=!!(d&&d.cdp&&d.cdp.ok);
+  if(c){
+    c.textContent=cdpOk?(pageOk?'已連線':'待喚醒'):'未連線';
+    c.className='chip '+(cdpOk&&pageOk?'cyan':'or');
+  }
+  if(dot){
+    dot.className='ml-dot'+(pageOk?' on':'')+((M.job&&M.job.state==='running')?' run':'');
+    dot.textContent='';
+  }
+}
+
+function mlFolders(d){
+  var box=$('mlFolders');
+  if(!box) return;
+  var fs=(d&&d.folders)||[];
+  var c=$('mlFolderCount');
+  if(c) c.textContent=fs.length?('· '+fs.length+' 個 · 共 '+nfmt(fs.reduce(function(a,b){ return a+(b.total||0); },0))+' 件'):'';
+  if(!fs.length){ box.innerHTML='<div class="ml-empty">還沒有收藏夾清單。按「重新抓收藏夾」向 MyLike 要一次（約 20 秒）。</div>'; return; }
+  box.innerHTML=fs.map(function(f){
+    return '<div class="ml-folder" data-fid="'+esc(f.id)+'">'+
+      '<span class="mf-name">'+esc(f.name)+'</span>'+
+      '<span class="mf-n">'+nfmt(f.total)+'</span>'+
+      '<span class="mf-tag">'+nfmt(f.dbItems)+'</span>'+
+      '<span class="mf-time">'+esc(ago(f.syncedAt))+'</span>'+
+      '<button type="button" class="mini-btn" data-ml-folder="'+esc(f.id)+'">抓索引</button>'+
+    '</div>';
+  }).join('');
+}
+
+function mlRuns(d){
+  var box=$('mlRuns');
+  if(!box) return;
+  var runs=(d&&d.last)||[];
+  if(!runs.length){ box.innerHTML='<div class="ml-empty">還沒有同步紀錄。</div>'; return; }
+  var KIND={likes:'點讚',favorites:'收藏',folder:'收藏夾'};
+  box.innerHTML=runs.map(function(r){
+    var tag=r.kind==='folder'?(r.targetName||'收藏夾'):(KIND[r.kind]||r.kind);
+    var st=r.state==='error'?'<span class="mr-state bad">失敗</span>':(r.state==='running'?'<span class="mr-state">進行中</span>':'<span class="mr-state ok">完成</span>');
+    return '<div class="ml-run" title="'+esc(r.error||'')+'">'+
+      '<span class="mr-kind">'+esc(tag)+'</span>'+
+      '<span class="mr-num">+'+nfmt(r.added)+'</span>'+
+      '<span class="mr-num dim">'+nfmt(r.updated)+'</span>'+
+      '<span class="mr-pages">'+nfmt(r.pages)+' 頁</span>'+
+      st+
+      '<span class="mr-time">'+esc(ago(r.finishedAt||r.startedAt))+'</span>'+
+    '</div>';
+  }).join('');
+}
+
+function mlProg(job){
+  var box=$('mlProg'), bar=$('mlBar'), txt=$('mlProgText');
+  if(!box) return;
+  if(!job||job.state!=='running'){ box.hidden=true; return; }
+  box.hidden=false;
+  var max=Number(job.maxPages)||60;
+  var pct=Math.max(2,Math.min(100,Math.round((Number(job.pages)||0)/max*100)));
+  if(bar) bar.style.width=pct+'%';
+  var label=job.kind==='folder'?('收藏夾 · '+(job.targetName||'')):(job.kind==='likes'?'點讚':'收藏');
+  if(txt) txt.textContent=label+' · 第 '+(job.pages||0)+' / '+max+' 頁 · 新增 '+nfmt(job.added)+' · 已存在 '+nfmt(job.updated);
+}
+
+function mlRenderAll(){
+  mlConn(M.data);
+  mlCards(M.data);
+  mlFolders(M.data);
+  mlRuns(M.data);
+  mlProg(M.job);
+}
+
+function mlLoad(){
+  if(M.loading) return Promise.resolve(false);
+  M.loading=true;
+  return req('/api/mylike').then(function(res){
+    M.loading=false;
+    if(!res.ok){
+      M.data=null;
+      mlRenderAll();
+      return false;
+    }
+    M.data=res.data||{};
+    M.job=M.data.job||M.job||null;
+    mlRenderAll();
+    if(M.job&&M.job.state==='running') mlPoll();
+    return true;
+  }).catch(function(){
+    M.loading=false; M.data=null; mlRenderAll();
+    return false;
+  });
+}
+
+function mlPoll(){
+  if(M.polling) return;
+  M.polling=setInterval(function(){
+    req('/api/mylike/job').then(function(res){
+      if(!res.ok){ clearInterval(M.polling); M.polling=0; return; }
+      var job=res.data&&res.data.job;
+      if(job) M.job=job;
+      mlProg(M.job);
+      mlConn(M.data);
+      if(job&&job.state==='running') return;
+      clearInterval(M.polling); M.polling=0;
+      mlLoad();
+      reload(true);
+      if(job&&job.state==='done') toast('同步完成 · 新增 '+nfmt(job.added)+' 件');
+      else if(job&&job.state==='error') toast('同步失敗：'+(job.error||''));
+    }).catch(function(){ clearInterval(M.polling); M.polling=0; });
+  },1500);
+}
+
+function mlStart(source){
+  var sel=$('mlPages');
+  var pages=Number(sel&&sel.value)||5;
+  post('/api/mylike/sync',{source:source,pages:pages}).then(function(res){
+    if(res.status===409){ toast('已有同步在跑，等它跑完'); mlLoad(); return; }
+    if(!res.ok){ toast('開始失敗：'+esc((res.data&&(res.data.error||res.data.message))||res.status)); return; }
+    M.job=res.data&&res.data.job;
+    mlProg(M.job); mlConn(M.data); mlPoll();
+    toast(source==='likes'?'開始同步點讚':'開始同步收藏');
+  }).catch(function(err){ toast('開始失敗：'+String(err&&err.message||err)); });
+}
+
+function mlFolder(id){
+  post('/api/mylike/folders/'+encodeURIComponent(id)+'/sync',{pages:400}).then(function(res){
+    if(res.status===404){ toast('這個收藏夾不在清單裡，先重新抓收藏夾'); return; }
+    if(res.status===409){ toast('已有同步在跑，等它跑完'); mlLoad(); return; }
+    if(!res.ok){ toast('開始失敗：'+esc((res.data&&(res.data.error||res.data.message))||res.status)); return; }
+    M.job=res.data&&res.data.job;
+    mlProg(M.job); mlConn(M.data); mlPoll();
+    toast('開始抓收藏夾：'+((M.job&&M.job.targetName)||''));
+  }).catch(function(err){ toast('開始失敗：'+String(err&&err.message||err)); });
+}
+
+function mlWake(){
+  var btn=$('mlWake');
+  if(btn){ btn.disabled=true; btn.textContent='喚醒中…'; }
+  post('/api/mylike/wake',{}).then(function(res){
+    if(btn){ btn.disabled=false; btn.textContent='喚醒抖音頁'; }
+    if(res.ok&&res.data&&res.data.ok) toast('抖音頁已開');
+    else toast('喚醒失敗：'+esc((res.data&&res.data.error)||res.status));
+    mlLoad();
+  }).catch(function(err){
+    if(btn){ btn.disabled=false; btn.textContent='喚醒抖音頁'; }
+    toast('喚醒失敗：'+String(err&&err.message||err));
+  });
+}
+
+function mlRefreshFolders(){
+  var btn=$('mlRefresh');
+  if(btn){ btn.disabled=true; btn.textContent='抓取中…'; }
+  post('/api/mylike/folders/refresh',{}).then(function(res){
+    if(btn){ btn.disabled=false; btn.textContent='重新抓收藏夾'; }
+    if(!res.ok){ toast('抓收藏夾失敗：'+esc((res.data&&(res.data.message||res.data.error))||res.status)); return; }
+    toast('已更新 '+nfmt(res.data.fetched)+' 個收藏夾');
+    mlLoad();
+  }).catch(function(err){
+    if(btn){ btn.disabled=false; btn.textContent='重新抓收藏夾'; }
+    toast('抓收藏夾失敗：'+String(err&&err.message||err));
+  });
+}
+
+function mlOpen(){
+  var p=$('libMyLikePanel'), b=$('libMyLike');
+  if(!p) return;
+  p.hidden=false;
+  M.open=true;
+  if(b) b.setAttribute('aria-expanded','true');
+  mlLoad();
+}
+
+function mlClose(){
+  var p=$('libMyLikePanel'), b=$('libMyLike');
+  if(p) p.hidden=true;
+  M.open=false;
+  if(b) b.setAttribute('aria-expanded','false');
+  if(M.polling){ clearInterval(M.polling); M.polling=0; }
+}
+
 /* ---------- 事件 ---------- */
 function debounce(fn,ms){
   var t=null;
@@ -501,6 +728,19 @@ function bind(){
     reload(true);
   });
 
+  /* MyLike 面板 */
+  on($('libMyLike'),'click',function(){ if(M.open) mlClose(); else mlOpen(); });
+  on($('mlClose'),'click',mlClose);
+  on($('mlWake'),'click',mlWake);
+  on($('mlRefresh'),'click',mlRefreshFolders);
+  var mlp=$('libMyLikePanel');
+  on(mlp,'click',function(e){
+    var b=e.target.closest('[data-ml-sync]');
+    if(b){ mlStart(b.getAttribute('data-ml-sync')); return; }
+    var f=e.target.closest('[data-ml-folder]');
+    if(f) mlFolder(f.getAttribute('data-ml-folder'));
+  });
+
   on($('libClose'),'click',closeViewer);
   on($('libPrev'),'click',function(){ step(-1); });
   on($('libNext'),'click',function(){ step(1); });
@@ -515,6 +755,7 @@ function bind(){
   });
 
   document.addEventListener('keydown',function(e){
+    if(e.key==='Escape'&&M.open){ e.preventDefault(); mlClose(); return; }
     var v=$('libViewer');
     if(!v||v.hidden) return;
     if(e.key==='Escape'){ e.preventDefault(); closeViewer(); return; }
@@ -533,6 +774,7 @@ function bind(){
       var t=document.body.getAttribute('data-topic');
       var now=t==='library';
       if(now===L.active) return;
+      if(!now&&M.open) mlClose();
       L.active=now;
       if(now&&(!L.loaded||Date.now()-L.at>POLL_MS)) reload(true);
     });
@@ -547,5 +789,6 @@ else bind();
 
 window.KOLINDEX_LIBRARY={state:L,load:load,reload:reload,loadAuthors:loadAuthors,setMode:setMode,setAuthor:setAuthor,
   clearAuthor:clearAuthor,displayAuthor:displayAuthor,authorRowHtml:authorRowHtml,renderAuthors:renderAuthors,
-  openViewer:openViewer,closeViewer:closeViewer,mediaUrl:mediaUrl,esc:esc,bytes:bytes,day:day,trim:trim,nfmt:nfmt};
+  openViewer:openViewer,closeViewer:closeViewer,mediaUrl:mediaUrl,esc:esc,bytes:bytes,day:day,trim:trim,nfmt:nfmt,
+  mylike:{state:M,open:mlOpen,close:mlClose,load:mlLoad,start:mlStart,folder:mlFolder,wake:mlWake,refreshFolders:mlRefreshFolders,ago:ago}};
 })();

@@ -1032,6 +1032,9 @@
               <option value="name">名稱</option>
             </select>
             <button type="button" class="mini-btn" id="libReset">重置</button>
+            <button type="button" class="mini-btn mylike-btn" id="libMyLike" aria-expanded="false" aria-controls="libMyLikePanel">
+              <span class="ml-dot" id="libMyLikeDot" aria-hidden="true"></span>MyLike 同步
+            </button>
           </div>
           <div class="lib-chipbar" id="libAuthorChip" hidden>
             <span class="lcb-label">作者</span>
@@ -1044,8 +1047,55 @@
             <span class="lib-foot-text" id="libFoot">—</span>
           </div>
           <div class="p-cap">
-            <b>本機抖音素材。</b>索引由 <code>sync-library.mjs</code> 把 <code>gallery/index.json</code> 灌進 API 的 <code>douyin_item</code>；縮圖與影片由 5400 的靜態站直接給。這頁只讀，不會去抖音重新抓。
+            <b>本機抖音素材。</b>索引由 <code>sync-library.mjs</code> 把 <code>gallery/index.json</code> 灌進 API 的 <code>douyin_item</code>；縮圖與影片由 5400 的靜態站直接給。要回抖音補新點讚、新收藏或收藏夾，按右上的「MyLike 同步」。
           </div>
+
+          <aside class="mylike-panel" id="libMyLikePanel" role="dialog" aria-label="MyLike 同步" hidden>
+            <div class="ml-head">
+              <div class="ml-title">MyLike 同步<span class="en">douyin index · incremental</span></div>
+              <div class="ml-head-right">
+                <span class="chip or" id="mlConn">未連線</span>
+                <button type="button" class="ml-x" id="mlClose" aria-label="關閉面板">×</button>
+              </div>
+            </div>
+            <div class="ml-body">
+              <div class="ml-cards" id="mlCards"></div>
+
+              <div class="ml-row">
+                <button type="button" class="mini-btn" id="mlWake">喚醒抖音頁</button>
+                <button type="button" class="mini-btn primary" data-ml-sync="likes">同步點讚</button>
+                <button type="button" class="mini-btn primary" data-ml-sync="favorites">同步收藏</button>
+                <select id="mlPages" class="lib-select" aria-label="每輪抓幾頁">
+                  <option value="5">每輪 5 頁</option>
+                  <option value="15">每輪 15 頁</option>
+                  <option value="60">每輪 60 頁</option>
+                  <option value="2">每輪 2 頁（試跑）</option>
+                </select>
+              </div>
+
+              <div class="ml-prog" id="mlProg" hidden>
+                <div class="ml-track"><span class="ml-bar" id="mlBar"></span></div>
+                <div class="ml-prog-text" id="mlProgText">—</div>
+              </div>
+
+              <div class="ml-sec">
+                <div class="ml-sec-head">
+                  <span>收藏夾<span class="ml-dim" id="mlFolderCount"></span></span>
+                  <button type="button" class="mini-btn" id="mlRefresh">重新抓收藏夾</button>
+                </div>
+                <div class="ml-folders" id="mlFolders"></div>
+              </div>
+
+              <div class="ml-sec">
+                <div class="ml-sec-head"><span>最近同步</span></div>
+                <div class="ml-runs" id="mlRuns"></div>
+              </div>
+
+              <div class="ml-note">
+                同步只把索引（作者、標題、封面、播放網址）寫進 <code>douyin_item</code>，不下載媒體；<code>files / bytes</code> 保留本機原本的數字，由 <code>download.mjs</code> 事後補。抖音播放網址幾小時就過期，之後用 <code>refill.mjs</code> 重取。
+              </div>
+            </div>
+          </aside>
         </div>
       </div>
 
