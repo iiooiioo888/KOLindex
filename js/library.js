@@ -1,7 +1,8 @@
 /* ============================================================
    library.js · 「素材庫」分頁
    抖音點讚／收藏抓下來的作品索引（30.7k 件），縮圖與影片由本機靜態站給。
-   後端：GET /api/library?q=&kind=&source=&sort=&limit=&offset=
+   後端：GET /api/library?q=&kind=&source=&sort=&limit=&offset=&author=
+         GET /api/library/authors?q=&sort=&limit=&offset=（作者索引）
          GET /api/library/:id（含本機檔案清單與原始網址）
    這頁只讀，不寫任何東西。
    ============================================================ */
@@ -13,10 +14,12 @@ var MEDIA=(typeof window!=='undefined'&&window.KOLINDEX_MEDIA)||'http://127.0.0.
 
 var SRC_LABEL={likes:'讚',favorites:'藏',folder:'夾',unknown:'?'};
 var KIND_LABEL={gallery:'圖集',video:'影片'};
-var LIMIT=48, POLL_MS=120000;
+var LIMIT=48, ALIMIT=120, POLL_MS=120000;
 
 var L={ok:false,loaded:false,loading:false,active:false,q:'',kind:'all',source:'all',sort:'recent',
-  items:[],total:0,offset:0,counts:null,sources:null,error:'',at:0,tok:0,view:null,detail:null};
+  items:[],total:0,offset:0,counts:null,sources:null,error:'',at:0,tok:0,view:null,detail:null,
+  mode:'items',author:'',authors:[],authorTotal:0,aOffset:0,asort:'count',atok:0,authorLoading:false,
+  aCounts:null};
 
 /* ---------- 小工具 ---------- */
 function $(id){ return document.getElementById(id); }
@@ -63,6 +66,7 @@ function query(){
   if(L.q) p.push('q='+encodeURIComponent(L.q));
   if(L.kind!=='all') p.push('kind='+encodeURIComponent(L.kind));
   if(L.source!=='all') p.push('source='+encodeURIComponent(L.source));
+  if(L.author) p.push('author='+encodeURIComponent(L.author));
   p.push('sort='+encodeURIComponent(L.sort));
   return '/api/library?'+p.join('&');
 }
@@ -75,6 +79,11 @@ function req(path){
       return {ok:r.ok,status:r.status,data:j};
     });
   });
+}
+
+function displayAuthor(a){
+  if(!a) return '未命名';
+  return a==='unnamed'?'未命名':a;
 }
 
 function load(reset){
@@ -114,6 +123,111 @@ function load(reset){
   return L.pending;
 }
 
+/* ---------- 作者索引 ---------- */
+function loadAuthors(reset){
+  if(L.authorLoading){ L.aQueued=!!(reset||L.aQueued); return Promise.resolve(false); }
+  if(reset){ L.aOffset=0; }
+  var tok=++L.atok;
+  L.authorLoading=true;
+  setStatus('載入作者…','or');
+  var path='/api/library/authors?sort='+encodeURIComponent(L.asort)+'&limit='+ALIMIT+'&offset='+L.aOffset;
+  if(L.q) path+='&q='+encodeURIComponent(L.q);
+  L.aPending=req(path).then(function(res){
+    if(tok!==L.atok) return false;
+    L.authorLoading=false;
+    if(!res.ok){
+      L.ok=false; L.error=(res.data&&(res.data.error||res.data.message))||('HTTP '+res.status);
+      setStatus('後端未連線','or');
+      renderError();
+      return false;
+    }
+    var d=res.data||{};
+    L.ok=true; L.loaded=true; L.at=Date.now(); L.error='';
+    L.aCounts=d.counts||null;
+    L.authorTotal=Number(d.total)||0;
+    L.authors=reset?(d.items||[]):L.authors.concat(d.items||[]);
+    L.aOffset=L.authors.length;
+    setStatus('API · LIVE','cyan');
+    renderAuthors();
+    return true;
+  }).catch(function(err){
+    if(tok!==L.atok) return false;
+    L.authorLoading=false; L.ok=false; L.error=String(err&&err.message||err);
+    setStatus('後端未連線','or');
+    renderError();
+    return false;
+  }).then(function(v){
+    if(L.aQueued){ var again=L.aQueued; L.aQueued=false; loadAuthors(again); }
+    return v;
+  });
+  return L.aPending;
+}
+
+function authorRowHtml(a){
+  var meta=[];
+  if(a.works) meta.push(nfmt(a.works)+' 件');
+  if(a.gallery) meta.push('圖集 '+nfmt(a.gallery));
+  if(a.video) meta.push('影片 '+nfmt(a.video));
+  if(a.localItems!=null&&a.localItems<a.works) meta.push('本機 '+nfmt(a.localItems));
+  return '<button type="button" class="lib-author" data-author="'+esc(a.author)+'" title="只看這位作者的素材">'+
+    '<span class="la-name">'+esc(displayAuthor(a.author))+'</span>'+
+    '<span class="la-meta">'+esc(meta.join(' · '))+'</span>'+
+    '<span class="la-right"><b>'+esc(nfmt(a.files)+' 檔 · '+bytes(a.bytes))+'</b>'+
+      '<span>'+esc(day(a.lastCt))+'</span></span>'+
+  '</button>';
+}
+
+function renderAuthors(){
+  var box=$('libGrid');
+  if(!box) return;
+  box.classList.add('is-authors');
+  if(!L.authors.length){
+    box.innerHTML='<div class="lib-empty">'+(L.loaded?'沒有符合的作者':'尚未載入')+'</div>';
+  } else {
+    box.innerHTML=L.authors.map(authorRowHtml).join('');
+  }
+  var cnt=$('libCount');
+  if(cnt) cnt.textContent=nfmt(L.authorTotal)+' 位作者';
+  renderFoot();
+}
+
+function setMode(m){
+  L.mode=(m==='authors')?'authors':'items';
+  var authors=L.mode==='authors';
+  var seg=$('libMode');
+  if(seg) seg.querySelectorAll('button').forEach(function(x){ x.setAttribute('aria-pressed',String(x.getAttribute('data-mode')===L.mode)); });
+  [$('libKind'),$('libSource'),$('libSort')].forEach(function(el){ if(el) el.hidden=authors; });
+  var as=$('libASort'); if(as) as.hidden=!authors;
+  var box=$('libGrid'); if(box&&authors) box.classList.add('is-authors');
+  var foot=$('libFoot');
+  if(authors){ if(foot) foot.textContent=''; loadAuthors(true); }
+  else { if(box) box.classList.remove('is-authors'); load(true); }
+  return L.mode;
+}
+
+function updateChip(){
+  var chip=$('libAuthorChip'), nm=$('libAuthorName');
+  if(chip) chip.hidden=!L.author;
+  if(nm) nm.textContent=L.author?displayAuthor(L.author):'—';
+}
+
+function setAuthor(name){
+  L.author=String(name||'');
+  updateChip();
+  setMode('items');
+}
+
+function clearAuthor(){
+  if(!L.author) return;
+  L.author='';
+  updateChip();
+  if(L.mode==='items') load(true); else loadAuthors(true);
+}
+
+function reload(reset){
+  return L.mode==='authors'? loadAuthors(!!reset) : load(!!reset);
+}
+
 /* ---------- 畫面 ---------- */
 function renderKpis(){
   var box=$('libKpis');
@@ -149,7 +263,7 @@ function cardHtml(it){
     '<span class="lc-shot">'+img+play+badges+(srcs?'<span class="lc-src">'+esc(srcs)+'</span>':'')+'</span>'+
     '<span class="lc-meta">'+
       '<b class="lc-title">'+esc(trim(it.caption,42)||'（無標題）')+'</b>'+
-      '<span class="lc-sub">'+esc(it.author||'未命名')+' · '+esc(day(it.ct))+'</span>'+
+      '<span class="lc-sub">'+esc(displayAuthor(it.author))+' · '+esc(day(it.ct))+'</span>'+
       '<span class="lc-foot">'+esc(it.kind==='video'?'1 支 · ':(it.images||0)+' 張 · ')+esc(bytes(it.bytes))+
         (it.hasLocal?'':' · 未下載')+'</span>'+
     '</span>'+
@@ -159,6 +273,7 @@ function cardHtml(it){
 function renderGrid(){
   var box=$('libGrid');
   if(!box) return;
+  box.classList.remove('is-authors');
   if(!L.items.length){
     box.innerHTML='<div class="lib-empty">'+(L.loaded?'沒有符合的素材':'尚未載入')+'</div>';
     renderFoot();
@@ -172,12 +287,17 @@ function renderGrid(){
 
 function renderFoot(){
   var more=$('libMore'), foot=$('libFoot');
+  var authors=L.mode==='authors';
+  var n=authors?L.authors.length:L.items.length;
+  var total=authors?L.authorTotal:L.total;
+  var busy=authors?L.authorLoading:L.loading;
+  var unit=authors?'位':'件';
   if(more){
-    var has=L.items.length<L.total;
-    more.disabled=!has||L.loading;
-    more.textContent=has?'載入更多（還有 '+nfmt(L.total-L.items.length)+' 件）':'沒有更多了';
+    var has=n<total;
+    more.disabled=!has||busy;
+    more.textContent=has?'載入更多（還有 '+nfmt(total-n)+' '+unit+'）':'沒有更多了';
   }
-  if(foot) foot.textContent=L.items.length?('顯示 '+nfmt(L.items.length)+' / '+nfmt(L.total)+' 件'):'';
+  if(foot) foot.textContent=n?('顯示 '+nfmt(n)+' / '+nfmt(total)+' '+unit+(authors?'作者':'')+' · '+(authors?'點一位看他名下的作品':'點縮圖開檢視器')):'';
 }
 
 function renderAll(){ renderKpis(); renderGrid(); renderFoot(); }
@@ -223,7 +343,7 @@ function paintViewer(){
     head.innerHTML='<div class="lv-kicker">'+esc(KIND_LABEL[det.kind]||det.kind)+' · '+
       esc((det.sources||[]).map(function(s){return SRC_LABEL[s]||s;}).join('·'))+' · '+esc(day(det.ct))+'</div>'+
       '<div class="lv-title">'+esc(trim(det.caption,120)||'（無標題）')+'</div>'+
-      '<div class="lv-sub">'+esc(det.author||'未命名')+' · <code>'+esc(det.id)+'</code></div>';
+      '<div class="lv-sub">'+esc(displayAuthor(det.author))+' · <code>'+esc(det.id)+'</code></div>';
   }
   var body=$('libViewBody');
   if(body){
@@ -238,9 +358,15 @@ function paintViewer(){
     }).join('')+
     '<div class="lv-actions">'+
       '<a class="mini-btn" href="'+esc(det.url)+'" target="_blank" rel="noopener">原始網址</a>'+
+      '<button type="button" class="mini-btn" id="libViewAuthor">這位作者</button>'+
       '<button type="button" class="mini-btn" id="libCopyPath">複製目錄</button>'+
     '</div>';
     on($('libCopyPath'),'click',function(){ copyPath(det); });
+    on($('libViewAuthor'),'click',function(){
+      var who=det.author;
+      closeViewer();
+      if(who) setAuthor(who);
+    });
   }
   var th=$('libThumbs');
   if(th){
@@ -309,19 +435,33 @@ function debounce(fn,ms){
 }
 
 function bind(){
+  updateChip();
   var grid=$('libGrid');
   on(grid,'click',function(e){
+    var row=e.target.closest('.lib-author');
+    if(row){ setAuthor(row.getAttribute('data-author')); return; }
     var card=e.target.closest('.lib-card');
     if(card) openViewer(card.getAttribute('data-id'));
   });
 
+  var seg=$('libMode');
+  on(seg,'click',function(e){
+    var b=e.target.closest('button[data-mode]');
+    if(!b) return;
+    var m=b.getAttribute('data-mode');
+    if(m===L.mode) return;
+    setMode(m);
+  });
+
+  on($('libAuthorClear'),'click',clearAuthor);
+
   var more=$('libMore');
-  on(more,'click',function(){ load(false); });
+  on(more,'click',function(){ reload(false); });
 
   var search=$('libSearch');
   var doSearch=debounce(function(){
     L.q=String(search&&search.value||'').trim();
-    load(true);
+    reload(true);
   },260);
   on(search,'input',doSearch);
 
@@ -346,15 +486,19 @@ function bind(){
   var sort=$('libSort');
   on(sort,'change',function(){ L.sort=sort.value||'recent'; load(true); });
 
+  var asort=$('libASort');
+  on(asort,'change',function(){ L.asort=asort.value||'count'; if(L.mode==='authors') loadAuthors(true); });
+
   var reset=$('libReset');
   on(reset,'click',function(){
-    L.q=''; L.kind='all'; L.source='all'; L.sort='recent';
+    L.q=''; L.kind='all'; L.source='all'; L.sort='recent'; L.author='';
     if(search) search.value='';
     if(sort) sort.value='recent';
     var k=$('libKind'), s=$('libSource');
     if(k) k.querySelectorAll('button').forEach(function(x){ x.setAttribute('aria-pressed',String(x.getAttribute('data-kind')==='all')); });
     if(s) s.querySelectorAll('button').forEach(function(x){ x.setAttribute('aria-pressed',String(x.getAttribute('data-source')==='all')); });
-    load(true);
+    updateChip();
+    reload(true);
   });
 
   on($('libClose'),'click',closeViewer);
@@ -380,8 +524,8 @@ function bind(){
 
   window.addEventListener('kolindex:api',function(e){
     var d=(e&&e.detail)||{};
-    if(d.ok&&!L.loaded) load(true);
-    else if(d.ok&&L.active&&Date.now()-L.at>POLL_MS) load(true);
+    if(d.ok&&!L.loaded) reload(true);
+    else if(d.ok&&L.active&&Date.now()-L.at>POLL_MS) reload(true);
   });
 
   if(typeof MutationObserver==='function'){
@@ -390,7 +534,7 @@ function bind(){
       var now=t==='library';
       if(now===L.active) return;
       L.active=now;
-      if(now&&(!L.loaded||Date.now()-L.at>POLL_MS)) load(true);
+      if(now&&(!L.loaded||Date.now()-L.at>POLL_MS)) reload(true);
     });
     mo.observe(document.body,{attributes:true,attributeFilter:['data-topic']});
   }
@@ -401,5 +545,7 @@ function bind(){
 if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',bind);
 else bind();
 
-window.KOLINDEX_LIBRARY={state:L,load:load,openViewer:openViewer,closeViewer:closeViewer,mediaUrl:mediaUrl,esc:esc,bytes:bytes,day:day,trim:trim};
+window.KOLINDEX_LIBRARY={state:L,load:load,reload:reload,loadAuthors:loadAuthors,setMode:setMode,setAuthor:setAuthor,
+  clearAuthor:clearAuthor,displayAuthor:displayAuthor,authorRowHtml:authorRowHtml,renderAuthors:renderAuthors,
+  openViewer:openViewer,closeViewer:closeViewer,mediaUrl:mediaUrl,esc:esc,bytes:bytes,day:day,trim:trim,nfmt:nfmt};
 })();

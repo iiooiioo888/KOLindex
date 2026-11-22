@@ -1005,6 +1005,10 @@
           <div class="lib-kpis" id="libKpis"></div>
           <div class="lib-bar">
             <input type="search" id="libSearch" class="lib-input" placeholder="搜尋作者、標題或作品 id…" aria-label="搜尋素材">
+            <div class="lib-seg" id="libMode" role="group" aria-label="檢視">
+              <button type="button" data-mode="items" aria-pressed="true">作品</button>
+              <button type="button" data-mode="authors" aria-pressed="false">作者</button>
+            </div>
             <div class="lib-seg" id="libKind" role="group" aria-label="類型">
               <button type="button" data-kind="all" aria-pressed="true">全部</button>
               <button type="button" data-kind="gallery" aria-pressed="false">圖集</button>
@@ -1020,7 +1024,17 @@
               <option value="old">最舊發佈</option>
               <option value="files">檔案最多</option>
             </select>
+            <select id="libASort" class="lib-select" aria-label="作者排序" hidden>
+              <option value="count">作品最多</option>
+              <option value="recent">最近有作品</option>
+              <option value="name">名稱</option>
+            </select>
             <button type="button" class="mini-btn" id="libReset">重置</button>
+          </div>
+          <div class="lib-chipbar" id="libAuthorChip" hidden>
+            <span class="lcb-label">作者</span>
+            <b id="libAuthorName">—</b>
+            <button type="button" id="libAuthorClear" aria-label="清除作者篩選">×</button>
           </div>
           <div class="lib-grid" id="libGrid"></div>
           <div class="lib-foot">

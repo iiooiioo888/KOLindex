@@ -1557,7 +1557,7 @@
     studio:{label:'UI 生成',hint:'一句話需求 → 線框圖 · 只出結構不出像素'},
     person:{label:'人物檔案',hint:'歸戶結果 · 貼文／AI 事件／告警合併時間軸'},
     review:{label:'審核台',hint:'AI 只產候選 · 人工裁決寫回 review_task 並留審計'},
-    library:{label:'素材庫',hint:'抖音點讚／收藏 · 30.7k 件本機媒體，只讀不寫'}
+    library:{label:'素材庫',hint:'抖音點讚／收藏 · 30.7k 件、18.9k 位作者，只讀不寫'}
   };
   var INFRA_PANES=['docker','ecs','bill','cost','conn','jobs'];
   var INFRA_LABEL={docker:'Docker',ecs:'ECS',bill:'帳單',cost:'成本預算',conn:'連接器',jobs:'排程工作'};
