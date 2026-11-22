@@ -19,6 +19,7 @@
 <link rel="stylesheet" href="css/jobs.css?v=20261121">
 <link rel="stylesheet" href="css/library.css?v=20261122">
 <link rel="stylesheet" href="css/person.css?v=20261122">
+<link rel="stylesheet" href="css/seats.css?v=20261123">
 </head>
 <body data-topic="queue">
 
@@ -449,6 +450,37 @@
           </div>
         </div>
         <div class="panel-body">
+          <div class="fleet" id="fleet" aria-label="席位編隊 · 真實執行">
+            <div class="fleet-top">
+              <div class="fleet-h"><b>席位編隊</b><span class="en">worker pool · 8 seats</span><span class="fleet-live" id="fleetLive">連接中</span></div>
+              <div class="fleet-note" id="fleetNote">每一張工單都真的在後端跑：查 SQLite、算容量、掃索引</div>
+            </div>
+            <div class="fleet-kpis" id="fleetKpis">
+              <div class="fleet-kpi"><span class="fk-k">席位</span><b class="fk-v">—</b><span class="fk-s">等待後端</span></div>
+            </div>
+            <div class="fleet-bar">
+              <span class="fleet-bl">派工</span>
+              <select id="fleetKind" aria-label="工單種類">
+                <option value="all">全部掃描</option>
+                <option value="library">素材索引掃描</option>
+                <option value="review">複核佇列彙總</option>
+                <option value="collect">收集待收統計</option>
+                <option value="queue">採集佇列探測</option>
+                <option value="disk">磁碟容量探測</option>
+                <option value="audit">審計日誌彙總</option>
+              </select>
+              <button class="mini-btn" id="fleetRun" type="button">派工</button>
+              <label class="fleet-auto"><input type="checkbox" id="fleetAuto" checked> 自動派工</label>
+              <button class="mini-btn" id="fleetRefresh" type="button">重新整理</button>
+            </div>
+            <div class="fleet-grid">
+              <div class="fleet-seats" id="fleetSeats"></div>
+              <div class="fleet-right">
+                <div class="fleet-sub">最近工單 · seat_task</div>
+                <ol class="fleet-tasks" id="fleetTasks"><li class="ft-empty">載入中…</li></ol>
+              </div>
+            </div>
+          </div>
           <div class="role-intro">
             <p>來源：<b>backend/company/roles/</b>（STANDARD_ROLES）＋ <b>backend/linkin/roles.py</b>（靈境子角色種子）</p>
             <p>對齊日期 2026-10-22 · 內建 80 席＋靈境 16 席＋模板 8。席位表＝ 80 公司席＋ 5 RAHO 脊柱席＝ 85。脊柱席不進 STANDARD_ROLES，但必須在席位表內，否則 C-SEAT-003 無從驗證。</p>
@@ -1304,6 +1336,7 @@
 <script defer src="js/jobs.js?v=20261121"></script>
 <script defer src="js/library.js?v=20261122"></script>
 <script defer src="js/person.js?v=20261122"></script>
+<script defer src="js/seats.js?v=20261123"></script>
 <script defer src="js/rail.js?v=20261123"></script>
 </body>
 </html>

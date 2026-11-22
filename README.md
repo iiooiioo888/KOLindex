@@ -4,7 +4,7 @@
 
 網紅索引與監控平台的介面原型，照《KOL-Index 項目計劃書／架構書／驗收規格 v2.2》做的「自動認領 × LLM 空檔排程」執行時畫面。純靜態：HTML + CSS + 原生 JS，沒有框架、沒有建置步驟、沒有 npm 依賴。
 
-12 個分頁各自是一塊真實介面，其中六塊（任務收集、人物檔案、審核台、基礎設施的連接器與排程工作、素材庫）加上右欄監控面板，接本機的 `kolindex-api`（SQLite）真實資料；其餘分頁仍是示範資料。
+12 個分頁各自是一塊真實介面，其中七塊（任務收集、席位執行的 worker pool、人物檔案、審核台、基礎設施的連接器與排程工作、素材庫）加上右欄監控面板，接本機的 `kolindex-api`（SQLite）真實資料；其餘分頁仍是示範資料。
 
 ![素材庫與右欄監控面板](screenshots/screenshot-library.jpg)
 
@@ -16,7 +16,7 @@
 | 02 | 任務隊列 | 四條車道的排程動畫、任務卡 | 示範 |
 | 03 | 感測上下文 | 平台熱度、關鍵詞、情緒分佈 | 示範 |
 | 04 | 產出庫 | 已交付的內容與檢視器 | 示範 |
-| 05 | 席位執行 | LLM 席位、模型與上下文槽 | 示範 |
+| 05 | 席位執行 | 8 個席位的 worker pool：搶工單、掃資料庫／磁碟、寫回結果與耗時 | 真（`GET /api/seats`、`POST /api/seats/run\|auto`） |
 | 06 | 統一管線 | 採集 → 清洗 → 入庫的流程圖 | 示範 |
 | 07 | 基礎設施 | Docker 總覽（示範）＋連接器憑證、排程工作兩個子頁籤 | 後兩個真 |
 | 08 | 開源組件 | 第三方依賴清單 | 示範 |
@@ -77,10 +77,11 @@ Pages 是純靜態，沒有 `/api`：接後端的分頁會顯示示範資料，U
 index2.html            12 個分頁的版面（單檔）
 css/index2.css         原版樣式
 css/ds/                設計系統四層：tokens → base → components → pages
-css/*.css              各分頁樣式（studio／person／review／connectors／jobs／library）
+css/*.css              各分頁樣式（studio／person／review／connectors／jobs／library／seats）
 js/index2.js           分頁切換、示範資料、圖表、對話框
 js/api.js              後端橋接（收集、告警）
 js/rail.js             右欄監控面板 → /api/rail
+js/seats.js            席位編隊 → /api/seats（派工、自動派工、工人狀態）
 js/*.js                各分頁邏輯（studio／person／review／infra／jobs／library／wireframe）
 fonts/                 自架 woff2（Chakra Petch、IBM Plex Mono）
 tests/                 四支靜態檢查 + 零依賴 dev-server
@@ -91,5 +92,5 @@ docs/                  README 用的截圖
 
 - 仍是原型：任務隊列、感測上下文、產出庫、席位執行、統一管線、開源組件是示範資料，動畫用 `requestAnimationFrame` 產生。
 - 素材庫依賴本機已經抓下來的抖音媒體（約 86.8 GB / 95,023 檔），repo 裡沒有任何媒體檔。
-- 只有三條寫入路徑（審核裁決、收集認領／退回、素材庫補檔），其餘分頁唯讀。
+- 只有四組寫入路徑（審核裁決、收集認領／退回、素材庫補檔、席位派工與工單結果），其餘分頁唯讀。
 - 外部依賴只有 jsdelivr 的 tippy.js／popper.js（有 SRI）與 highlight.js（無 SRI），離線時失效但頁面仍可載入。

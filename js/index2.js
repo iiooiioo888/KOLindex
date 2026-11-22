@@ -1556,7 +1556,7 @@
     queue:{label:'任務隊列',hint:'席位自動拉取任務 · 等 LLM 空檔才執行'},
     sense:{label:'感測上下文',hint:'壓縮與文本感知 · 8 槽各自回寫'},
     out:{label:'產出庫',hint:'另存新版 · 舊檔不覆蓋'},
-    seat:{label:'席位執行',hint:'任務經理拆分 · 席位自動拉取'},
+    seat:{label:'席位執行',hint:'8 個席位真的會跑工單 · worker pool 接真資料'},
     pipe:{label:'統一管線',hint:'resolve_execution_path · 唯一判斷源'},
     infra:{label:'基礎設施',hint:'Docker Compose · 阿里雲唯讀'},
     oss:{label:'開源組件',hint:'GitHub 鎖定版本 · 候選不進主棧'},

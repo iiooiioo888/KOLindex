@@ -1,0 +1,107 @@
+/* 席位編隊 · 只作用在 #topic-seat 的 #fleet（工程藍圖風：直角、髮絲線、等寬數字） */
+#fleet {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  margin: 0 0 16px;
+}
+#fleet .fleet-top {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 11px; border-bottom: 1px solid var(--line-soft);
+}
+#fleet .fleet-h { display: flex; align-items: center; gap: 8px; min-width: 0; }
+#fleet .fleet-h b { font: 600 12px/1 var(--mono); letter-spacing: .04em; color: var(--text); }
+#fleet .fleet-h .en { font: 400 10px/1 var(--mono); color: var(--faint); letter-spacing: .08em; text-transform: uppercase; }
+#fleet .fleet-live {
+  font: 600 9px/1 var(--mono); letter-spacing: .1em; padding: 3px 6px;
+  border: 1px solid var(--line-strong); color: var(--faint);
+}
+#fleet .fleet-live.is-ok { color: var(--green); border-color: color-mix(in srgb, var(--green) 45%, var(--line)); }
+#fleet .fleet-live.is-bad { color: var(--red); border-color: color-mix(in srgb, var(--red) 45%, var(--line)); }
+#fleet .fleet-note {
+  margin-left: auto; font: 400 10px/1.3 var(--mono); color: var(--faint);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+#fleet .fleet-kpis {
+  display: grid; grid-template-columns: repeat(6, minmax(0, 1fr));
+  border-bottom: 1px solid var(--line-soft);
+}
+#fleet .fleet-kpi { padding: 9px 11px 8px; border-right: 1px solid var(--line-soft); min-width: 0; }
+#fleet .fleet-kpi:last-child { border-right: 0; }
+#fleet .fk-k { display: block; font: 500 9.5px/1 var(--mono); letter-spacing: .09em; text-transform: uppercase; color: var(--faint); }
+#fleet .fk-v { display: block; margin-top: 5px; font: 600 17px/1 var(--mono); color: var(--text); font-variant-numeric: tabular-nums; }
+#fleet .fk-s { display: block; margin-top: 4px; font: 400 9.5px/1.3 var(--mono); color: var(--faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#fleet .fleet-bar {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  padding: 8px 11px; border-bottom: 1px solid var(--line-soft); background: var(--surface-2);
+}
+#fleet .fleet-bl { font: 500 9.5px/1 var(--mono); letter-spacing: .09em; text-transform: uppercase; color: var(--faint); }
+#fleet select {
+  height: 26px; background: var(--surface-3); color: var(--text);
+  border: 1px solid var(--line); border-radius: var(--r-ctl); padding: 0 6px;
+  font: 500 11px/1 var(--mono);
+}
+#fleet .fleet-auto {
+  display: inline-flex; align-items: center; gap: 6px; margin-left: auto;
+  font: 400 10.5px/1 var(--mono); color: var(--dim); cursor: pointer;
+}
+#fleet .fleet-auto input { accent-color: var(--amber); }
+#fleet .fleet-grid {
+  display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+  gap: 0;
+}
+#fleet .fleet-seats {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
+  gap: 1px; background: var(--line-soft); border-right: 1px solid var(--line-soft);
+}
+#fleet .fs-card { background: var(--surface); padding: 8px 9px 7px; min-width: 0; }
+#fleet .fs-card.is-busy { background: color-mix(in srgb, var(--amber) 7%, var(--surface)); }
+#fleet .fs-top { display: flex; align-items: center; gap: 6px; }
+#fleet .fs-id { font: 600 12px/1 var(--mono); color: var(--text); }
+#fleet .fs-plat { font: 400 9px/1 var(--mono); color: var(--faint); text-transform: uppercase; letter-spacing: .06em; }
+#fleet .fs-dot { width: 5px; height: 5px; background: var(--line-strong); margin-left: auto; }
+#fleet .fs-card.is-busy .fs-dot { background: var(--amber); }
+#fleet .fs-card.is-ok .fs-dot { background: var(--green); }
+#fleet .fs-card.is-warn .fs-dot { background: var(--red); }
+#fleet .fs-state { font: 400 9px/1 var(--mono); color: var(--faint); }
+#fleet .fs-kind {
+  margin-top: 6px; font: 500 11px/1.35 var(--cjk); color: var(--dim);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+#fleet .fs-meta { margin-top: 3px; font: 400 9.5px/1.3 var(--mono); color: var(--faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#fleet .fleet-right { min-width: 0; }
+#fleet .fleet-sub {
+  padding: 7px 11px; font: 500 9.5px/1 var(--mono); letter-spacing: .09em;
+  text-transform: uppercase; color: var(--faint); border-bottom: 1px solid var(--line-soft);
+}
+#fleet .fleet-tasks { list-style: none; margin: 0; padding: 0; max-height: 218px; overflow-y: auto; }
+#fleet .ft-row {
+  display: grid; grid-template-columns: 50px 30px 24px minmax(0, 1fr);
+  gap: 7px; align-items: baseline; padding: 6px 11px;
+  border-bottom: 1px solid var(--line-soft); font: 400 10px/1.25 var(--mono); color: var(--faint);
+}
+#fleet .ft-row:last-child { border-bottom: 0; }
+#fleet .ft-time, #fleet .ft-id, #fleet .ft-seat, #fleet .ft-ms { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#fleet .ft-main { display: block; min-width: 0; }
+#fleet .ft-line { display: flex; align-items: center; gap: 6px; min-width: 0; }
+#fleet .ft-st { flex: 0 0 auto; }
+#fleet .ft-ms { flex: 0 0 auto; }
+#fleet .ft-kind { color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 0 1 auto; }
+#fleet .ft-st { text-transform: uppercase; letter-spacing: .04em; font-size: 9px; text-align: center; padding: 2px 0; border: 1px solid var(--line); }
+#fleet .ft-st.is-done { color: var(--green); border-color: color-mix(in srgb, var(--green) 40%, var(--line)); }
+#fleet .ft-st.is-running { color: var(--amber); border-color: color-mix(in srgb, var(--amber) 40%, var(--line)); }
+#fleet .ft-st.is-failed { color: var(--red); border-color: color-mix(in srgb, var(--red) 40%, var(--line)); }
+#fleet .ft-st.is-queued { color: var(--faint); }
+#fleet .ft-res { display: block; margin-top: 2px; color: var(--faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#fleet .ft-empty { padding: 14px 11px; font: 400 10.5px/1.4 var(--mono); color: var(--faint); }
+@media (max-width: 1100px) {
+  #fleet .fleet-kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  #fleet .fleet-kpi:nth-child(3n) { border-right: 0; }
+  #fleet .fleet-grid { grid-template-columns: minmax(0, 1fr); }
+  #fleet .fleet-seats { border-right: 0; border-bottom: 1px solid var(--line-soft); }
+}
+@media (max-width: 640px) {
+  #fleet .fleet-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  #fleet .fleet-kpi { border-right: 0; border-bottom: 1px solid var(--line-soft); }
+  #fleet .ft-row { grid-template-columns: 46px 28px 22px minmax(0, 1fr); }
+  #fleet .ft-ms, #fleet .ft-res { display: none; }
+}
