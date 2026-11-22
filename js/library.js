@@ -314,7 +314,7 @@ function renderFoot(){
   if(foot) foot.textContent=n?('顯示 '+nfmt(n)+' / '+nfmt(total)+' '+unit+(authors?'作者':'')+' · '+(authors?'點一位看他名下的作品':'點縮圖開檢視器')):'';
 }
 
-function renderAll(){ renderKpis(); renderGrid(); renderFoot(); updateDownloadUi(); updateOptUi(); updateLossyUi(); }
+function renderAll(){ renderKpis(); renderGrid(); renderFoot(); updateDownloadUi(); updateOptUi(); updateDerivUi(); }
 
 function renderError(){
   var box=$('libGrid');
@@ -636,79 +636,80 @@ function syncOptimize(){
 }
 
 
-/* ---------- 圖片有損壓縮：用 libwebp 重新編碼換空間 ---------- */
-var LQ={state:null,running:false,stats:null,poll:0};
+/* ---------- 圖片衍生層：只產生 q50 副本，原檔不動（證據與去重鍵不變） ---------- */
+var DV={state:null,running:false,stats:null,poll:0};
 
-function lossyRunning(){
-  var s=LQ.state;
-  return !!(LQ.running||(s&&s.state==='running'));
+function derivRunning(){
+  var s=DV.state;
+  return !!(DV.running||(s&&s.state==='running'));
 }
 
-function updateLossyUi(){
-  var b=$('libLossy');
+function updateDerivUi(){
+  var b=$('libDeriv');
   if(!b) return;
-  if(lossyRunning()){
-    var s=LQ.state||{};
+  if(derivRunning()){
+    var s=DV.state||{};
     b.disabled=true;
-    b.textContent='有損壓縮 '+(s.done||0)+'/'+(s.items||'…');
-    b.title='libwebp 重編碼中（品質 '+(s.quality||50)+'）'+(s.etaMin?'，約剩 '+s.etaMin+' 分鐘':'');
+    b.textContent='產生衍生層 '+(s.done||0)+'/'+(s.items||'…');
+    b.title='libwebp 產生衍生檔中（品質 '+(s.quality||50)+'）'+(s.etaMin?'，約剩 '+s.etaMin+' 分鐘':'');
     return;
   }
   b.disabled=false;
-  b.textContent='有損壓縮';
-  var st=LQ.stats&&LQ.stats.saved?LQ.stats.saved:0;
-  var s2=LQ.state||{};
+  b.textContent='產生衍生層';
+  var st=DV.stats&&DV.stats.saved?DV.stats.saved:0;
+  var s2=DV.state||{};
   var head=s2.state==='interrupted'?('上次中斷在 '+nfmt(s2.done||0)+'/'+nfmt(s2.items||0)+' 件，按一下續跑；'):'';
-  b.title=head+'用 libwebp 重新編碼（品質 50，與 CompressO 的 Standard 預設一致，會改變像素）'
-    +(st?'（累計省 '+mb(st)+'，'+nfmt(LQ.stats.items)+' 件）':'');
+  b.title=head+'用 libwebp 產生 q50 副本（原檔保留，不會覆蓋證據；容量不會因此變小）'
+    +(st?'（累計省 '+mb(st)+'，'+nfmt(DV.stats.items)+' 件）':'');
 }
 
-function lossyTick(){
-  req('/api/library/lossy').then(function(res){
+function derivTick(){
+  req('/api/library/derivative').then(function(res){
     var d=res.ok&&res.data?res.data:{};
-    LQ.state=d.state||null;
-    LQ.running=!!d.running;
-    if(d.stats) LQ.stats=d.stats;
-    updateLossyUi();
-    if(lossyRunning()){ if(!L.active){ LQ.poll=0; return; } LQ.poll=setTimeout(lossyTick,2000); return; }
-    LQ.poll=0;
-    var s=LQ.state||{};
-    if(s.state==='error') toast('有損壓縮中斷：'+(s.error||'未知錯誤'));
-    else if(s.state==='done'&&s.savedBytes>0) toast('有損壓縮完成：'+nfmt(s.done||0)+' 件，省下 '+mb(s.savedBytes));
-    else if(s.state==='done') toast('有損壓縮完成，沒有可省的檔案');
+    DV.state=d.state||null;
+    DV.running=!!d.running;
+    if(d.stats) DV.stats=d.stats;
+    updateDerivUi();
+    if(derivRunning()){ if(!L.active){ DV.poll=0; return; } DV.poll=setTimeout(derivTick,2000); return; }
+    DV.poll=0;
+    var s=DV.state||{};
+    if(s.state==='error') toast('衍生層中斷：'+(s.error||'未知錯誤'));
+    else if(s.state==='stopped'&&s.stopReason==='low_disk') toast('衍生層暫停：磁碟剩餘空間不足（原檔都還在）');
+    else if(s.state==='done'&&s.savedBytes>0) toast('衍生層完成：'+nfmt(s.done||0)+' 件，可省 '+mb(s.savedBytes)+'（原檔保留）');
+    else if(s.state==='done') toast('衍生層完成，沒有可省的檔案');
     if(s.savedBytes>0) reload(true);
   }).catch(function(){
-    LQ.poll=0;
-    updateLossyUi();
+    DV.poll=0;
+    updateDerivUi();
   });
 }
 
-function lossyImages(){
-  if(lossyRunning()) return;
-  var b=$('libLossy');
+function derivativeImages(){
+  if(derivRunning()) return;
+  var b=$('libDeriv');
   if(b){ b.disabled=true; b.textContent='啟動中…'; }
-  post('/api/library/lossy',{quality:50,method:4}).then(function(res){
+  post('/api/library/derivative',{quality:50,method:4}).then(function(res){
     var d=res&&res.data||{};
     if(!res.ok||d.error){
-      updateLossyUi();
-      toast('無法開始有損壓縮：'+(d.error==='busy'?'已有一批在跑':'HTTP '+(res?res.status:'?')));
+      updateDerivUi();
+      toast('無法開始衍生層：'+(d.error==='busy'?'已有一批在跑':'HTTP '+(res?res.status:'?')));
       return;
     }
-    lossyTick();
+    derivTick();
   }).catch(function(e){
-    updateLossyUi();
-    toast('無法開始有損壓縮：'+String(e&&e.message||e));
+    updateDerivUi();
+    toast('無法開始衍生層：'+String(e&&e.message||e));
   });
 }
 
-function syncLossy(){
-  req('/api/library/lossy').then(function(res){
+function syncDeriv(){
+  req('/api/library/derivative').then(function(res){
     var d=res.ok&&res.data?res.data:{};
-    LQ.state=d.state||null;
-    LQ.running=!!d.running;
-    if(d.stats) LQ.stats=d.stats;
-    updateLossyUi();
-    if(lossyRunning()&&L.active&&!LQ.poll) lossyTick();
+    DV.state=d.state||null;
+    DV.running=!!d.running;
+    if(d.stats) DV.stats=d.stats;
+    updateDerivUi();
+    if(derivRunning()&&L.active&&!DV.poll) derivTick();
   }).catch(function(){ /* 後端沒開時安靜 */ });
 }
 
@@ -1053,7 +1054,7 @@ function bind(){
   /* MyLike 面板 */
   on($('libMyLike'),'click',function(){ if(M.open) mlClose(); else mlOpen(); });
   on($('libOptimize'),'click',optimizeImages);
-  on($('libLossy'),'click',lossyImages);
+  on($('libDeriv'),'click',derivativeImages);
   on($('libDownloadMissing'),'click',downloadMissing);
   on($('mlClose'),'click',mlClose);
   on($('mlWake'),'click',mlWake);
@@ -1102,8 +1103,8 @@ function bind(){
       if(now===L.active) return;
       if(!now&&M.open) mlClose();
       L.active=now;
-      if(!now&&LQ.poll){ clearTimeout(LQ.poll); LQ.poll=0; }
-      if(now&&lossyRunning()&&!LQ.poll) lossyTick();
+      if(!now&&DV.poll){ clearTimeout(DV.poll); DV.poll=0; }
+      if(now&&derivRunning()&&!DV.poll) derivTick();
       if(now&&(!L.loaded||Date.now()-L.at>POLL_MS)) reload(true);
     });
     mo.observe(document.body,{attributes:true,attributeFilter:['data-topic']});
@@ -1112,7 +1113,7 @@ function bind(){
   if(L.active) load(true);
   syncDownload();
   syncOptimize();
-  syncLossy();
+  syncDeriv();
 }
 
 if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',bind);
@@ -1123,6 +1124,6 @@ window.KOLINDEX_LIBRARY={state:L,load:load,reload:reload,loadAuthors:loadAuthors
   openViewer:openViewer,closeViewer:closeViewer,mediaUrl:mediaUrl,esc:esc,bytes:bytes,day:day,trim:trim,nfmt:nfmt,
   download:{state:D,item:downloadItem,missing:downloadMissing,sync:syncDownload},
   optimize:{state:O,run:optimizeImages,sync:syncOptimize,tick:optTick,mb:mb},
-  lossy:{state:LQ,run:lossyImages,sync:syncLossy,tick:lossyTick},
+  derivative:{state:DV,run:derivativeImages,sync:syncDeriv,tick:derivTick},
   mylike:{state:M,open:mlOpen,close:mlClose,load:mlLoad,start:mlStart,folder:mlFolder,wake:mlWake,refreshFolders:mlRefreshFolders,ago:ago}};
 })();
