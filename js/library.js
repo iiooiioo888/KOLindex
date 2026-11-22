@@ -257,7 +257,7 @@ function cardHtml(it){
   var srcs=(it.sources||[]).map(function(s){ return SRC_LABEL[s]||s; }).join('·');
   var play=it.kind==='video'?'<span class="lc-play" aria-hidden="true">▶</span>':'';
   var img=cover
-    ? '<img src="'+esc(cover)+'" alt="" loading="lazy" decoding="async" onerror="this.style.display=\'none\'">'
+    ? '<img src="'+esc(cover)+'" alt="" loading="lazy" decoding="async" onerror="this.parentNode.classList.add(\'no-img\');this.remove()">'
     : '<span class="lc-noimg">無縮圖</span>';
   return '<button type="button" class="lib-card" data-id="'+esc(it.id)+'" title="'+esc(trim(it.caption,80)||it.id)+'">'+
     '<span class="lc-shot">'+img+play+badges+(srcs?'<span class="lc-src">'+esc(srcs)+'</span>':'')+'</span>'+
@@ -270,12 +270,26 @@ function cardHtml(it){
   '</button>';
 }
 
+function skelHtml(){
+  var one='<div class="lib-card is-skel" aria-hidden="true">'+
+    '<span class="lc-shot"></span>'+
+    '<span class="lc-meta"><span class="sk-line sk-a"></span><span class="sk-line sk-b"></span></span>'+
+  '</div>';
+  var out='';
+  for(var i=0;i<8;i++) out+=one;
+  return out;
+}
+
 function renderGrid(){
   var box=$('libGrid');
   if(!box) return;
   box.classList.remove('is-authors');
   if(!L.items.length){
-    box.innerHTML='<div class="lib-empty">'+(L.loaded?'沒有符合的素材':'尚未載入')+'</div>';
+    if(L.loading&&!L.loaded){
+      box.innerHTML=skelHtml();
+    } else {
+      box.innerHTML='<div class="lib-empty">'+(L.loaded?'沒有符合的素材':'尚未載入')+'</div>';
+    }
     renderFoot();
     return;
   }
@@ -334,9 +348,10 @@ function paintViewer(){
     m.innerHTML='<img src="'+esc(mediaUrl(files[v.idx]))+'" alt="">';
   } else {
     var r=(det.remote||[])[0];
-    m.innerHTML=r
-      ? '<div class="lv-none"><b>本機沒有這件的檔案。</b>原始網址可能已經過期：<br><a href="'+esc(det.url)+'" target="_blank" rel="noopener">'+esc(det.url)+'</a></div>'
-      : '<div class="lv-none"><b>本機沒有這件的檔案。</b><br><a href="'+esc(det.url)+'" target="_blank" rel="noopener">'+esc(det.url)+'</a></div>';
+    m.innerHTML='<div class="lv-none"><b>本機沒有這件的檔案</b>'+
+      (r?'只有索引，存的網址可能已經過期。':'只有索引，抖音上的網址要即時重取。')+
+      '<div class="lv-none-act"><button type="button" class="mini-btn primary" data-lv-dl>下載到本機</button></div>'+
+      '<div style="margin-top:10px"><a href="'+esc(det.url)+'" target="_blank" rel="noopener">'+esc(det.url)+'</a></div></div>';
   }
   var head=$('libViewHead');
   if(head){
@@ -394,7 +409,7 @@ function copyPath(det){
 }
 
 /* ---------- 下載：單件與批次（伺服器端抓，帶磁碟守衛） ---------- */
-var D={job:null,poll:0,busy:false};
+var D={job:null,poll:0,busy:false,freeGb:null,minGb:null,missing:null};
 
 function jobRunning(){
   return !!(D.job&&D.job.state==='running');
@@ -416,13 +431,20 @@ function updateDownloadUi(){
   }
   var all=$('libDownloadMissing');
   if(all){
+    var m=missingNum();
+    var low=D.freeGb!=null&&D.minGb!=null&&D.freeGb<D.minGb;
     if(jobRunning()){
       all.disabled=true;
       all.textContent='下載中 '+(D.job.done||0)+'/'+(D.job.total||'…');
+      all.title='';
+    } else if(low){
+      all.disabled=true;
+      all.textContent='下載缺檔 · 空間不足';
+      all.title='磁碟剩 '+D.freeGb+' GB，至少要 '+D.minGb+' GB。清出空間，或把 KOL_MEDIA_ROOT 指到別顆碟再重啟 API。';
     } else {
       all.disabled=!!D.busy;
-      var m=missingNum();
       all.textContent=m==null?'下載缺檔':('下載缺檔 '+(m>9999?nfmt(m):m));
+      all.title='把只有索引、還沒有本機檔案的抓下來'+(m==null?'':'（'+m+' 件）');
     }
   }
 }
@@ -471,6 +493,8 @@ function dlTick(){
   req('/api/library/download/job').then(function(res){
     var d=res.ok&&res.data?res.data:{};
     if(d.job) D.job=d.job;
+    if(d.freeGb!=null) D.freeGb=d.freeGb;
+    if(d.minGb!=null) D.minGb=d.minGb;
     if(d.missing!=null&&L.counts) L.counts.missing=d.missing;
     updateDownloadUi();
     if(D.job&&D.job.state==='running'){
@@ -482,7 +506,7 @@ function dlTick(){
     var j=D.job||{};
     var line='下載完成：'+(j.done||0)+' 件'+(j.failed?('，失敗 '+j.failed+' 件'):'')+(j.bytes?(' · '+bytes(j.bytes)):'');
     if(j.state==='error') toast('下載中斷：'+(j.error||'未知錯誤'));
-    else if(j.reason==='disk_low') toast('磁碟不足，已停在 '+(j.done||0)+' 件（剩 '+(j.freeGb==null?'?':j.freeGb)+' GB）');
+    else if(j.reason==='disk_low') toast('磁碟不足，已停在 '+(j.done||0)+' 件（剩 '+(j.freeGb==null?'?':j.freeGb)+' GB，來源已清掉或改 KOL_MEDIA_ROOT 再試）');
     else if(j.reason==='cancelled') toast('已停止下載，完成 '+(j.done||0)+' 件');
     else toast(line);
     reload(true);
@@ -495,6 +519,10 @@ function dlTick(){
 
 function downloadMissing(){
   if(D.busy||jobRunning()) return;
+  if(D.freeGb!=null&&D.minGb!=null&&D.freeGb<D.minGb){
+    toast('磁碟剩 '+D.freeGb+' GB，至少要 '+D.minGb+' GB；先清空間或改 KOL_MEDIA_ROOT');
+    return;
+  }
   D.busy=true;
   updateDownloadUi();
   post('/api/library/download',{limit:20}).then(function(res){
@@ -519,6 +547,9 @@ function syncDownload(){
   req('/api/library/download/job').then(function(res){
     var d=res.ok&&res.data?res.data:{};
     D.job=d.job||D.job;
+    if(d.freeGb!=null) D.freeGb=d.freeGb;
+    if(d.minGb!=null) D.minGb=d.minGb;
+    if(d.missing!=null) D.missing=d.missing;
     updateDownloadUi();
     if(jobRunning()&&!D.poll) dlTick();
   }).catch(function(){ /* 後端沒開時安靜 */ });
@@ -876,6 +907,7 @@ function bind(){
     if(f) mlFolder(f.getAttribute('data-ml-folder'));
   });
 
+  on($('libMedia'),'click',function(e){ if(e.target.closest('[data-lv-dl]')) downloadItem(); });
   on($('libClose'),'click',closeViewer);
   on($('libPrev'),'click',function(){ step(-1); });
   on($('libNext'),'click',function(){ step(1); });

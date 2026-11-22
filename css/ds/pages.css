@@ -39,6 +39,9 @@
 
 /* ── 3. 容器查詢：舞台變窄先收說明，不壓縮資料 ─────────────── */
 @container stage (max-width:980px){
+  /* 標題列的 chip 在窄舞台折到第二行，別擠掉標題或被面板邊界切掉 */
+  .panel-head{flex-wrap:wrap;row-gap:4px;padding-block:6px}
+  .panel-tools{margin-left:auto;flex-wrap:wrap;justify-content:flex-end}
   .topic-head{padding:var(--s-4) var(--s-4) var(--s-2)}
   .topic-tabs{padding:0 var(--s-4)}
   .topic-hint{display:none}
@@ -133,3 +136,11 @@
   .rail-right{grid-template-columns:minmax(0,1fr);padding:0 var(--s-3) var(--s-8)}
   .statusbar{display:none}
 }
+/* ── 8. 基礎設施子分頁列：寬度不夠時指標折到第二行，不再橫向捲動切掉頁籤 ── */
+#infraTabs{
+  flex-wrap:wrap;
+  overflow-x:visible;
+  row-gap:0;
+  padding-bottom:4px;
+}
+#infraTabs .tabs-meta{ margin-left:auto; }

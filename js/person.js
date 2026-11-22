@@ -227,9 +227,11 @@ function renderKpis(){
 }
 
 function rowHtml(a){
-  var meta=nfmt(a.works||0)+' 件 · '+nfmt(a.files||0)+' 檔 · '+bytes(a.bytes);
+  // 卡片寬度有限：容量留給側欄，清單只放件數／檔數，完整資訊掛 title
+  var meta=nfmt(a.works||0)+' 件 · '+nfmt(a.files||0)+' 檔';
+  var tip=displayAuthor(a.author)+' · '+meta+' · '+bytes(a.bytes)+' · 最後 '+day(a.lastCt);
   var on=A.sel===a.author?' on':'';
-  return '<button type="button" class="pn-row'+on+'" data-author="'+esc(a.author)+'" aria-pressed="'+(A.sel===a.author)+'">'+
+  return '<button type="button" class="pn-row'+on+'" data-author="'+esc(a.author)+'" title="'+esc(tip)+'" aria-pressed="'+(A.sel===a.author)+'">'+
     '<span class="pr-name">'+esc(displayAuthor(a.author))+'</span>'+
     '<span class="pr-meta">'+esc(meta)+'</span>'+
     '<span class="pr-day">'+esc(day(a.lastCt))+'</span>'+
