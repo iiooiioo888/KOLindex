@@ -14,7 +14,8 @@ var KIND_LABEL={gallery:'圖集',video:'影片'};
 
 var A={ok:false,loaded:false,loading:false,active:false,q:'',sort:'count',
   items:[],total:0,offset:0,counts:null,error:'',at:0,tok:0,
-  sel:'',meta:null,works:[],worksTotal:0,worksOffset:0,worksLoading:false,wtok:0};
+  sel:'',meta:null,works:[],worksTotal:0,worksOffset:0,worksLoading:false,wtok:0,
+  view:'index',queued:false,wQueued:false};
 
 /* ---------- 小工具 ---------- */
 function $(id){ return document.getElementById(id); }
@@ -199,6 +200,7 @@ function renderSide(){
       '<span>最近 '+esc(day(m.lastCt))+'</span>'+
     '</div>'+
     '<div class="ah-actions">'+
+      '<button type="button" class="mini-btn" data-au-back="1">← 作者清單</button>'+
       '<button type="button" class="mini-btn primary" data-lib-all="1">在素材庫看全部</button>'+
     '</div>'+
   '</div>';
@@ -215,7 +217,13 @@ function renderSide(){
   box.innerHTML=head+grid+more;
 }
 
-function renderAll(){ renderKpis(); renderList(); renderSide(); }
+/* 兩個檢視：index＝作者清單（全寬卡片grid）、profile＝作者檔案（全寬作品牆）。
+   只換 #topic-authors 上的 data-au-view，版面由 CSS 決定。 */
+function applyView(){
+  var box=$('topic-authors');
+  if(box&&box.setAttribute) box.setAttribute('data-au-view',A.view);
+}
+function renderAll(){ renderKpis(); renderList(); renderSide(); applyView(); }
 
 function renderError(){
   var box=$('auList');
@@ -227,10 +235,16 @@ function selectAuthor(name){
   A.sel=String(name||'');
   A.meta=null;
   A.works=[]; A.worksTotal=0; A.worksOffset=0;
+  A.view='profile';
   for(var i=0;i<A.items.length;i++){ if(A.items[i].author===A.sel){ A.meta=A.items[i]; break; } }
-  renderList();
-  renderSide();
+  renderAll();
   loadWorks(true);
+}
+
+/* 回到作者清單：清單捲動位置保持不動（同一個 DOM，只是換顯示） */
+function backToList(){
+  A.view='index';
+  renderAll();
 }
 
 function openInLibrary(){
@@ -256,6 +270,7 @@ function debounce(fn,ms){
 function bind(){
   setStatus('待連線','or');
   renderSide();
+  applyView();
   var list=$('auList');
   on(list,'click',function(e){
     var row=e.target.closest('.au-row');
@@ -267,6 +282,7 @@ function bind(){
 
   var side=$('auSide');
   on(side,'click',function(e){
+    if(e.target.closest('[data-au-back]')){ backToList(); return; }
     if(e.target.closest('[data-lib-all]')){ openInLibrary(); return; }
     if(e.target.closest('[data-work-more]')){ loadWorks(false); return; }
     var w=e.target.closest('.au-work');
@@ -323,6 +339,6 @@ function bind(){
 if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',bind);
 else bind();
 
-window.KOLINDEX_AUTHORS={state:A,load:load,loadWorks:loadWorks,selectAuthor:selectAuthor,openInLibrary:openInLibrary,
+window.KOLINDEX_AUTHORS={state:A,load:load,loadWorks:loadWorks,selectAuthor:selectAuthor,backToList:backToList,openInLibrary:openInLibrary,
   displayAuthor:displayAuthor,rowHtml:rowHtml,authorRows:function(){ return A.items; },esc:esc,bytes:bytes,day:day,nfmt:nfmt};
 })();
