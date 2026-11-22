@@ -1,0 +1,70 @@
+name: pages
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: 靜態檢查
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: 語法檢查
+        run: |
+          for f in js/*.js; do node --check "$f"; echo "ok $f"; done
+      - name: 起本機靜態站（測試要打 5200）
+        run: |
+          node tests/dev-server.mjs . 5200 > /tmp/dev-server.log 2>&1 &
+          for i in $(seq 1 50); do curl -sf -o /dev/null http://127.0.0.1:5200/ && break; sleep 0.2; done
+          curl -sf -o /dev/null http://127.0.0.1:5200/ || { cat /tmp/dev-server.log; exit 1; }
+      - name: 線框圖渲染器
+        run: node tests/test-wireframe.js
+      - name: 站台輸出與分頁註冊
+        run: node tests/test-page.mjs
+      - name: 設計系統四層
+        run: node tests/test-ds.mjs
+      - name: HTML 標籤配對
+        run: node tests/test-balance.mjs
+      - name: 伺服器日誌
+        if: always()
+        run: cat /tmp/dev-server.log || true
+
+  deploy:
+    name: 部署 GitHub Pages
+    needs: check
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: 啟用 Pages（如果還沒開）
+        uses: actions/configure-pages@v5
+        with:
+          enablement: true
+      - name: 整理要發佈的檔案
+        run: |
+          mkdir -p _site
+          cp index2.html _site/
+          cp -r css js fonts _site/
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - id: deploy
+        uses: actions/deploy-pages@v4
