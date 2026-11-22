@@ -120,7 +120,7 @@
   .topic-hint{display:none}
   .waterfall{padding:var(--s-3) var(--s-3) 0}
 
-  /* 底部導覽：11 個分頁橫向捲動 */
+  /* 底部導覽：12 個分頁橫向捲動 */
   .tabs .inner{
     display:flex;justify-content:flex-start;gap:0;
     overflow-x:auto;overflow-y:hidden;

@@ -18,6 +18,7 @@
 <link rel="stylesheet" href="css/review.css?v=20261121">
 <link rel="stylesheet" href="css/connectors.css?v=20261121">
 <link rel="stylesheet" href="css/jobs.css?v=20261121">
+<link rel="stylesheet" href="css/library.css?v=20261122">
 </head>
 <body data-topic="queue">
 
@@ -88,6 +89,7 @@
       <button class="nav-item" data-topic="studio"><svg class="ic"><use href="#i-cube"/></svg><span class="nm">UI 生成</span><span class="bd">NEW</span></button>
       <button class="nav-item" data-topic="person"><svg class="ic"><use href="#i-pulse"/></svg><span class="nm">人物檔案</span><span class="bd">API</span></button>
       <button class="nav-item" data-topic="review"><svg class="ic"><use href="#i-shield"/></svg><span class="nm">審核台</span><span class="bd">LIVE</span></button>
+<button class="nav-item" data-topic="library"><svg class="ic"><use href="#i-cube"/></svg><span class="nm">素材庫</span><span class="bd" id="navLibraryBd">30.7k</span></button>
     </div>
 
     <div class="micro-card">
@@ -117,7 +119,7 @@
       <h4>快捷鍵</h4>
       <div class="kv"><span>搜尋</span><b>⌘K / Ctrl+K</b></div>
       <div class="kv"><span>清除</span><b>ESC</b></div>
-      <div class="kv"><span>切換分頁</span><b>⌘1–9 · ⌘0 · ⌘⇧0 · ←→</b></div>
+      <div class="kv"><span>切換分頁</span><b>⌘1–9 · ⌘0 · ⌘⇧0 · ⌘⇧1 · ←→</b></div>
       <div class="kv"><span>深連結</span><b>#/頁/編號</b></div>
       <div class="kv"><span>暫停渲染</span><b>SPACE</b></div>
       <div class="kv"><span>自動認領</span><b>⌘⇧A</b></div>
@@ -154,6 +156,7 @@
         <button class="topic-btn" id="tab-studio" role="tab" aria-selected="false" aria-controls="topic-studio" data-topic="studio">UI 生成</button>
         <button class="topic-btn" id="tab-person" role="tab" aria-selected="false" aria-controls="topic-person" data-topic="person">人物檔案</button>
         <button class="topic-btn" id="tab-review" role="tab" aria-selected="false" aria-controls="topic-review" data-topic="review">審核台</button>
+<button class="topic-btn" id="tab-library" role="tab" aria-selected="false" aria-controls="topic-library" data-topic="library">素材庫</button>
       </div>
     </div>
 
@@ -987,6 +990,64 @@
         </div>
       </div>
     </section>
+
+    <!-- ═══ 素材庫 ═══ -->
+    <section class="waterfall" id="topic-library" role="tabpanel" aria-labelledby="tab-library" aria-hidden="true">
+      <div class="panel">
+        <div class="panel-head">
+          <div class="panel-title">素材庫<span class="en">douyin harvest · local media</span></div>
+          <div class="panel-tools">
+            <span class="chip or" id="libStatus">待連線</span>
+            <span class="chip cyan" id="libCount">—</span>
+          </div>
+        </div>
+        <div class="panel-body">
+          <div class="lib-kpis" id="libKpis"></div>
+          <div class="lib-bar">
+            <input type="search" id="libSearch" class="lib-input" placeholder="搜尋作者、標題或作品 id…" aria-label="搜尋素材">
+            <div class="lib-seg" id="libKind" role="group" aria-label="類型">
+              <button type="button" data-kind="all" aria-pressed="true">全部</button>
+              <button type="button" data-kind="gallery" aria-pressed="false">圖集</button>
+              <button type="button" data-kind="video" aria-pressed="false">影片</button>
+            </div>
+            <div class="lib-seg" id="libSource" role="group" aria-label="來源">
+              <button type="button" data-source="all" aria-pressed="true">全部來源</button>
+              <button type="button" data-source="likes" aria-pressed="false">點讚</button>
+              <button type="button" data-source="favorites" aria-pressed="false">收藏</button>
+            </div>
+            <select id="libSort" class="lib-select" aria-label="排序">
+              <option value="recent">最新發佈</option>
+              <option value="old">最舊發佈</option>
+              <option value="files">檔案最多</option>
+            </select>
+            <button type="button" class="mini-btn" id="libReset">重置</button>
+          </div>
+          <div class="lib-grid" id="libGrid"></div>
+          <div class="lib-foot">
+            <button type="button" class="mini-btn primary" id="libMore">載入更多</button>
+            <span class="lib-foot-text" id="libFoot">—</span>
+          </div>
+          <div class="p-cap">
+            <b>本機抖音素材。</b>索引由 <code>sync-library.mjs</code> 把 <code>gallery/index.json</code> 灌進 API 的 <code>douyin_item</code>；縮圖與影片由 5400 的靜態站直接給。這頁只讀，不會去抖音重新抓。
+          </div>
+        </div>
+      </div>
+
+      <div class="lib-viewer" id="libViewer" role="dialog" aria-modal="true" aria-label="素材檢視" hidden>
+        <div class="lv-stage">
+          <div class="lv-media" id="libMedia"></div>
+          <button type="button" class="lv-nav prev" id="libPrev" aria-label="上一個檔案">‹</button>
+          <button type="button" class="lv-nav next" id="libNext" aria-label="下一個檔案">›</button>
+          <button type="button" class="lv-close" id="libClose" aria-label="關閉">✕</button>
+        </div>
+        <div class="lv-side">
+          <div class="lv-head" id="libViewHead"></div>
+          <div class="lv-body" id="libViewBody"></div>
+          <div class="lv-counter" id="libCounter"></div>
+          <div class="lv-thumbs" id="libThumbs" hidden></div>
+        </div>
+      </div>
+    </section>
   </main>
 
   <aside class="rail-right" aria-label="監控面板">
@@ -1122,6 +1183,7 @@
     <button class="tab" data-topic="studio"><svg class="ic"><use href="#i-cube"/></svg>生成</button>
     <button class="tab" data-topic="person"><svg class="ic"><use href="#i-pulse"/></svg>人物</button>
     <button class="tab" data-topic="review"><svg class="ic"><use href="#i-shield"/></svg>審核</button>
+<button class="tab" data-topic="library"><svg class="ic"><use href="#i-cube"/></svg>素材</button>
   </div>
 </nav>
 
@@ -1180,5 +1242,6 @@
 <script defer src="js/review.js?v=20261121"></script>
 <script defer src="js/infra.js?v=20261121"></script>
 <script defer src="js/jobs.js?v=20261121"></script>
+<script defer src="js/library.js?v=20261122"></script>
 </body>
 </html>

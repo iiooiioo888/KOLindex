@@ -1544,7 +1544,7 @@
   $('#autoClaimBtn').addEventListener('click',toggleAuto);
 
   /* ================= 路由 + 轉頁 ================= */
-  var TOPICS=['collect','queue','sense','out','seat','pipe','infra','oss','studio','person','review'];
+  var TOPICS=['collect','queue','sense','out','seat','pipe','infra','oss','studio','person','review','library'];
   var TOPIC_META={
     collect:{label:'任務收集',hint:'待收項確認後才進隊列 · 這頁不拉取外部內容'},
     queue:{label:'任務隊列',hint:'席位自動拉取任務 · 等 LLM 空檔才執行'},
@@ -1556,7 +1556,8 @@
     oss:{label:'開源組件',hint:'GitHub 鎖定版本 · 候選不進主棧'},
     studio:{label:'UI 生成',hint:'一句話需求 → 線框圖 · 只出結構不出像素'},
     person:{label:'人物檔案',hint:'歸戶結果 · 貼文／AI 事件／告警合併時間軸'},
-    review:{label:'審核台',hint:'AI 只產候選 · 人工裁決寫回 review_task 並留審計'}
+    review:{label:'審核台',hint:'AI 只產候選 · 人工裁決寫回 review_task 並留審計'},
+    library:{label:'素材庫',hint:'抖音點讚／收藏 · 30.7k 件本機媒體，只讀不寫'}
   };
   var INFRA_PANES=['docker','ecs','bill','cost','conn','jobs'];
   var INFRA_LABEL={docker:'Docker',ecs:'ECS',bill:'帳單',cost:'成本預算',conn:'連接器',jobs:'排程工作'};
@@ -2307,9 +2308,11 @@
     if ((e.metaKey||e.ctrlKey)&&e.shiftKey&&e.key.toLowerCase()==='a'){ e.preventDefault(); toggleAuto(); return; }
     if ((e.metaKey||e.ctrlKey)&&e.key>='1'&&e.key<='9'){ var kb=TOPICS[parseInt(e.key,10)-1]; if (kb){ e.preventDefault(); setTopic(kb); } return; }
     if ((e.metaKey||e.ctrlKey)&&e.shiftKey&&e.code==='Digit0'){ var kbr=TOPICS[10]; if (kbr){ e.preventDefault(); setTopic(kbr); } return; }
+    if ((e.metaKey||e.ctrlKey)&&e.shiftKey&&e.code==='Digit1'){ var kbl=TOPICS[11]; if (kbl){ e.preventDefault(); setTopic(kbl); } return; }
     if ((e.metaKey||e.ctrlKey)&&e.key==='0'){ var kb0=TOPICS[9]; if (kb0){ e.preventDefault(); setTopic(kb0); } return; }
     if (!e.metaKey && !e.ctrlKey && !e.altKey && (e.key==='ArrowLeft'||e.key==='ArrowRight')){
       if (overlay.classList.contains('on') || ($('#dlgMask') && !$('#dlgMask').hidden)) return;
+      if (document.body.hasAttribute('data-lib-open')) return;
       if (e.target.closest('#seats,#topicBar,#infraTabs,#seatLegend,#rangeRow')) return;
       e.preventDefault();
       var i=TOPICS.indexOf(routeState.topic||'queue');
