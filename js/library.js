@@ -300,7 +300,7 @@ function renderFoot(){
   if(foot) foot.textContent=n?('顯示 '+nfmt(n)+' / '+nfmt(total)+' '+unit+(authors?'作者':'')+' · '+(authors?'點一位看他名下的作品':'點縮圖開檢視器')):'';
 }
 
-function renderAll(){ renderKpis(); renderGrid(); renderFoot(); }
+function renderAll(){ renderKpis(); renderGrid(); renderFoot(); updateDownloadUi(); }
 
 function renderError(){
   var box=$('libGrid');
@@ -357,10 +357,12 @@ function paintViewer(){
       return '<div class="lv-row"><span>'+esc(r[0])+'</span><b>'+esc(r[1])+'</b></div>';
     }).join('')+
     '<div class="lv-actions">'+
+      '<button type="button" class="mini-btn primary" id="libDownload">'+(det.fileCount?'重新下載':'下載到本機')+'</button>'+
       '<a class="mini-btn" href="'+esc(det.url)+'" target="_blank" rel="noopener">原始網址</a>'+
       '<button type="button" class="mini-btn" id="libViewAuthor">這位作者</button>'+
       '<button type="button" class="mini-btn" id="libCopyPath">複製目錄</button>'+
     '</div>';
+    on($('libDownload'),'click',downloadItem);
     on($('libCopyPath'),'click',function(){ copyPath(det); });
     on($('libViewAuthor'),'click',function(){
       var who=det.author;
@@ -378,6 +380,7 @@ function paintViewer(){
   }
   var counter=$('libCounter');
   if(counter) counter.textContent=files.length?(Math.min(v.idx+1,files.length)+' / '+files.length):'';
+  updateDownloadUi();
 }
 
 function copyPath(det){
@@ -388,6 +391,137 @@ function copyPath(det){
   if(navigator.clipboard&&navigator.clipboard.writeText){
     navigator.clipboard.writeText(txt).then(done,function(){ /* 沒有剪貼簿權限就算了 */ });
   }
+}
+
+/* ---------- 下載：單件與批次（伺服器端抓，帶磁碟守衛） ---------- */
+var D={job:null,poll:0,busy:false};
+
+function jobRunning(){
+  return !!(D.job&&D.job.state==='running');
+}
+
+function missingNum(){
+  var c=L.counts;
+  if(!c||c.all==null||c.localItems==null) return null;
+  return Math.max(0,Number(c.all)-Number(c.localItems));
+}
+
+function updateDownloadUi(){
+  var one=$('libDownload');
+  if(one){
+    var det=L.detail;
+    one.disabled=!!D.busy||!det;
+    one.textContent=det&&det.fileCount?'重新下載':'下載到本機';
+    if(D.busy) one.textContent='下載中…';
+  }
+  var all=$('libDownloadMissing');
+  if(all){
+    if(jobRunning()){
+      all.disabled=true;
+      all.textContent='下載中 '+(D.job.done||0)+'/'+(D.job.total||'…');
+    } else {
+      all.disabled=!!D.busy;
+      var m=missingNum();
+      all.textContent=m==null?'下載缺檔':('下載缺檔 '+(m>9999?nfmt(m):m));
+    }
+  }
+}
+
+function dlErrText(res){
+  var d=res&&res.data||{};
+  var err=d.error||('HTTP '+(res?res.status:'?'));
+  if(err==='disk_low') return '磁碟空間不足：剩 '+(d.freeGb==null?'?':d.freeGb)+' GB，至少要 '+(d.minGb||2)+' GB';
+  if(err==='busy') return '有一批下載正在跑，稍後再試';
+  if(err==='no_images'||err==='urls_expired') return '遠端網址失效又拿不到新的（MyLike 的抖音頁要開著）';
+  if(err==='not_found') return '後端找不到這件';
+  return err;
+}
+
+function downloadItem(){
+  var det=L.detail;
+  if(!det||D.busy) return;
+  D.busy=true;
+  updateDownloadUi();
+  post('/api/library/'+encodeURIComponent(det.id)+'/download',{force:!!det.fileCount}).then(function(res){
+    D.busy=false;
+    var d=res&&res.data||{};
+    if(res.ok&&d.ok){
+      toast(d.skipped?'本機已經有檔案':('已下載 '+d.files+' 個檔案 · '+bytes(d.bytes)));
+      var it=(L.items||[]).filter(function(x){ return x.id===det.id; })[0];
+      if(it){
+        it.fileCount=d.files; it.bytes=d.bytes; it.dir=d.dir;
+        it.hasLocal=true; if(d.cover) it.cover=d.cover;
+      }
+      renderGrid();
+      return req('/api/library/'+encodeURIComponent(det.id)).then(function(r2){
+        if(r2.ok&&r2.data&&!r2.data.error){ L.detail=r2.data; if(L.view) L.view.idx=0; paintViewer(); }
+      });
+    }
+    toast('下載失敗：'+dlErrText(res));
+    updateDownloadUi();
+    return false;
+  }).catch(function(e){
+    D.busy=false;
+    toast('下載失敗：'+String(e&&e.message||e));
+    updateDownloadUi();
+  });
+}
+
+function dlTick(){
+  req('/api/library/download/job').then(function(res){
+    var d=res.ok&&res.data?res.data:{};
+    if(d.job) D.job=d.job;
+    if(d.missing!=null&&L.counts) L.counts.missing=d.missing;
+    updateDownloadUi();
+    if(D.job&&D.job.state==='running'){
+      D.poll=setTimeout(dlTick,1500);
+      return;
+    }
+    D.poll=0;
+    D.busy=false;
+    var j=D.job||{};
+    var line='下載完成：'+(j.done||0)+' 件'+(j.failed?('，失敗 '+j.failed+' 件'):'')+(j.bytes?(' · '+bytes(j.bytes)):'');
+    if(j.state==='error') toast('下載中斷：'+(j.error||'未知錯誤'));
+    else if(j.reason==='disk_low') toast('磁碟不足，已停在 '+(j.done||0)+' 件（剩 '+(j.freeGb==null?'?':j.freeGb)+' GB）');
+    else if(j.reason==='cancelled') toast('已停止下載，完成 '+(j.done||0)+' 件');
+    else toast(line);
+    reload(true);
+  }).catch(function(){
+    D.poll=0;
+    D.busy=false;
+    updateDownloadUi();
+  });
+}
+
+function downloadMissing(){
+  if(D.busy||jobRunning()) return;
+  D.busy=true;
+  updateDownloadUi();
+  post('/api/library/download',{limit:20}).then(function(res){
+    if(!res.ok||!res.data||res.data.error){
+      D.busy=false;
+      toast('無法開始下載：'+dlErrText(res));
+      updateDownloadUi();
+      return;
+    }
+    D.job=res.data.job||null;
+    D.busy=false;
+    updateDownloadUi();
+    dlTick();
+  }).catch(function(e){
+    D.busy=false;
+    toast('無法開始下載：'+String(e&&e.message||e));
+    updateDownloadUi();
+  });
+}
+
+function syncDownload(){
+  req('/api/library/download/job').then(function(res){
+    var d=res.ok&&res.data?res.data:{};
+    D.job=d.job||D.job;
+    updateDownloadUi();
+    if(jobRunning()&&!D.poll) dlTick();
+  }).catch(function(){ /* 後端沒開時安靜 */ });
 }
 
 function openViewer(id){
@@ -730,6 +864,7 @@ function bind(){
 
   /* MyLike 面板 */
   on($('libMyLike'),'click',function(){ if(M.open) mlClose(); else mlOpen(); });
+  on($('libDownloadMissing'),'click',downloadMissing);
   on($('mlClose'),'click',mlClose);
   on($('mlWake'),'click',mlWake);
   on($('mlRefresh'),'click',mlRefreshFolders);
@@ -782,6 +917,7 @@ function bind(){
   }
   L.active=document.body.getAttribute('data-topic')==='library';
   if(L.active) load(true);
+  syncDownload();
 }
 
 if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',bind);
@@ -790,5 +926,6 @@ else bind();
 window.KOLINDEX_LIBRARY={state:L,load:load,reload:reload,loadAuthors:loadAuthors,setMode:setMode,setAuthor:setAuthor,
   clearAuthor:clearAuthor,displayAuthor:displayAuthor,authorRowHtml:authorRowHtml,renderAuthors:renderAuthors,
   openViewer:openViewer,closeViewer:closeViewer,mediaUrl:mediaUrl,esc:esc,bytes:bytes,day:day,trim:trim,nfmt:nfmt,
+  download:{state:D,item:downloadItem,missing:downloadMissing,sync:syncDownload},
   mylike:{state:M,open:mlOpen,close:mlClose,load:mlLoad,start:mlStart,folder:mlFolder,wake:mlWake,refreshFolders:mlRefreshFolders,ago:ago}};
 })();
