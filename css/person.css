@@ -405,6 +405,82 @@
 }
 #topic-person[data-pn-view="profile"] .pn-more-side{ padding:12px 16px; }
 
+/* ---------- 平台（抖音） ---------- */
+#topic-person .pn-plat{
+  padding:12px 13px 13px;
+  border-bottom:1px solid var(--line);
+  background:var(--surface);
+}
+#topic-person[data-pn-view="profile"] .pn-plat{ padding:16px 20px 18px; }
+#topic-person .pp-link{
+  display:inline-flex;
+  align-items:center;
+  gap:5px;
+  padding:5px 8px;
+  margin-bottom:9px;
+  border:1px solid var(--line);
+  background:var(--surface-2);
+  font:500 11px/1 var(--mono);
+  color:var(--amber);
+  text-decoration:none;
+}
+#topic-person .pp-link:hover{ border-color:var(--amber); color:var(--amber-hot); }
+#topic-person .pp-stats{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(72px,1fr));
+  gap:1px;
+  margin-bottom:9px;
+  border:1px solid var(--line-soft);
+  background:var(--line-soft);
+}
+#topic-person .pp-cell{ display:grid; gap:3px; padding:7px 8px; background:var(--surface-2); }
+#topic-person .pp-cell span{
+  font:400 9.5px/1 var(--mono);
+  letter-spacing:var(--tr-cap);
+  text-transform:uppercase;
+  color:var(--faint);
+}
+#topic-person .pp-cell b{
+  font:500 13px/1.2 var(--mono);
+  color:var(--text);
+  font-variant-numeric:tabular-nums;
+}
+#topic-person .pp-line{
+  font:400 10.5px/1.7 var(--mono);
+  color:var(--dim);
+  font-variant-numeric:tabular-nums;
+}
+#topic-person .pp-cap{
+  margin:11px 0 6px;
+  font:500 9.5px/1 var(--mono);
+  letter-spacing:var(--tr-cap);
+  text-transform:uppercase;
+  color:var(--faint);
+}
+#topic-person .pp-tops{ display:grid; gap:3px; }
+#topic-person .pp-top{
+  display:grid;
+  grid-template-columns:74px minmax(0,1fr);
+  align-items:center;
+  gap:9px;
+  width:100%;
+  padding:5px 7px;
+  border:1px solid var(--line-soft);
+  background:var(--surface-2);
+  color:var(--dim);
+  text-align:left;
+  font:400 11px/1.4 var(--cjk);
+  cursor:pointer;
+}
+#topic-person .pp-top:hover{ border-color:var(--line-strong); color:var(--text); }
+#topic-person .ppt-dg{
+  font:500 10px/1 var(--mono);
+  color:var(--amber);
+  font-variant-numeric:tabular-nums;
+  white-space:nowrap;
+}
+#topic-person .ppt-cap{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
 @media (max-width:1100px){
   #topic-person[data-pn-view="index"] .pn-list{
     grid-template-columns:repeat(auto-fill,minmax(180px,1fr));

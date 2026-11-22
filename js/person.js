@@ -17,6 +17,7 @@ var A={ok:false,loaded:false,loading:false,active:false,q:'',sort:'count',
   items:[],total:0,offset:0,counts:null,error:'',at:0,tok:0,
   sel:'',meta:null,works:[],worksTotal:0,worksOffset:0,worksLoading:false,wtok:0,
   months:[],monthsLoading:false,mtok:0,
+  plat:null,platLoading:false,ptok:0,
   view:'index',queued:false,wQueued:false};
 
 /* ---------- 小工具 ---------- */
@@ -143,6 +144,54 @@ function loadMonths(){
   return A.mPending;
 }
 
+/* 平台資料：抖音帳號（sec_uid）、互動合計與平均、互動最高的作品。
+   資料來自 GET /api/library/author，統計值來自 remote_json.stats（抓取當下的平台數字）。 */
+function loadPlatform(){
+  if(!A.sel) return Promise.resolve(false);
+  var tok=++A.ptok, who=A.sel;
+  A.platLoading=true;
+  A.pPending=req('/api/library/author?author='+encodeURIComponent(who)).then(function(res){
+    if(tok!==A.ptok||who!==A.sel) return false;
+    A.platLoading=false;
+    A.plat=(res&&res.ok&&res.data&&res.data.platforms)?res.data:null;
+    renderSide();
+    return true;
+  }).catch(function(){
+    if(tok!==A.ptok) return false;
+    A.platLoading=false; A.plat=null; renderSide(); return false;
+  });
+  return A.pPending;
+}
+
+function platformHtml(){
+  if(A.platLoading) return '<div class="pn-plat"><div class="pm-cap">平台</div><div class="pm-empty">載入中…</div></div>';
+  var d=A.plat, pf=d&&d.platforms&&d.platforms[0];
+  if(!pf) return '';
+  var st=pf.stats||{}, avg=pf.avg||{};
+  var cells=[['讚',st.dg],['留言',st.cm],['分享',st.sh],['收藏',st.cl]];
+  if(st.pl) cells.push(['播放',st.pl]);
+  var statHtml=cells.map(function(x){
+    return '<div class="pp-cell"><span>'+esc(x[0])+'</span><b>'+esc(nfmt(x[1]||0))+'</b></div>';
+  }).join('');
+  var avgBits=[['讚',avg.dg],['留言',avg.cm],['收藏',avg.cl]].map(function(x){
+    return esc(x[0])+' '+esc(nfmt(x[1]||0));
+  }).join(' · ');
+  var top=(pf.top||[]).slice(0,3).map(function(w){
+    return '<button type="button" class="pp-top" data-pn-top="'+esc(w.id)+'" title="'+esc(trim(w.caption,80)||w.id)+'">'+
+      '<span class="ppt-dg">'+esc(nfmt(w.dg||0))+' 讚</span>'+
+      '<span class="ppt-cap">'+esc(trim(w.caption,42)||w.id)+'</span>'+
+    '</button>';
+  }).join('');
+  return '<div class="pn-plat">'+
+    '<div class="pm-cap">平台<span class="pm-sub">'+esc(pf.label||'抖音')+'</span></div>'+
+    (pf.profile?'<a class="pp-link" href="'+esc(pf.profile)+'" target="_blank" rel="noopener noreferrer">抖音主頁<span aria-hidden="true"> ↗</span></a>':'')+
+    '<div class="pp-stats">'+statHtml+'</div>'+
+    '<div class="pp-line">平均每件：'+avgBits+'</div>'+
+    '<div class="pp-line">首發 '+esc(day((pf.first?Date.parse(pf.first)/1000:0)))+' · 最近 '+esc(day((pf.last?Date.parse(pf.last)/1000:0)))+'</div>'+
+    (top?'<div class="pp-cap">互動最高</div><div class="pp-tops">'+top+'</div>':'')+
+  '</div>';
+}
+
 function monthsHtml(){
   if(A.monthsLoading) return '<div class="pn-months"><div class="pm-cap">作品時間軸</div><div class="pm-empty">載入中…</div></div>';
   if(!A.months.length) return '';
@@ -250,7 +299,7 @@ function renderSide(){
   if(A.works.length<A.worksTotal){
     more='<div class="pn-more pn-more-side"><button type="button" class="mini-btn" data-work-more="1">'+(A.worksLoading?'載入中…':'更多作品（還有 '+nfmt(A.worksTotal-A.works.length)+' 件）')+'</button></div>';
   }
-  box.innerHTML=head+monthsHtml()+grid+more;
+  box.innerHTML=head+platformHtml()+monthsHtml()+grid+more;
 }
 
 /* 兩個檢視：index＝人物清單（全寬卡片grid）、profile＝作者檔案（全寬作品牆）。
@@ -272,11 +321,13 @@ function selectAuthor(name){
   A.meta=null;
   A.works=[]; A.worksTotal=0; A.worksOffset=0;
   A.months=[]; A.monthsLoading=true;
+  A.plat=null; A.platLoading=true;
   A.view='profile';
   for(var i=0;i<A.items.length;i++){ if(A.items[i].author===A.sel){ A.meta=A.items[i]; break; } }
   renderAll();
   loadWorks(true);
   loadMonths();
+  loadPlatform();
 }
 
 /* 回到人物清單：清單捲動位置保持不動（同一個 DOM，只是換顯示） */
@@ -323,6 +374,8 @@ function bind(){
     if(e.target.closest('[data-pn-back]')){ backToList(); return; }
     if(e.target.closest('[data-lib-all]')){ openInLibrary(); return; }
     if(e.target.closest('[data-work-more]')){ loadWorks(false); return; }
+    var t=e.target.closest('.pp-top');
+    if(t){ openWork(t.getAttribute('data-pn-top')); return; }
     var w=e.target.closest('.pw-work');
     if(w) openWork(w.getAttribute('data-id'));
   });
@@ -377,6 +430,6 @@ function bind(){
 if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',bind);
 else bind();
 
-window.KOLINDEX_PERSON={state:A,load:load,loadWorks:loadWorks,loadMonths:loadMonths,monthsHtml:monthsHtml,selectAuthor:selectAuthor,backToList:backToList,openInLibrary:openInLibrary,
+window.KOLINDEX_PERSON={state:A,load:load,loadWorks:loadWorks,loadMonths:loadMonths,loadPlatform:loadPlatform,platformHtml:platformHtml,monthsHtml:monthsHtml,selectAuthor:selectAuthor,backToList:backToList,openInLibrary:openInLibrary,
   displayAuthor:displayAuthor,rowHtml:rowHtml,authorRows:function(){ return A.items; },esc:esc,bytes:bytes,day:day,nfmt:nfmt};
 })();
