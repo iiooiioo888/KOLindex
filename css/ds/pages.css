@@ -17,6 +17,13 @@
 .waterfall{padding:var(--frame-y) var(--frame-x) 0;gap:var(--frame-y)}
 /* 切頁不淡入：任何 .on 上的動畫都會讓「無感切頁」破功 */
 .waterfall.on{animation:none}
+/* 右欄改接即時資料後，面板要隨內容長高（否則 flex 會把 .rr 壓成 104px 並裁掉內容） */
+.rail-right>.rr{flex:0 0 auto}
+/* 舊版「收起次要數字」的規則會把右欄的即時數值一起關掉，這裡只在右欄還原 */
+.rail-right .mtile .mv{display:block}
+.rail-right .hero-chart .hc-val{display:block}
+.rail-right .hero-chart .hc-delta{display:inline-block}
+.rail-right .note{display:block}
 
 /* ── 2. 各頁節奏 ───────────────────────────────────────────── */
 #topic-collect .collect-stats{gap:var(--col-gap)}

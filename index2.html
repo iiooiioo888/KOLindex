@@ -1134,53 +1134,42 @@
       <div class="rr-body">
         <div class="hero-chart">
           <div class="hc-top">
-            <div class="hc-val"><span data-num="queueDepth">—</span><small>ITEMS</small></div>
-            <div class="hc-delta up" id="depthDelta">▲ +2</div>
+            <div class="hc-val"><span id="railDepth">—</span><small>ITEMS</small></div>
+            <div class="hc-delta" id="railDelta">—</div>
           </div>
-          <div class="apex-slot" id="depthChart" role="img" aria-label="佇列深度走勢"></div>
-          <div class="hc-axis"><span id="rangeStart">-24H</span><span>-12H</span><span>NOW</span></div>
+          <div class="apex-slot" id="depthChart" role="img" aria-label="每桶寫入事件數走勢"></div>
+          <div class="hc-axis"><span id="rangeStart">—</span><span id="rangeMid">—</span><span>NOW</span></div>
         </div>
-        <div class="mgrid">
-          <div class="mtile"><div class="ml">自動拉取</div><div class="mv tone-green"><span data-num="claimRate">—</span><small>/min</small></div><svg class="mspark" data-spark="4,4.6,5,5.4,5.8,6.2,6,6.4,6.1,6.3,6.1" data-color="#63b880"></svg></div>
-          <div class="mtile"><div class="ml">待空檔</div><div class="mv tone-orange"><span data-num="claimedWait">—</span><small>項</small></div><div class="mbar"><i class="fill-orange" data-pct="wait"></i></div></div>
-          <div class="mtile"><div class="ml">槽位利用</div><div class="mv"><span data-num="slotUsed">—</span><small>/8</small></div><svg class="mspark" data-spark="5,6,7,6,8,7,6,7,6,6,6" data-color="#cfa04a"></svg></div>
-          <div class="mtile"><div class="ml">待空檔時間</div><div class="mv tone-cyan"><span data-num="slotWait">—</span><small>s</small></div><svg class="mspark" data-spark="3,4,5,4,3.8,4.6,4.2,5,4.4,4,4.2" data-color="#7fb2c9"></svg></div>
-          <div class="mtile"><div class="ml">再分拆</div><div class="mv tone-violet"><span data-num="split">—</span><small>子任務</small></div><svg class="mspark" data-spark="1,2,2,3,4,3,5,6,5,7,8" data-color="#9a93c9"></svg></div>
-          <div class="mtile"><div class="ml">吞吐</div><div class="mv tone-cyan"><span data-num="thru">—</span><small>/h</small></div><svg class="mspark" data-spark="22,26,24,29,27,31,28,33,30,32,31" data-color="#7fb2c9"></svg></div>
-        </div>
-        <div class="note" style="margin-top:8px">最後同步 <span id="lastSync">—</span> · pause＝暫停渲染（訂閱保留）</div>
+        <div class="mgrid" id="railTiles"></div>
+        <div class="note" style="margin-top:8px">來源 <span id="railSrc">—</span> · 最後同步 <span id="railSync">—</span><span id="railNote"></span></div>
       </div>
     </div>
 
     <div class="rr">
       <div class="rr-head">
         <div class="rr-ic tone-amber" style="border-color:rgba(207,160,74,.35);background:rgba(207,160,74,.08)"><svg><use href="#i-slot"/></svg></div>
-        <div class="rr-title"><b>LLM 空檔排程</b> · 8 槽位</div>
-        <div class="rr-live"><i></i><span data-num="slotUsed">—</span>/8 佔用</div>
+        <div class="rr-title"><b>連接器槽位</b> · 憑證</div>
+        <div class="rr-live"><i></i><span id="railSlotOk">—</span>/<span id="railSlotTotal">—</span> 可用</div>
       </div>
       <div class="rr-body tight">
-        <div class="slot-grid" id="slotGridRR"></div>
-        <div style="margin-top:10px">
-          <div class="quota-row"><span class="ql">Token 配額</span><div class="qtrack"><i class="fill-amber" data-pct="qToken"></i></div><span class="qv" data-num="quotaToken">—</span></div>
-          <div class="quota-row"><span class="ql">成本配額</span><div class="qtrack"><i class="fill-orange" data-pct="qCost"></i></div><span class="qv" data-num="quotaCost">—</span></div>
-          <div class="quota-row"><span class="ql">速率限制</span><div class="qtrack"><i class="fill-cyan" data-pct="qRate"></i></div><span class="qv" data-num="quotaRpm">—</span></div>
-        </div>
-        <div class="kv" style="margin-top:6px"><span>調度</span><b>空檔釋放 → 按排位派發</b></div>
-        <div class="kv"><span>保留</span><b class="bad">1 槽 · P0 搶佔</b></div>
+        <div class="slot-grid" id="railSlots"></div>
+        <div style="margin-top:10px" id="railQuotas"></div>
+        <div class="kv" style="margin-top:6px"><span>狀態</span><b id="railSlotState">—</b></div>
+        <div class="kv"><span>最近成功</span><b id="railSlotLast">—</b></div>
+        <div class="kv"><span>最長連續失敗</span><b class="bad" id="railSlotFail">—</b></div>
       </div>
     </div>
 
     <div class="rr">
       <div class="rr-head">
         <div class="rr-ic tone-green" style="border-color:rgba(99,184,128,.35);background:rgba(99,184,128,.08)"><svg><use href="#i-clock"/></svg></div>
-        <div class="rr-title"><b>Dispatcher</b> · 自動認領</div>
-        <div class="rr-live"><i></i>TICK <span id="dispTick">04</span>s</div>
+        <div class="rr-title"><b>Dispatcher</b> · 人工認領</div>
+        <div class="rr-live"><i></i>SYNC <span id="dispTick">15</span>s</div>
       </div>
       <div class="rr-body tight">
-        <div class="pulse-strip" id="pulseStrip" aria-hidden="true"></div>
-        <div class="kv"><span>拉取循環</span><b id="dispScan">— 項掃描</b></div>
-        <div class="kv"><span>自動拉取 / 釋放</span><b><span class="tone-green" id="dispDispatch">3</span> / <span class="tone-red" id="dispReclaim">1</span></b></div>
-        <div class="kv"><span>lock TTL</span><b class="warn">15m · 心跳 5s</b></div>
+        <div class="kv"><span>拉取循環</span><b id="dispScan">—</b></div>
+        <div class="kv"><span>今日認領 / 退回</span><b><span class="tone-green" id="dispDispatch">0</span> / <span class="tone-red" id="dispReclaim">0</span></b></div>
+        <div class="kv"><span>最近決定</span><b id="dispLast">—</b></div>
         <div id="lockList" style="margin-top:8px"></div>
       </div>
     </div>
@@ -1188,7 +1177,7 @@
     <div class="rr">
       <div class="rr-head">
         <div class="rr-ic tone-cyan" style="border-color:rgba(127,178,201,.35);background:rgba(127,178,201,.08)"><svg><use href="#i-queue"/></svg></div>
-        <div class="rr-title"><b>事件流</b> · 上限 200 條</div>
+        <div class="rr-title"><b>事件流</b> · audit_log</div>
         <button class="mini-btn" id="evPause">PAUSE</button>
         <button class="mini-btn" id="evClear">CLEAR</button>
       </div>
@@ -1218,14 +1207,16 @@
     <div class="rr">
       <div class="rr-head">
         <div class="rr-ic tone-orange" style="border-color:rgba(207,134,84,.35);background:rgba(207,134,84,.08)"><svg><use href="#i-cube"/></svg></div>
-        <div class="rr-title"><b>計費</b> · v6</div>
+        <div class="rr-title"><b>儲存</b> · media</div>
         <div class="rr-live paused"><i></i>READ ONLY</div>
       </div>
       <div class="rr-body tight">
-        <div class="pool"><div class="p-top"><span>Docker 時數</span><b>218h / 300h</b></div><div class="p-track"><div class="p-fill fill-orange" data-pct="bill1"></div></div></div>
-        <div class="pool"><div class="p-top"><span>個人池</span><b>12,480</b></div><div class="p-track"><div class="p-fill fill-amber" data-pct="bill2"></div></div></div>
-        <div class="pool"><div class="p-top"><span>共享池</span><b>45,000</b></div><div class="p-track"><div class="p-fill fill-cyan" data-pct="bill3"></div></div></div>
-        <div class="kv"><span>LLM 執行扣抵</span><b class="or">2,180 積分</b></div>
+        <div class="pool"><div class="p-top"><span>本機檔案</span><b id="stBytes">—</b></div><div class="p-track"><div class="p-fill fill-amber" id="stBytesBar"></div></div></div>
+        <div class="pool"><div class="p-top"><span>磁碟已用</span><b id="stFree">—</b></div><div class="p-track"><div class="p-fill fill-cyan" id="stFreeBar"></div></div></div>
+        <div class="pool"><div class="p-top"><span>只有索引</span><b id="stMissing">—</b></div><div class="p-track"><div class="p-fill fill-orange" id="stMissingBar"></div></div></div>
+        <div class="kv"><span>作品</span><b id="stItems">—</b></div>
+        <div class="kv"><span>圖集 / 影片</span><b id="stKinds">—</b></div>
+        <div class="kv"><span>作者</span><b id="stAuthors">—</b></div>
       </div>
     </div>
   </aside>
@@ -1304,14 +1295,15 @@
 
 <script defer src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js" integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r" crossorigin="anonymous"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/tippy.js@6.3.7/dist/tippy.umd.min.js" integrity="sha384-pjtv4LzKGI/lGxchW/wd/upB/HsGOP/Q2iPYyDU8qo2bp4JLbN34hQkdAArvidZX" crossorigin="anonymous"></script>
-<script defer src="js/index2.js?v=20261121"></script>
+<script defer src="js/index2.js?v=20261123"></script>
 <script defer src="js/wireframe.js?v=20261121"></script>
 <script defer src="js/studio.js?v=20261121"></script>
-<script defer src="js/api.js?v=20261121"></script>
+<script defer src="js/api.js?v=20261123"></script>
 <script defer src="js/review.js?v=20261121"></script>
 <script defer src="js/infra.js?v=20261121"></script>
 <script defer src="js/jobs.js?v=20261121"></script>
 <script defer src="js/library.js?v=20261122"></script>
 <script defer src="js/person.js?v=20261122"></script>
+<script defer src="js/rail.js?v=20261123"></script>
 </body>
 </html>

@@ -1186,7 +1186,9 @@
       return '<div class="slot" data-slot="'+esc(s.id)+'"><div class="s-id"><span>'+esc(s.id)+'</span><span class="st" data-f="st"></span></div>'+
         '<div class="s-who" data-f="who"></div><div class="s-meta" data-f="meta"></div><div class="s-ttl"><i data-f="bar"></i></div></div>';
     }).join('');
-    ['slotGrid','slotGridRR'].forEach(function(id){ var g=document.getElementById(id); if (g) g.innerHTML=gridHtml; });
+    ['slotGrid','slotGridRR'].forEach(function(id){
+      if (id==='slotGridRR'&&window.KOLINDEX_RAIL_LIVE) return;  // 右欄由 rail.js 用真實憑證資料畫
+      var g=document.getElementById(id); if (g) g.innerHTML=gridHtml; });
     var sense=document.getElementById('senseSlots');
     if (sense) sense.innerHTML=store.slots.map(function(s){
       return '<article class="sync-card" data-slot="'+esc(s.id)+'">'+
@@ -1223,6 +1225,7 @@
     var views={};
     store.slots.forEach(function(s){ views[s.id]=slotView(s); });
     SLOT_HOSTS.forEach(function(id){
+      if (id==='slotGridRR'&&window.KOLINDEX_RAIL_LIVE) return;  // 右欄由 rail.js 畫
       var bag=slotNodes[id];
       if (!bag) return;
       var kind=SLOT_KIND[id];
@@ -1277,6 +1280,7 @@
     });
   }
   function renderLocks(){
+    if (window.KOLINDEX_RAIL_LIVE) return;  // 右欄改由 rail.js 畫真實決定
     var el=$('#lockList'); if (!el) return;
     el.innerHTML=store.locks.map(function(l){
       var cls=l.ttl>300?'ok':l.ttl>90?'warn':'bad';
@@ -1302,6 +1306,7 @@
     $('#alertCount').textContent=store.alerts.length;
   }
   function renderAudit(){
+    if (window.KOLINDEX_RAIL_LIVE) return;  // 右欄審計改由 rail.js 餵 audit_log
     var el=$('#auditList'); if (!el) return;
     el.innerHTML=store.audits.length
       ? store.audits.slice(0,6).map(function(a){
@@ -1329,6 +1334,7 @@
   /* ================= 事件流（上限 200） ================= */
   var stream=$('#eventStream');
   function pushEvent(color,html){
+    if (window.KOLINDEX_RAIL_LIVE) return;  // 事件流改由 rail.js 餵 audit_log
     if (!stream) return;
     var el=document.createElement('div');
     el.className='ev new';
@@ -1876,6 +1882,7 @@
     }
   }
   function addAlert(id,title,desc){
+    if (window.KOLINDEX_RAIL_LIVE) return;  // 告警面板改由 api.js 餵真資料，不讓感測器注入示範告警
     if (store.alerts.some(function(a){ return a.id===id; })) return;
     store.alerts.unshift({id:id,tone:'red',icon:'i-warn',title:title,desc:desc,time:'剛剛'});
     renderAlerts();
@@ -2324,6 +2331,7 @@
   /* ================= depth chart + cost charts（頁內 SVG / conic） ================= */
   var depthSeries=[6,7,5,8,7,9,11,10,12,9,13,11,12,16,14,13,15,12,14,16,13,15,14,14];
   function renderDepth(){
+    if (window.KOLINDEX_RAIL_LIVE) return;  // 走勢圖改由 rail.js 用 audit_log 分桶畫
     var c=document.getElementById('depthChart'); if (!c) return;
     var w=300,h=62,pad=4,len=depthSeries.length;
     var min=Math.min.apply(null,depthSeries)-2,max=Math.max.apply(null,depthSeries)+2,span=(max-min)||1;
@@ -2494,6 +2502,7 @@
   }
   renderDepth();
   $('#rangeRow').addEventListener('click',function(e){
+    if (window.KOLINDEX_RAIL_LIVE) return;  // range 由 rail.js 重新抓 /api/rail
     var b=e.target.closest('.range-btn'); if (!b) return;
     $$('#rangeRow .range-btn').forEach(function(x){ x.setAttribute('aria-pressed','false'); });
     b.setAttribute('aria-pressed','true');
@@ -2512,6 +2521,7 @@
     if (Math.random()>0.7) bar.classList.add('hot'); else if (Math.random()>0.5) bar.classList.add('cool');
     strip.appendChild(bar); } }
   every(1000, function(){
+    if (window.KOLINDEX_RAIL_LIVE) return;  // Dispatcher 面板改由 rail.js 畫
     if (store.paused||document.hidden) return;
     var t=metricNodes.dispTick; if (!t) return;
     var v=parseInt(t.textContent,10)-1;
@@ -2529,7 +2539,7 @@
   function fmtTtl(s){ s=Math.max(0,Math.round(s)); return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0'); }
   every(1000, function(){
     if (store.paused||document.hidden) return;
-    for (var i=0;i<lockRows.length;i++){
+    for (var i=0;i<(window.KOLINDEX_RAIL_LIVE?0:lockRows.length);i++){
       var row=lockRows[i];
       var ttl=parseFloat(row.getAttribute('data-ttl'))-1,max=parseFloat(row.getAttribute('data-max'))||1;
       if (ttl<=0) ttl=max;
@@ -2592,14 +2602,15 @@
     ['#7fb2c9','<b>queue</b> FIFO 重排 · P0 優先']
   ]; var ai=0;
   every(5800, function(){
+    if (window.KOLINDEX_RAIL_LIVE) return;  // 不造假事件
     if (store.paused||store.evPaused||document.hidden) return;
     var e=autoEvents[ai%autoEvents.length]; ai++; pushEvent(e[0],e[1]);
   });
-  $('#evPause').addEventListener('click',function(){
+  if (!window.KOLINDEX_RAIL_LIVE) $('#evPause').addEventListener('click',function(){
     store.evPaused=!store.evPaused;
     this.textContent=store.evPaused?'RESUME':'PAUSE';
   });
-  $('#evClear').addEventListener('click',function(){
+  if (!window.KOLINDEX_RAIL_LIVE) $('#evClear').addEventListener('click',function(){
     stream.innerHTML='';
     pushEvent('#9aa2a9','<b>system</b> 事件流已清空');
   });

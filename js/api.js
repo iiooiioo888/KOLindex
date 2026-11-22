@@ -60,7 +60,7 @@
 
     var collect = getJSON('/api/collect').then(function (d) {
       var items = d && Array.isArray(d.items) ? d.items : [];
-      if (!items.length) return;
+      // 拿到回應就以它為準，即使是空陣列（否則清空資料庫後頁面還留著示範卡片）
       // 只帶要用的欄位；srcName/srcCat/srcLicense 讓卡片顯示正確的來源名
       var slim = items.map(function (x) {
         return { id: x.id, accountId: x.accountId, title: x.title, source: x.source, pri: x.pri, priLabel: x.priLabel,
@@ -72,8 +72,8 @@
 
     var alerts = getJSON('/api/alerts').then(function (d) {
       var items = d && Array.isArray(d.ui) ? d.ui : [];
-      if (!items.length) return;
-      if (bridge.setAlerts(items)) hits.alerts = items.length;
+      // 同 collect：成功就覆蓋，空陣列代表「目前沒有告警」
+      if (bridge.setAlerts(items) && items.length) hits.alerts = items.length;
     });
 
     return Promise.allSettled([collect, alerts]).then(function (res) {
