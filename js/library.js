@@ -314,7 +314,7 @@ function renderFoot(){
   if(foot) foot.textContent=n?('顯示 '+nfmt(n)+' / '+nfmt(total)+' '+unit+(authors?'作者':'')+' · '+(authors?'點一位看他名下的作品':'點縮圖開檢視器')):'';
 }
 
-function renderAll(){ renderKpis(); renderGrid(); renderFoot(); updateDownloadUi(); }
+function renderAll(){ renderKpis(); renderGrid(); renderFoot(); updateDownloadUi(); updateOptUi(); }
 
 function renderError(){
   var box=$('libGrid');
@@ -552,6 +552,86 @@ function syncDownload(){
     if(d.missing!=null) D.missing=d.missing;
     updateDownloadUi();
     if(jobRunning()&&!D.poll) dlTick();
+  }).catch(function(){ /* 後端沒開時安靜 */ });
+}
+
+/* ---------- 圖片無損壓縮：只剝中介資料，像素不動 ---------- */
+var O={job:null,stats:null,poll:0};
+
+function optRunning(){
+  var j=O.job;
+  return !!(j&&j.state==='running');
+}
+
+function mb(n){
+  n=Number(n)||0;
+  if(n<1024) return n+' B';
+  if(n<1048576) return (n/1024).toFixed(1)+' KB';
+  return (n/1048576).toFixed(1)+' MB';
+}
+
+function updateOptUi(){
+  var b=$('libOptimize');
+  if(!b) return;
+  if(optRunning()){
+    var j=O.job;
+    b.disabled=true;
+    b.textContent='壓縮 '+(j.done||0)+'/'+(j.total||'…');
+    b.title='正在剝中介資料：'+(j.current||'')+'（像素不變，無損）';
+    return;
+  }
+  b.disabled=false;
+  b.textContent='無損壓縮';
+  var st=O.stats&&O.stats.saved?O.stats.saved:0;
+  b.title='剝掉 ICC／EXIF／XMP 等中介資料，像素完全不變'+(st?'（累計省 '+mb(st)+'，'+nfmt(O.stats.files)+' 張）':'');
+}
+
+function optTick(){
+  req('/api/library/optimize/job').then(function(res){
+    var d=res.ok&&res.data?res.data:{};
+    if(d.job) O.job=d.job;
+    if(d.stats) O.stats=d.stats;
+    updateOptUi();
+    if(optRunning()){ O.poll=setTimeout(optTick,1200); return; }
+    O.poll=0;
+    var j=O.job||{};
+    if(j.state==='error') toast('壓縮中斷：'+(j.error||'未知錯誤'));
+    else if(j.saved>0) toast('無損壓縮完成：掃 '+nfmt(j.scanned)+' 張，省下 '+mb(j.saved)+(j.failed?'，失敗 '+j.failed+' 張':''));
+    else toast('沒有可省的中介資料（掃 '+nfmt(j.scanned||0)+' 張）');
+    if(j.saved>0) reload(true);
+  }).catch(function(){
+    O.poll=0;
+    updateOptUi();
+  });
+}
+
+function optimizeImages(){
+  if(optRunning()) return;
+  var b=$('libOptimize');
+  if(b){ b.disabled=true; b.textContent='啟動中…'; }
+  post('/api/library/optimize',{limit:500}).then(function(res){
+    var d=res&&res.data||{};
+    if(!res.ok||d.error){
+      updateOptUi();
+      toast('無法開始壓縮：'+(d.error==='busy'?'已有一批在跑':'HTTP '+(res?res.status:'?')));
+      return;
+    }
+    O.job=d.job||null;
+    updateOptUi();
+    optTick();
+  }).catch(function(e){
+    updateOptUi();
+    toast('無法開始壓縮：'+String(e&&e.message||e));
+  });
+}
+
+function syncOptimize(){
+  req('/api/library/optimize/job').then(function(res){
+    var d=res.ok&&res.data?res.data:{};
+    if(d.job) O.job=d.job;
+    if(d.stats) O.stats=d.stats;
+    updateOptUi();
+    if(optRunning()&&!O.poll) optTick();
   }).catch(function(){ /* 後端沒開時安靜 */ });
 }
 
@@ -895,6 +975,7 @@ function bind(){
 
   /* MyLike 面板 */
   on($('libMyLike'),'click',function(){ if(M.open) mlClose(); else mlOpen(); });
+  on($('libOptimize'),'click',optimizeImages);
   on($('libDownloadMissing'),'click',downloadMissing);
   on($('mlClose'),'click',mlClose);
   on($('mlWake'),'click',mlWake);
@@ -950,6 +1031,7 @@ function bind(){
   L.active=document.body.getAttribute('data-topic')==='library';
   if(L.active) load(true);
   syncDownload();
+  syncOptimize();
 }
 
 if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',bind);
@@ -959,5 +1041,6 @@ window.KOLINDEX_LIBRARY={state:L,load:load,reload:reload,loadAuthors:loadAuthors
   clearAuthor:clearAuthor,displayAuthor:displayAuthor,authorRowHtml:authorRowHtml,renderAuthors:renderAuthors,
   openViewer:openViewer,closeViewer:closeViewer,mediaUrl:mediaUrl,esc:esc,bytes:bytes,day:day,trim:trim,nfmt:nfmt,
   download:{state:D,item:downloadItem,missing:downloadMissing,sync:syncDownload},
+  optimize:{state:O,run:optimizeImages,sync:syncOptimize,tick:optTick,mb:mb},
   mylike:{state:M,open:mlOpen,close:mlClose,load:mlLoad,start:mlStart,folder:mlFolder,wake:mlWake,refreshFolders:mlRefreshFolders,ago:ago}};
 })();
