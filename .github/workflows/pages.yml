@@ -54,7 +54,10 @@ jobs:
       url: ${{ steps.deploy.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
+      # GITHUB_TOKEN 沒有管理員權限，開不了 Pages；已經在 Settings → Pages
+      # 把 Source 設成「GitHub Actions」時這步會直接成功，所以讓它可失敗。
       - name: 啟用 Pages（如果還沒開）
+        continue-on-error: true
         uses: actions/configure-pages@v5
         with:
           enablement: true
