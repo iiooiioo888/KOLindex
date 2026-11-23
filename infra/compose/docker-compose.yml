@@ -12,6 +12,9 @@ services:
       HOST: "0.0.0.0"
       PORT: "5200"
       KOL_PROD: "1"
+      KOL_GATE: ${KOL_GATE:?set KOL_GATE in infra/compose/.env}
+      KOL_ROLE: ${KOL_ROLE:-viewer}
+      KOL_OPERATOR: ${KOL_OPERATOR:-}
       POSTGRES_HOST: postgres
       POSTGRES_PORT: "5432"
       POSTGRES_DB: kolindex

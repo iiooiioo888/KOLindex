@@ -28,19 +28,12 @@
   <form class="login-card" id="loginForm" autocomplete="on">
     <div class="login-kicker">靈境 · Linkin</div>
     <h1>進入工作台</h1>
-    <p class="login-lead">先核對操作者，通過後才打開分頁。通行碼只送到這台伺服器，不寫進瀏覽器儲存。</p>
+    <p class="login-lead">先核對操作者。角色由伺服器決定，這張表單不能自選權限。</p>
     <label for="loginName">操作者
       <input id="loginName" name="username" autocomplete="username" required maxlength="40" placeholder="例如 AD">
     </label>
     <label for="loginPass">通行碼
       <input id="loginPass" name="password" type="password" autocomplete="current-password" maxlength="200">
-    </label>
-    <label for="loginRole">角色
-      <select id="loginRole" name="role">
-        <option value="operator">操作者</option>
-        <option value="reviewer">審核</option>
-        <option value="viewer">只讀</option>
-      </select>
     </label>
     <p class="login-err" id="loginErr" hidden></p>
     <button type="submit" class="mini-btn primary" id="loginSubmit">進入</button>

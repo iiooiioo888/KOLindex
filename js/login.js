@@ -64,8 +64,6 @@
     var nameEl = $('loginName');
     var name = nameEl ? nameEl.value.trim() : '';
     var password = ($('loginPass') && $('loginPass').value) || '';
-    var role = ($('loginRole') && $('loginRole').value) || 'operator';
-    if (!ROLE[role]) role = 'operator';
     if (!name) { showErr('請填操作者'); return; }
     var btn = $('loginSubmit');
     if (btn) btn.disabled = true;
@@ -73,7 +71,7 @@
       method: 'POST',
       credentials: 'same-origin',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ name: name, password: password, role: role })
+      body: JSON.stringify({ name: name, password: password })
     }).then(function (r) {
       return r.text().then(function (t) {
         var j = {};
@@ -82,16 +80,15 @@
       });
     }).then(function (res) {
       if (btn) btn.disabled = false;
+      if (res.status === 429) { showErr((res.data && res.data.message) || '請稍後再試'); return; }
       if (res.status === 401) { showErr('通行碼不對'); return; }
       if (!res.data || !res.data.ok) { showErr('登入沒有完成'); return; }
-      enter({ name: name, role: role, mode: res.data.gate ? 'server' : 'local' });
+      enter({ name: res.data.name || name, role: res.data.role || 'viewer', mode: res.data.gate ? 'server' : 'local' });
       write(window.KOLINDEX_SESSION);
       showErr('');
     }).catch(function () {
       if (btn) btn.disabled = false;
-      var session = { name: name, role: role, mode: 'local' };
-      write(session);
-      enter(session);
+      showErr('登入服務沒有回應，沒有建立工作階段。');
     });
   }
 
@@ -109,7 +106,7 @@
           lead.textContent = '這台沒有設定通行碼，填操作者就能進入。要擋住未登入的人，啟動時加上 KOL_GATE。';
         }
         if (d && d.ok && d.name) {
-          var session = { name: d.name, role: d.role || 'operator', mode: 'server' };
+          var session = { name: d.name, role: d.role || 'viewer', mode: 'server' };
           write(session);
           enter(session);
           return;

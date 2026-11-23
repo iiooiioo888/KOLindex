@@ -3289,10 +3289,6 @@
         error:''
       });
     });
-    var mj=mylike&&(mylike.job||null);
-    if (mj&&mj.state==='running'){
-      out.push({board:'crawl', state:'running', ref:'ML', title:'MyLike 索引同步'+(mj.kind?(' · '+mj.kind):''), detail:'進行中的爬蟲', error:''});
-    }
     var dj=download&&(download.job||null);
     if (dj&&dj.state==='running'){
       out.push({board:'crawl', state:'running', ref:'DL', title:'缺檔下載', detail:(dj.done||0)+' / '+(dj.total||'…'), error:''});
@@ -3306,7 +3302,7 @@
     return '<article class="live-job">'+
       '<div class="lj-top"><b class="mono">'+esc(j.ref)+'</b><span>'+esc(kind)+'</span></div>'+
       '<div class="lj-sub">'+esc(j.title)+(j.detail?' · '+esc(j.detail):'')+'</div>'+
-      '<div class="lj-sup">監督 · '+esc(sup)+' · 只看，不執行</div>'+
+      '<div class="lj-sup">已接線 · '+esc(sup)+' · 本次未推理</div>'+
       (j.error?'<div class="lj-err">'+esc(j.error)+'</div>':'')+
     '</article>';
   }
@@ -3332,7 +3328,7 @@
     if (src){ src.textContent='LIVE · 分類與爬蟲'; src.className='chip green'; }
     var sup=$('#queueSupervisor');
     if (sup){
-      sup.textContent='監督 · '+(queueLive.supervisor||'未接線');
+      sup.textContent='已接線 · '+(queueLive.supervisor||'未接線')+' · 本次未推理';
       sup.className='chip '+(queueLive.supervisorOn?'cyan':'or');
     }
     var unit=$('#claimUnit');

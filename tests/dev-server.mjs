@@ -39,9 +39,10 @@ const LLM = {
 // ── 後端 API（kolindex-api）：/api/* 反向代理，同源就沒有 CORS 問題 ────
 const API_BASE = (process.env.KOL_API || 'http://127.0.0.1:5210').replace(/\/+$/, '');
 const GATE = process.env.KOL_GATE || '';
+const SERVER_ROLE = ['viewer', 'operator', 'reviewer'].includes(process.env.KOL_ROLE) ? process.env.KOL_ROLE : 'viewer';
+const SERVER_OPERATOR = String(process.env.KOL_OPERATOR || '').trim();
 const SESSION_MS = 12 * 60 * 60 * 1000;
 const sessions = new Map();
-const ROLES = new Set(['operator', 'reviewer', 'viewer']);
 
 function sameSecret(a, b) {
   const ha = crypto.createHash('sha256').update(String(a), 'utf8').digest();
@@ -71,14 +72,40 @@ function currentSession(req) {
   return row;
 }
 
-function setSessionCookie(res, token) {
-  res.setHeader('Set-Cookie', [
+function setSessionCookie(res, token, secure) {
+  const parts = [
     'kol_session=' + token,
     'HttpOnly',
     'SameSite=Lax',
     'Path=/',
     'Max-Age=' + Math.floor(SESSION_MS / 1000),
-  ].join('; '));
+  ];
+  if (secure) parts.push('Secure');
+  res.setHeader('Set-Cookie', parts.join('; '));
+}
+
+const loginFails = new Map();
+
+function clientIp(req) {
+  return String(req.socket && req.socket.remoteAddress || '');
+}
+
+function loginBlocked(ip) {
+  const row = loginFails.get(ip);
+  if (!row) return false;
+  if (row.until && row.until > Date.now()) return true;
+  if (row.until && row.until <= Date.now()) loginFails.delete(ip);
+  return false;
+}
+
+function noteLoginFail(ip) {
+  const row = loginFails.get(ip) || { n: 0, until: 0 };
+  row.n += 1;
+  if (row.n >= 5) {
+    row.until = Date.now() + 60000;
+    row.n = 0;
+  }
+  loginFails.set(ip, row);
 }
 
 function clearSessionCookie(res) {
@@ -103,14 +130,24 @@ function handleAuth(req, res, url) {
     let body = {};
     try { body = raw ? JSON.parse(raw) : {}; } catch { body = {}; }
     const name = String(body.name || '').trim().slice(0, 40);
-    const role = ROLES.has(body.role) ? body.role : 'operator';
     if (!name || /[\u0000-\u001f]/.test(name)) return json(res, 400, { error: 'name' });
-    if (!GATE) return json(res, 200, { ok: true, gate: false, mode: 'local', name, role });
-    if (!sameSecret(body.password || '', GATE)) return json(res, 401, { error: 'bad_pass' });
+    const ip = clientIp(req);
+    if (loginBlocked(ip)) return json(res, 429, { error: 'slow', message: '登入失敗次數太多，請稍後再試。' });
+    if (!GATE) return json(res, 200, { ok: true, gate: false, mode: 'local', name, role: 'viewer' });
+    if (SERVER_OPERATOR && name !== SERVER_OPERATOR) {
+      noteLoginFail(ip);
+      return json(res, 401, { error: 'bad_pass' });
+    }
+    if (!sameSecret(body.password || '', GATE)) {
+      noteLoginFail(ip);
+      return json(res, 401, { error: 'bad_pass' });
+    }
+    loginFails.delete(ip);
     const token = crypto.randomBytes(32).toString('hex');
-    sessions.set(token, { name, role, exp: Date.now() + SESSION_MS });
-    setSessionCookie(res, token);
-    return json(res, 200, { ok: true, gate: true, mode: 'server', name, role });
+    sessions.set(token, { name: SERVER_OPERATOR || name, role: SERVER_ROLE, exp: Date.now() + SESSION_MS });
+    const secure = process.env.KOL_COOKIE_SECURE === '1' || req.headers['x-forwarded-proto'] === 'https';
+    setSessionCookie(res, token, secure);
+    return json(res, 200, { ok: true, gate: true, mode: 'server', name: SERVER_OPERATOR || name, role: SERVER_ROLE });
   }).catch((err) => json(res, 400, { error: err.message }));
 }
 
@@ -507,6 +544,11 @@ const server = http.createServer(async (req, res) => {
 });
 
 function listen(port, attempt = 0) {
+  const loopback = HOST === '127.0.0.1' || HOST === '::1' || HOST === 'localhost';
+  if (!loopback && !GATE) {
+    console.error('拒絕啟動：監聽 ' + HOST + ' 時必須設定 KOL_GATE');
+    process.exit(1);
+  }
   server.once('error', (err) => {
     if (!PROD && err.code === 'EADDRINUSE' && attempt < 20) {
       listen(port + 1, attempt + 1);

@@ -1,10 +1,9 @@
-/* KOLindex · api.js — 這頁唯一跟後端說話的地方（唯讀）
+/* KOLindex · api.js — 收集與告警的輪詢（60 秒）。寫入在各分頁自己的檔案。
  *
  * 後端是 F:\DeepPlaygrent\kolindex-api\server.mjs（node:sqlite + node:http），
- * 由 dev-server.mjs 的 /api/* 反向代理轉發，所以前端是同源呼叫，不用處理 CORS。
+ * 由 dev-server.mjs 的 /api/* 反向代理轉發。右欄 rail.js 是 15 秒，不是這支。
  *
- * 規則：只有真的拿到資料才覆蓋頁面上的示範資料；拿不到就靜靜保留示範資料，
- *      只把右上角的 chip 從「DEMO DATA」改成「API DOWN」，不彈窗、不擋任何操作。
+ * 連不上或 401 時清掉收集與告警，不留示範卡片。401 會回到登入閘。
  */
 (function () {
   'use strict';
@@ -77,6 +76,15 @@
     });
 
     return Promise.allSettled([collect, alerts]).then(function (res) {
+      var denied = res.some(function (r) { return r.status === 'rejected' && r.reason && r.reason.status === 401; });
+      if (denied) {
+        if (bridge.setCollect) bridge.setCollect([]);
+        if (bridge.setAlerts) bridge.setAlerts([]);
+        paint('需要登入', 'or', '工作階段失效。收集與告警已清掉，不顯示示範卡片。');
+        if (window.KOLINDEX_LOGIN && typeof window.KOLINDEX_LOGIN.logout === 'function') window.KOLINDEX_LOGIN.logout();
+        emit(false, { hits: hits, reason: '401' });
+        return { ok: false, hits: hits };
+      }
       var up = res.some(function (r) { return r.status === 'fulfilled'; });
       if (up) {
         failures = 0;
@@ -85,10 +93,12 @@
           'kolindex-api 已連線：收集 ' + counts.collect + ' 項、告警 ' + counts.alerts + ' 筆（每 ' + (POLL_MS / 1000) + ' 秒重抓）');
       } else {
         failures += 1;
+        if (bridge.setCollect) bridge.setCollect([]);
+        if (bridge.setAlerts) bridge.setAlerts([]);
         var why = res.map(function (r) { return r.status === 'rejected' ? String(r.reason && r.reason.message || r.reason) : ''; })
           .filter(Boolean).join(' / ');
-        paint(failures > 1 ? 'API DOWN' : 'DEMO DATA', 'or',
-          '拿不到後端資料，頁面保留示範資料。' + (why ? '（' + why + '）' : '') + ' 另開終端跑：node kolindex-api/server.mjs');
+        paint('未連線', 'or',
+          '收集與告警沒有連上後端，已清掉示範卡片。' + (why ? '（' + why + '）' : '') + ' 輪詢 ' + (POLL_MS / 1000) + ' 秒。');
       }
       firstPaint = false;
       emit(up, { hits: hits, reason: up ? '' : why });

@@ -90,7 +90,7 @@ docker compose -f infra/compose/docker-compose.yml up -d --build
 
 `.env` 只留在本機。Compose 會拉起網頁，以及 PostgreSQL 16.16、Redis 7.4.7、MinIO `RELEASE.2025-10-15T17-29-55Z`、Meilisearch v1.57.0。資料庫、快取、物件儲存和搜尋只在內部網路互通，埠綁在 `127.0.0.1`。網頁容器讀得到這些主機名，現有頁面仍透過 `/api` 讀 kolindex-api，不會在這個映像裡建表。
 
-預設頁面聽 `127.0.0.1:5200`。前面再加你自己的反向代理。容器內 `KOL_PROD=1`：沒有自動重整、不列出目錄、預設不轉發 `/__llm`。沒有設定 `KOL_API` 時，同步按鈕會顯示後端未連線，頁面其餘部分用示範資料。Sherlock 不在這組服務裡；呼叫它要在裝了 Docker 的機器上跑 `node tests/dev-server.mjs`。
+預設頁面聽 `127.0.0.1:5200`。網頁容器裡面聽 `0.0.0.0`，所以必須在 `.env` 設 `KOL_GATE`，否則行程拒絕啟動。角色用 `KOL_ROLE`（預設 `viewer`），名字用 `KOL_OPERATOR`；表單不能自選角色。前面再加你自己的反向代理。容器內 `KOL_PROD=1`：沒有自動重整、不列出目錄、預設不轉發 `/__llm`。沒有設定 `KOL_API` 時，收集與告警顯示未連線並清掉示範卡片，不把假資料留在畫面上。收集輪詢 60 秒，右欄 `rail.js` 是 15 秒。Sherlock 不在這組服務裡；呼叫它要在裝了 Docker 的機器上跑 `node tests/dev-server.mjs`。
 
 打開站會先看到登入頁。沒有 `KOL_GATE` 時，填操作者就能進入，通行碼不核對。要擋住未登入的人和 `/api`，啟動時加上 `KOL_GATE`（只放在伺服器環境變數，不要寫進倉庫）。登入後右上角名字可點，用來登出。
 
