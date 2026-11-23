@@ -12,7 +12,7 @@
 <link rel="stylesheet" href="css/ds/tokens.css?v=20261121">
 <link rel="stylesheet" href="css/ds/base.css?v=20261121">
 <link rel="stylesheet" href="css/ds/components.css?v=20261121">
-<link rel="stylesheet" href="css/ds/pages.css?v=20261121">
+<link rel="stylesheet" href="css/ds/pages.css?v=20261123e">
 <link rel="stylesheet" href="css/studio.css?v=20261121">
 <link rel="stylesheet" href="css/review.css?v=20261121">
 <link rel="stylesheet" href="css/connectors.css?v=20261121">
@@ -108,7 +108,7 @@
       <button class="nav-item" data-topic="out"><svg class="ic"><use href="#i-cube"/></svg><span class="nm">產出庫</span><span class="bd" id="navOutBd">5</span></button>
       <button class="nav-item" data-topic="seat"><svg class="ic"><use href="#i-tasks"/></svg><span class="nm">席位執行</span><span class="bd">80</span></button>
       <button class="nav-item" data-topic="pipe"><svg class="ic"><use href="#i-monitor"/></svg><span class="nm">統一管線</span><span class="bd">6 段</span></button>
-      <button class="nav-item" data-topic="infra"><svg class="ic"><use href="#i-docker"/></svg><span class="nm">基礎設施</span><span class="bd">6/6</span></button>
+      <button class="nav-item" data-topic="infra"><svg class="ic"><use href="#i-docker"/></svg><span class="nm">基礎設施</span><span class="bd" id="navInfraBd">—</span></button>
       <button class="nav-item" data-topic="oss"><svg class="ic"><use href="#i-git"/></svg><span class="nm">開源組件</span><span class="bd">17</span></button>
       <button class="nav-item" data-topic="studio"><svg class="ic"><use href="#i-cube"/></svg><span class="nm">UI 生成</span><span class="bd">NEW</span></button>
       <button class="nav-item" data-topic="person"><svg class="ic"><use href="#i-pulse"/></svg><span class="nm">人物檔案</span><span class="bd" id="navPersonBd">18.9k</span></button>
@@ -126,12 +126,12 @@
 
     <div class="micro-card">
       <h4>系統摘要</h4>
-      <div class="kv"><span>LLM 槽位</span><b class="warn"><span data-num="slotUsed">—</span>/8 佔用</b></div>
-      <div class="kv"><span>待空檔</span><b class="or"><span data-num="claimedWait">—</span> 項</b></div>
-      <div class="kv"><span>guard.py</span><b class="warn"><span data-num="guardPending">—</span> 待審</b></div>
-      <div class="kv"><span>熔斷器</span><b class="ok">CLOSED</b></div>
-      <div class="kv"><span>席位池</span><b class="vi">87/120</b></div>
-      <div class="kv"><span>Compose</span><b class="ok">6/6</b></div>
+      <div class="kv"><span>席位</span><b id="sysSeats">—</b></div>
+      <div class="kv"><span>佇列</span><b id="sysQueue">—</b></div>
+      <div class="kv"><span>連接器</span><b id="sysConn">—</b></div>
+      <div class="kv"><span>磁碟</span><b id="sysDisk">—</b></div>
+      <div class="kv"><span>今日完成</span><b id="sysToday">—</b></div>
+      <div class="kv"><span>自動派工</span><b id="sysAuto">—</b></div>
     </div>
 
     <div class="micro-card">
@@ -141,11 +141,9 @@
 
     <div class="micro-card">
       <h4>埠號</h4>
-      <div class="kv"><span>前端</span><b>3001</b></div>
-      <div class="kv"><span>後端</span><b class="amber">8000</b></div>
-      <div class="kv"><span>OPC</span><b class="cyan">8001</b></div>
-      <div class="kv"><span>Redis</span><b>6379</b></div>
-      <div class="kv"><span>Chroma</span><b>8100</b></div>
+      <div class="kv"><span>頁面</span><b id="sysPortWeb">—</b></div>
+      <div class="kv"><span>API</span><b id="sysPortApi">同源 /api</b></div>
+      <div class="kv"><span>媒體</span><b id="sysPortMedia">—</b></div>
     </div>
   </aside>
 
@@ -227,17 +225,18 @@
           <div class="panel-title">任務看板<span class="en">狀態 × 總任務進程</span></div>
           <div class="panel-tools">
             <span class="chip green" id="autoChip">AUTO-CLAIM ON</span>
-            <span class="chip or">P0 保留槽位 1</span>
+            <span class="chip or" id="queueSrc">DEMO · 數字會自己跳</span>
+            <span class="chip" id="queueSupervisor">監督模型 · —</span>
             <span class="chip cyan">槽位 8</span>
           </div>
         </div>
         <div class="panel-body">
           <div class="kpis" id="kpiBand">
-            <div class="kpi"><div class="kl">Auto-claim</div><div class="kv2 tone-green"><span data-num="claimRate">—</span><small>/min</small></div><div class="ks">席位自動拉取</div><div class="kbar"><i class="fill-green" data-pct="claimRate"></i></div></div>
+            <div class="kpi"><div class="kl">Auto-claim</div><div class="kv2 tone-green"><span data-num="claimRate">—</span><small id="claimUnit">/min</small></div><div class="ks">席位自動拉取</div><div class="kbar"><i class="fill-green" data-pct="claimRate"></i></div></div>
             <div class="kpi"><div class="kl">Queue depth</div><div class="kv2 tone-cyan"><span data-num="queueDepth">—</span></div><div class="ks">待拉取（佇列中）</div><div class="kbar"><i class="fill-cyan" data-pct="queue"></i></div></div>
             <div class="kpi"><div class="kl">Claimed / 待空檔</div><div class="kv2 tone-orange"><span data-num="claimedWait">—</span></div><div class="ks">已拉取 · 等 LLM 空檔</div><div class="kbar"><i class="fill-orange" data-pct="wait"></i></div></div>
             <div class="kpi"><div class="kl">Executing</div><div class="kv2 tone-amber"><span data-num="executing">—</span></div><div class="ks">執行中 · 佔用槽位</div><div class="kbar"><i class="fill-amber" data-pct="exec"></i></div></div>
-            <div class="kpi"><div class="kl">Slot util</div><div class="kv2"><span data-num="slotUsed">—</span><small>/8</small></div><div class="ks">LLM 併發槽位</div><div class="kbar"><i class="fill-amber" data-pct="slot"></i></div></div>
+            <div class="kpi"><div class="kl">Slot util</div><div class="kv2"><span data-num="slotUsed">—</span><small id="slotMaxLabel">/8</small></div><div class="ks">LLM 併發槽位</div><div class="kbar"><i class="fill-amber" data-pct="slot"></i></div></div>
             <div class="kpi"><div class="kl">Avg slot wait</div><div class="kv2"><span data-num="slotWait">—</span><small>s</small></div><div class="ks">平均待空檔時間</div><div class="kbar"><i class="fill-amber" data-pct="slotWait"></i></div></div>
             <div class="kpi"><div class="kl">Re-split</div><div class="kv2 tone-violet"><span data-num="split">—</span></div><div class="ks">回注子任務</div><div class="kbar"><i class="fill-violet" data-pct="split"></i></div></div>
             <div class="kpi"><div class="kl">Throughput</div><div class="kv2"><span data-num="thru">—</span><small>/h</small></div><div class="ks">完成 <span data-num="done">—</span> · 失敗 <span data-num="fail">—</span></div><div class="kbar"><i class="fill-cyan" data-pct="thru"></i></div></div>
@@ -651,38 +650,29 @@
     <section class="waterfall" id="topic-infra" role="tabpanel" aria-labelledby="tab-infra">
       <div class="panel">
         <div class="panel-head">
-          <div class="panel-title">基礎設施<span class="en">docker compose · aliyun read-only</span></div>
+          <div class="panel-title">基礎設施<span class="en">live · seats · storage · connectors</span></div>
           <div class="panel-tools">
-            <span class="chip green">6/6 healthy</span>
-            <span class="chip or">DEMO · 兩段確認</span>
-            <span class="chip vi">ReadOnlyAccess</span>
+            <span class="chip or" id="sysLive">未連線</span>
             <span class="chip or" id="connChip" title="連接器憑證健康 · GET /api/health/connectors">連接器 · 未連線</span>
           </div>
         </div>
         <div class="tabs-row" id="infraTabs" role="tablist" aria-label="基礎設施子分頁">
-          <button class="tab-btn" id="itab-docker" role="tab" aria-selected="true" aria-controls="pane-docker" data-pane="docker">Docker 6</button>
-          <button class="tab-btn" id="itab-ecs" role="tab" aria-selected="false" aria-controls="pane-ecs" data-pane="ecs">ECS 4</button>
-          <button class="tab-btn" id="itab-bill" role="tab" aria-selected="false" aria-controls="pane-bill" data-pane="bill">帳單 6</button>
-          <button class="tab-btn" id="itab-cost" role="tab" aria-selected="false" aria-controls="pane-cost" data-pane="cost">成本預算</button>
+          <button class="tab-btn" id="itab-docker" role="tab" aria-selected="true" aria-controls="pane-docker" data-pane="docker">服務</button>
+          <button class="tab-btn" id="itab-ecs" role="tab" aria-selected="false" aria-controls="pane-ecs" data-pane="ecs">席位</button>
+          <button class="tab-btn" id="itab-bill" role="tab" aria-selected="false" aria-controls="pane-bill" data-pane="bill">儲存</button>
+          <button class="tab-btn" id="itab-cost" role="tab" aria-selected="false" aria-controls="pane-cost" data-pane="cost">磁碟</button>
           <button class="tab-btn" id="itab-conn" role="tab" aria-selected="false" aria-controls="pane-conn" data-pane="conn">連接器 <span id="connTabN">—</span></button>
           <button class="tab-btn" id="itab-jobs" role="tab" aria-selected="false" aria-controls="pane-jobs" data-pane="jobs">排程工作 <span id="jobsTabN">—</span></button>
-          <div class="tabs-meta">
-            <span>CPU 34%</span><span>MEM 2.8/8GB</span><span>本月 218h</span><span class="tone-orange">¥6,180/¥8,000</span>
+          <div class="tabs-meta" id="sysMeta">
+            <span id="sysMetaSeats">席位 —</span><span id="sysMetaDisk">磁碟 —</span><span id="sysMetaQueue">佇列 —</span>
           </div>
         </div>
 
         <div class="tab-pane on" id="pane-docker" role="tabpanel" aria-labelledby="itab-docker">
           <div class="roster-wrap plain">
             <table class="table tbl-md" id="dockerTable">
-              <thead><tr><th>容器</th><th>映像</th><th>狀態</th><th data-col="low">CPU</th><th data-col="low">MEM</th><th>運行</th><th>操作</th></tr></thead>
-              <tbody>
-                <tr><td class="strong mono">linkin-backend</td><td class="mono">linkin/backend:1.24.0</td><td><span class="pill green"><span class="sig ok"></span>HEALTHY</span></td><td class="mono" data-col="low">22%</td><td class="mono" data-col="low">812 MB</td><td class="mono">4d06h</td><td><button class="act-btn" data-act="重啟">重啟</button> <button class="act-btn stop" data-act="停止">停止</button></td></tr>
-                <tr><td class="strong mono">linkin-frontend</td><td class="mono">linkin/frontend:1.24.0</td><td><span class="pill green"><span class="sig ok"></span>HEALTHY</span></td><td class="mono" data-col="low">8%</td><td class="mono" data-col="low">236 MB</td><td class="mono">4d06h</td><td><button class="act-btn" data-act="重啟">重啟</button> <button class="act-btn stop" data-act="停止">停止</button></td></tr>
-                <tr><td class="strong mono">linkin-opc</td><td class="mono">linkin/opc-service:1.24.0</td><td><span class="pill green"><span class="sig ok"></span>HEALTHY</span></td><td class="mono" data-col="low">3%</td><td class="mono" data-col="low">164 MB</td><td class="mono">4d06h</td><td><button class="act-btn" data-act="重啟">重啟</button> <button class="act-btn stop" data-act="停止">停止</button></td></tr>
-                <tr><td class="strong mono">linkin-redis</td><td class="mono">redis:7-alpine</td><td><span class="pill green"><span class="sig ok"></span>HEALTHY</span></td><td class="mono" data-col="low">1%</td><td class="mono" data-col="low">96 MB</td><td class="mono">12d02h</td><td><button class="act-btn" data-act="重啟">重啟</button> <button class="act-btn stop" data-act="停止">停止</button></td></tr>
-                <tr><td class="strong mono">linkin-chroma</td><td class="mono">chromadb/chroma:0.5</td><td><span class="pill green"><span class="sig ok"></span>HEALTHY</span></td><td class="mono" data-col="low">6%</td><td class="mono" data-col="low">1.1 GB</td><td class="mono">12d02h</td><td><button class="act-btn" data-act="重啟">重啟</button> <button class="act-btn stop" data-act="停止">停止</button></td></tr>
-                <tr><td class="strong mono">linkin-watch</td><td class="mono">containrrr/watchtower</td><td><span class="pill or"><span class="sig busy"></span>RESTARTING</span></td><td class="mono" data-col="low">0%</td><td class="mono" data-col="low">22 MB</td><td class="mono">0h14m</td><td><button class="act-btn" data-act="重啟">重啟</button> <button class="act-btn stop" data-act="停止">停止</button></td></tr>
-              </tbody>
+              <thead><tr><th>服務</th><th>來源</th><th>狀態</th><th>讀到</th></tr></thead>
+              <tbody id="sysServices"><tr><td colspan="4" class="conn-empty">正在連後端…</td></tr></tbody>
             </table>
           </div>
         </div>
@@ -690,13 +680,8 @@
         <div class="tab-pane" id="pane-ecs" role="tabpanel" aria-labelledby="itab-ecs">
           <div class="roster-wrap plain">
             <table class="table tbl-md">
-              <thead><tr><th>實例 ID</th><th>規格</th><th>可用域</th><th>角色</th><th>狀態</th><th data-col="low">CPU</th><th data-col="low">記憶體</th></tr></thead>
-              <tbody>
-                <tr class="hl"><td class="strong mono">i-uf6x2k9qa</td><td class="mono">ecs.c6.xlarge 4C8G</td><td class="mono">hz-b</td><td>容器宿主</td><td><span class="pill green"><span class="sig ok"></span>運行中</span></td><td class="mono" data-col="low">34%</td><td class="mono" data-col="low">2.8/8 GB</td></tr>
-                <tr><td class="strong mono">i-uf6y8m2vd</td><td class="mono">ecs.c6.xlarge 4C8G</td><td class="mono">hz-c</td><td>備援</td><td><span class="pill green"><span class="sig ok"></span>運行中</span></td><td class="mono" data-col="low">12%</td><td class="mono" data-col="low">1.4/8 GB</td></tr>
-                <tr><td class="strong mono">i-uf7b4n1tc</td><td class="mono">ecs.g7.2xlarge 8C32G</td><td class="mono">hz-b</td><td>AI Hub 推理</td><td><span class="pill green"><span class="sig ok"></span>運行中</span></td><td class="mono" data-col="low">61%</td><td class="mono" data-col="low">18.2/32 GB</td></tr>
-                <tr><td class="strong mono">i-uf7c6p9we</td><td class="mono">ecs.g7.xlarge 4C16G</td><td class="mono">bj-h</td><td>OPC 匯聚</td><td><span class="pill or"><span class="sig busy"></span>維護中</span></td><td class="mono" data-col="low">8%</td><td class="mono" data-col="low">3.1/16 GB</td></tr>
-              </tbody>
+              <thead><tr><th>席位</th><th>平台</th><th>狀態</th><th>車道</th><th data-col="low">完成</th><th data-col="low">失敗</th></tr></thead>
+              <tbody id="sysSeatBody"><tr><td colspan="6" class="conn-empty">正在連 /api/seats…</td></tr></tbody>
             </table>
           </div>
         </div>
@@ -704,52 +689,15 @@
         <div class="tab-pane" id="pane-bill" role="tabpanel" aria-labelledby="itab-bill">
           <div class="roster-wrap plain">
             <table class="table tbl-md">
-              <thead><tr><th>帳期</th><th>產品</th><th data-col="low">模式</th><th>用量</th><th>金額</th><th data-col="low">積分折算</th><th>對帳</th></tr></thead>
-              <tbody>
-                <tr><td class="mono">10-22</td><td class="strong">ECS 雲伺服器</td><td data-col="low"><span class="pill or"><span class="sig busy"></span>按時</span></td><td class="mono">2,304 h</td><td class="mono strong">¥3,240</td><td class="mono" data-col="low">-12,480</td><td><span class="pill green"><span class="sig ok"></span>已對帳</span></td></tr>
-                <tr><td class="mono">10-22</td><td class="strong">RDS 資料庫</td><td data-col="low"><span class="pill or"><span class="sig busy"></span>包月</span></td><td class="mono">2 實例</td><td class="mono strong">¥1,880</td><td class="mono" data-col="low">-4,700</td><td><span class="pill green"><span class="sig ok"></span>已對帳</span></td></tr>
-                <tr><td class="mono">10-21</td><td class="strong">OSS 儲存</td><td data-col="low"><span class="pill">按量</span></td><td class="mono">1.24 TB</td><td class="mono strong">¥420</td><td class="mono" data-col="low">-1,050</td><td><span class="pill green"><span class="sig ok"></span>已對帳</span></td></tr>
-                <tr><td class="mono">10-21</td><td class="strong">網路流出</td><td data-col="low"><span class="pill">按量</span></td><td class="mono">1.9 TB</td><td class="mono strong">¥380</td><td class="mono" data-col="low">-950</td><td><span class="pill amber"><span class="sig warn"></span>待對帳</span></td></tr>
-                <tr><td class="mono">10-20</td><td class="strong">SLB</td><td data-col="low"><span class="pill or"><span class="sig busy"></span>按時</span></td><td class="mono">720 h</td><td class="mono strong">¥260</td><td class="mono" data-col="low">-650</td><td><span class="pill green"><span class="sig ok"></span>已對帳</span></td></tr>
-                <tr><td class="mono">10-19</td><td class="strong">ACR 倉庫</td><td data-col="low"><span class="pill">按量</span></td><td class="mono">186 GB</td><td class="mono strong">¥48</td><td class="mono" data-col="low">-120</td><td><span class="pill amber"><span class="sig warn"></span>待對帳</span></td></tr>
-              </tbody>
+              <thead><tr><th>項目</th><th>數值</th><th>說明</th></tr></thead>
+              <tbody id="sysStoreBody"><tr><td colspan="3" class="conn-empty">正在連 /api/rail…</td></tr></tbody>
             </table>
           </div>
         </div>
 
         <div class="tab-pane" id="pane-cost" role="tabpanel" aria-labelledby="itab-cost">
-          <div class="panel-body">
-            <div class="cdn-charts">
-              <div>
-                <div class="kicker" style="margin-bottom:4px">預算使用</div>
-                <div class="apex-box" id="budgetRadial" role="img" aria-label="本月預算使用 77.2%"></div>
-              </div>
-              <div>
-                <div class="kicker" style="margin-bottom:4px">成本組成</div>
-                <div class="apex-box" id="costDonut" role="img" aria-label="本月成本組成"></div>
-              </div>
-            </div>
-            <div class="mini-2col">
-              <div>
-                <div class="kicker" style="margin-bottom:8px">成本分佈 2026-10（唯讀）</div>
-                <div class="cost-row"><div class="cl">ECS</div><div class="ctrack"><div class="cfill fill-orange" style="--pct:82%"></div></div><div class="cval">¥3,240</div><div class="cpct">52.4%</div></div>
-                <div class="cost-row"><div class="cl">RDS</div><div class="ctrack"><div class="cfill fill-cyan" style="--pct:48%"></div></div><div class="cval">¥1,880</div><div class="cpct">30.4%</div></div>
-                <div class="cost-row"><div class="cl">OSS</div><div class="ctrack"><div class="cfill fill-violet" style="--pct:16%"></div></div><div class="cval">¥420</div><div class="cpct">6.8%</div></div>
-                <div class="cost-row"><div class="cl">網路</div><div class="ctrack"><div class="cfill fill-amber" style="--pct:13%"></div></div><div class="cval">¥380</div><div class="cpct">6.1%</div></div>
-                <div class="cost-row"><div class="cl">SLB</div><div class="ctrack"><div class="cfill fill-green" style="--pct:10%"></div></div><div class="cval">¥260</div><div class="cpct">4.2%</div></div>
-              </div>
-              <div>
-                <div class="kicker" style="margin-bottom:8px">預算與換算</div>
-                <div class="micro-card" style="padding:9px 10px">
-                  <div class="kv"><span>本月累計</span><b class="or">¥6,180</b></div>
-                  <div class="kv"><span>預算上限</span><b>¥8,000（77.2%）</b></div>
-                  <div class="kv"><span>告警閾值</span><b class="warn">80% · 接近</b></div>
-                  <div class="kv"><span>Docker 時數</span><b class="or">218h ≈ 2,180 積分</b></div>
-                  <div class="kv"><span>權限</span><b class="vi">ReadOnlyAccess</b></div>
-                </div>
-                <div class="note">阿里雲成本<b>唯讀對帳</b>：只拉帳單與用量，不變更任何雲資源。</div>
-              </div>
-            </div>
+          <div class="panel-body" id="sysDiskPane">
+            <div class="conn-empty">正在連 /api/rail…</div>
           </div>
         </div>
         <div class="tab-pane" id="pane-conn" role="tabpanel" aria-labelledby="itab-conn">
@@ -1272,8 +1220,8 @@
 <footer class="statusbar">
   <div class="sb-item accent"><b>auto-claim</b> 席位自動拉取</div>
   <div class="sb-item">pause＝暫停渲染 <b>訂閱保留</b></div>
-  <div class="sb-item">ports <b>3001 · 8000 · 8001 · 6379 · 8100</b></div>
-  <div class="sb-item">資料 <b>DEMO DATA · 接 SSE/WebSocket</b></div>
+  <div class="sb-item">ports <b id="sysFootPorts">—</b></div>
+  <div class="sb-item">資料 <b id="sysFootData">未連線</b></div>
   <div class="sb-spacer"></div>
   <div class="sb-item sb-cmd" title="docker compose up -d · python -m backend.main · npm run dev">docker compose up -d · python -m backend.main · npm run dev</div>
 </footer>
@@ -1343,7 +1291,7 @@
 <script defer src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js" integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r" crossorigin="anonymous"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/tippy.js@6.3.7/dist/tippy.umd.min.js" integrity="sha384-pjtv4LzKGI/lGxchW/wd/upB/HsGOP/Q2iPYyDU8qo2bp4JLbN34hQkdAArvidZX" crossorigin="anonymous"></script>
 <script defer src="js/login.js?v=20261123"></script>
-<script defer src="js/index2.js?v=20261123d"></script>
+<script defer src="js/index2.js?v=20261123e"></script>
 <script defer src="js/wireframe.js?v=20261121"></script>
 <script defer src="js/studio.js?v=20261123c"></script>
 <script defer src="js/api.js?v=20261123"></script>
@@ -1354,5 +1302,6 @@
 <script defer src="js/person.js?v=20261123b"></script>
 <script defer src="js/seats.js?v=20261123b"></script>
 <script defer src="js/rail.js?v=20261123b"></script>
+<script defer src="js/system.js?v=20261123"></script>
 </body>
 </html>

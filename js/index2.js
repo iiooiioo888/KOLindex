@@ -151,29 +151,41 @@
 
   /* ================= SELECTORS（所有數字/百分比唯一來源） ================= */
   function laneCount(lane){ return store.tasks.filter(function(t){ return t.lane===lane; }).length; }
+  var queueLive={ok:false,lanes:null,metrics:null,items:[]};
   function derived(){
     var m=store.metrics;
-    var slotUsed=store.slots.filter(function(s){ return s.state==='busy'; }).length;
+    var live=queueLive.ok&&queueLive.metrics;
+    var slotUsed=live?live.slotUsed:store.slots.filter(function(s){ return s.state==='busy'; }).length;
+    var slotMax=live&&live.slotMax?live.slotMax:8;
+    var q=live?live.queueDepth:laneCount('queue');
+    var w=live?live.claimedWait:laneCount('wait');
+    var ex=live?live.executing:laneCount('proc');
+    var claim=live?live.claimRate:m.claimRate;
+    var waitS=live?live.slotWait:m.slotWait;
+    var split=live?live.split:m.split;
+    var thru=live?live.thru:m.thru;
+    var pile=Math.max(1,q+w+ex+split+thru);
     return {
-      queueDepth:laneCount('queue'),claimedWait:laneCount('wait'),executing:laneCount('proc'),
+      queueDepth:q,claimedWait:w,executing:ex,
       slotUsed:slotUsed,
-      claimRate:m.claimRate,slotWait:m.slotWait,split:m.split,thru:m.thru,
-      guardPending:m.guardPending,done:m.done,fail:m.fail,
-      quotaToken:m.tokenUsed+'K / '+m.tokenMax+'K',
-      quotaCost:'¥'+m.costUsed+' / ¥'+m.costMax,
-      quotaRpm:m.rpm+' / '+m.rpmMax+' rpm',
+      claimRate:claim,slotWait:waitS,split:split,thru:thru,
+      guardPending:live?live.guardPending:m.guardPending,
+      done:live?live.done:m.done,fail:live?live.fail:m.fail,
+      quotaToken:live?'—':(m.tokenUsed+'K / '+m.tokenMax+'K'),
+      quotaCost:live?'—':('¥'+m.costUsed+' / ¥'+m.costMax),
+      quotaRpm:live?'—':(m.rpm+' / '+m.rpmMax+' rpm'),
       bars:{
-        claimRate:Math.min(100,m.claimRate/8.5*100),
-        queue:Math.min(100,laneCount('queue')/6*100),
-        wait:Math.min(100,laneCount('wait')/8*100),
-        exec:Math.min(100,laneCount('proc')/6*100),
-        slot:slotUsed/8*100,
-        slotWait:Math.min(100,m.slotWait/7.5*100),
-        split:Math.min(100,m.split/60*100),
-        thru:Math.min(100,m.thru/52*100),
-        qToken:m.tokenUsed/m.tokenMax*100,
-        qCost:m.costUsed/m.costMax*100,
-        qRate:m.rpm/m.rpmMax*100,
+        claimRate:Math.min(100,live?claim:claim/8.5*100),
+        queue:live?q/pile*100:Math.min(100,q/6*100),
+        wait:live?w/pile*100:Math.min(100,w/8*100),
+        exec:live?ex/pile*100:Math.min(100,ex/6*100),
+        slot:slotMax?slotUsed/slotMax*100:0,
+        slotWait:Math.min(100,live?waitS:waitS/7.5*100),
+        split:live?split/pile*100:Math.min(100,split/60*100),
+        thru:live?thru/pile*100:Math.min(100,thru/52*100),
+        qToken:live?0:m.tokenUsed/m.tokenMax*100,
+        qCost:live?0:m.costUsed/m.costMax*100,
+        qRate:live?0:m.rpm/m.rpmMax*100,
         t1:m.t1,t2:m.t2,t3:m.t3,t4:m.t4,t5:m.t5,t6:m.t6,
         bill1:m.bill1,bill2:m.bill2,bill3:m.bill3
       }
@@ -245,7 +257,8 @@
     if (!metricNodes.nums.length) cacheMetrics();
     var d=derived();
     var laneN={queue:0,wait:0,proc:0,split:0,gen:0};
-    store.tasks.forEach(function(t){
+    if (queueLive.ok&&queueLive.lanes) laneN=queueLive.lanes;
+    else store.tasks.forEach(function(t){
       var k=t.exiting?t.leftFrom:t.lane;
       if (laneN[k]!==undefined) laneN[k]++;
     });
@@ -253,7 +266,7 @@
       var k=el.getAttribute('data-num');
       if (d[k]===undefined) return;
       var v=d[k];
-      var decimals=(k==='claimRate'||k==='slotWait')?1:0;
+      var decimals=k==='slotWait'?1:((k==='claimRate'&&!queueLive.ok)?1:0);
       var text=(typeof v==='number')?formatNum(v,decimals):String(v);
       if (typeof v==='number') tweenText(el,text,v,decimals);
       else if (el.textContent!==text) el.textContent=text;
@@ -412,6 +425,7 @@
     if (currentQuery) applyQuery();
   }
   function renderQueue(only){
+    if (queueLive.ok){ renderNumbers(); return; }
     var partial=!!(only && only.length);
     var lanes=partial
       ? QUEUE_LANES.filter(function(lane){ return only.indexOf(lane)>=0 || laneStructSig(lane)!==laneSigSeen[lane]; })
@@ -1548,7 +1562,7 @@
     library:{label:'素材庫',hint:'抖音點讚／收藏 · 30.7k 件、18.9k 位作者，只讀不寫'}
   };
   var INFRA_PANES=['docker','ecs','bill','cost','conn','jobs'];
-  var INFRA_LABEL={docker:'Docker',ecs:'ECS',bill:'帳單',cost:'成本預算',conn:'連接器',jobs:'排程工作'};
+  var INFRA_LABEL={docker:'服務',ecs:'席位',bill:'儲存',cost:'磁碟',conn:'連接器',jobs:'排程工作'};
   var routeState={topic:'',pane:null,focus:null};
   var lastInfra='docker';
   if ('scrollRestoration' in history) history.scrollRestoration='manual';
@@ -2010,7 +2024,7 @@
     return max+1;
   }
   function decomposeOne(){
-    if (store.paused||document.hidden||!store.autoClaim) return;
+    if (queueLive.ok||store.paused||document.hidden||!store.autoClaim) return;
     if (store.tasks.some(function(t){ return t.parent==='T-2841' && t.flowClosing; })) return;
     var open=store.tasks.filter(function(t){ return t.parent==='T-2841' && t.lane!=='done'; }).length;
     var total=store.tasks.filter(function(t){ return t.parent==='T-2841'; }).length;
@@ -2030,7 +2044,7 @@
   setTimeout(decomposeOne,2800);
   every(14000, decomposeOne);
   function autoClaim(){
-    if (!store.autoClaim||store.paused||document.hidden) return;
+    if (queueLive.ok||!store.autoClaim||store.paused||document.hidden) return;
     var q=store.tasks.filter(function(t){ return t.lane==='queue'; })[0];
     if (!q) return;
     var seatPick={'工業席':'S-15','分析席':'S-24','審核席':'S-28','報告席':'S-19'}[q.role]||'S-24';
@@ -2114,7 +2128,7 @@
 
   /* 執行進度：數值只改 --pct / 文字，換道才重建相關欄 */
   every(4200, function(){
-    if (store.paused||document.hidden) return;
+    if (queueLive.ok||store.paused||document.hidden) return;
     var touched=[];
     var slotMoved=false;
     function touch(lane){ if (lane && touched.indexOf(lane)<0) touched.push(lane); }
@@ -2292,7 +2306,9 @@
     return 'M'+n(p0[0])+','+n(p0[1])+'A'+r+','+r+' 0 '+large+' 1 '+n(p1[0])+','+n(p1[1])+
       'L'+n(q1[0])+','+n(q1[1])+'A'+ir+','+ir+' 0 '+large+' 0 '+n(q0[0])+','+n(q0[1])+'Z';
   }
+  window.KOLINDEX_SYSTEM_LIVE = true;
   function ensureCostCharts(){
+    if (window.KOLINDEX_SYSTEM_LIVE) return;
     var budget=document.getElementById('budgetRadial');
     var donut=document.getElementById('costDonut');
     if (budget && !budget.querySelector('.gauge')){
@@ -2493,7 +2509,7 @@
   /* ================= 全域指標推移 ================= */
   function bump(v,a,mn,mx){ return Math.max(mn,Math.min(mx,v+a)); }
   every(3000, function(){
-    if (store.paused||document.hidden) return;
+    if (queueLive.ok||store.paused||document.hidden) return;
     var m=store.metrics;
     m.claimRate=Math.round(bump(m.claimRate,(Math.random()-0.5)*0.5,3.2,8.5)*10)/10;
     m.slotWait=Math.round(bump(m.slotWait,(Math.random()-0.5)*0.8,1.6,7.5)*10)/10;
@@ -3154,8 +3170,185 @@
   });
 
   /* ================= init ================= */
+  function boardLane(item){
+    if (item.board==='classify'){
+      if (item.state==='deferred') return 'wait';
+      if (item.state==='rejected') return 'split';
+      if (item.state==='open') return 'queue';
+      return 'gen';
+    }
+    if (item.state==='queued') return 'queue';
+    if (item.state==='backoff'||item.state==='blocked') return 'wait';
+    if (item.state==='running') return 'proc';
+    if (item.state==='failed'||item.state==='error') return 'split';
+    if (item.state==='succeeded'||item.state==='done') return 'gen';
+    return 'queue';
+  }
+  function tallyBoard(items){
+    var lanes={queue:0,wait:0,proc:0,split:0,gen:0};
+    (items||[]).forEach(function(it){
+      var k=boardLane(it);
+      if (lanes[k]!=null) lanes[k]++;
+    });
+    return lanes;
+  }
+  function buildBoard(jobs,reviews,mylike,download){
+    var out=[];
+    ((jobs&&jobs.items)||[]).forEach(function(j){
+      var who=j.handle?('@'+j.handle):(j.platform||'');
+      out.push({
+        board:'crawl', state:j.state, ref:'#'+j.id,
+        title:(j.job_type||'爬蟲')+(who?' · '+who:''),
+        detail:j.connector||'排程工作', error:j.error_code||''
+      });
+    });
+    ((reviews&&reviews.items)||[]).forEach(function(x){
+      var kind=x.kind||'identity';
+      if (kind!=='identity') return;
+      if (x.state!=='open'&&x.state!=='deferred') return;
+      out.push({
+        board:'classify', state:x.state, ref:'R-'+x.id,
+        title:x.subject||('人物 #'+x.id),
+        detail:(x.kind_label||'歸戶')+(x.score==null?'':' · F2 '+Number(x.score).toFixed(2)),
+        error:''
+      });
+    });
+    var mj=mylike&&(mylike.job||null);
+    if (mj&&mj.state==='running'){
+      out.push({board:'crawl', state:'running', ref:'ML', title:'MyLike 索引同步'+(mj.kind?(' · '+mj.kind):''), detail:'進行中的爬蟲', error:''});
+    }
+    var dj=download&&(download.job||null);
+    if (dj&&dj.state==='running'){
+      out.push({board:'crawl', state:'running', ref:'DL', title:'缺檔下載', detail:(dj.done||0)+' / '+(dj.total||'…'), error:''});
+    }
+    return out;
+  }
+  function liveJobCard(j){
+    var kind=j.board==='classify'?'人物分類':'資料爬蟲';
+    var sup=queueLive.supervisor||'未接線';
+    return '<article class="live-job">'+
+      '<div class="lj-top"><b class="mono">'+esc(j.ref)+'</b><span>'+esc(kind)+'</span></div>'+
+      '<div class="lj-sub">'+esc(j.title)+(j.detail?' · '+esc(j.detail):'')+'</div>'+
+      '<div class="lj-sup">監督 · '+esc(sup)+' · 只看，不執行</div>'+
+      (j.error?'<div class="lj-err">'+esc(j.error)+'</div>':'')+
+    '</article>';
+  }
+  function paintLiveLanes(){
+    var buckets={queue:[],wait:[],proc:[],split:[],gen:[]};
+    (queueLive.items||[]).forEach(function(j){
+      var lane=boardLane(j);
+      if (buckets[lane]) buckets[lane].push(j);
+    });
+    ['queue','wait','proc','split','gen'].forEach(function(lane){
+      var body=document.getElementById('body-'+lane);
+      if (!body) return;
+      var rows=buckets[lane].slice(0,8);
+      body.innerHTML=rows.length?rows.map(liveJobCard).join(''):'<div class="live-empty">這個狀態沒有工作</div>';
+    });
+    var flow=$('#flowBoard');
+    if (flow) flow.innerHTML='<div class="live-empty">人物分類與資料爬蟲進同一塊看板。監督模型只標在卡片上，不啟動爬蟲、也不改歸戶。</div>';
+    var par=$('#parNow');
+    if (par) par.innerHTML='';
+  }
+  function markQueueLive(seats){
+    var src=$('#queueSrc');
+    if (src){ src.textContent='LIVE · 分類與爬蟲'; src.className='chip green'; }
+    var sup=$('#queueSupervisor');
+    if (sup){
+      sup.textContent='監督 · '+(queueLive.supervisor||'未接線');
+      sup.className='chip '+(queueLive.supervisorOn?'cyan':'or');
+    }
+    var unit=$('#claimUnit');
+    if (unit) unit.textContent='次';
+    var slotMax=$('#slotMaxLabel');
+    if (slotMax) slotMax.textContent='/'+((seats&&seats.seats&&seats.seats.length)||'—');
+    var caps={
+      claimRate:'今日認領',
+      queueDepth:'待分類／待爬',
+      claimedWait:'延後／受阻',
+      executing:'正在爬',
+      slotUsed:'席位執行中',
+      slotWait:'平均耗時',
+      split:'失敗／駁回',
+      thru:'已結束'
+    };
+    Object.keys(caps).forEach(function(k){
+      var n=document.querySelector('#kpiBand [data-num="'+k+'"]');
+      var ks=n&&n.closest('.kpi')&&n.closest('.kpi').querySelector('.ks');
+      if (ks) ks.textContent=caps[k];
+    });
+    var chip=$('#autoChip');
+    if (chip&&seats){
+      chip.textContent=seats.auto?'席位自動派工 ON':'席位自動派工 OFF';
+      chip.className='chip '+(seats.auto?'green':'or');
+    }
+  }
+  function applyQueueLive(jobs,seats,rail,reviews,mylike,download,llm){
+    var list=(seats&&seats.seats)||[];
+    var busy=list.filter(function(s){ return s.current; }).length;
+    var avg=seats&&seats.avgMs;
+    var claims=rail&&rail.dispatcher?Number(rail.dispatcher.claimsToday)||0:0;
+    var items=buildBoard(jobs,reviews,mylike,download);
+    var lanes=tallyBoard(items);
+    var openClassify=items.filter(function(it){ return it.board==='classify'&&it.state==='open'; }).length;
+    queueLive.ok=true;
+    queueLive.items=items;
+    queueLive.lanes=lanes;
+    queueLive.supervisor=(llm&&llm.configured&&llm.model)?String(llm.model):'未接線';
+    queueLive.supervisorOn=!!(llm&&llm.configured&&llm.model);
+    queueLive.metrics={
+      queueDepth:lanes.queue,
+      claimedWait:lanes.wait,
+      executing:lanes.proc,
+      slotUsed:busy,
+      slotMax:list.length||0,
+      claimRate:claims,
+      slotWait:avg==null?0:Math.round(avg/100)/10,
+      split:lanes.split,
+      thru:lanes.gen,
+      done:(seats&&seats.counts&&seats.counts.today!=null)?Number(seats.counts.today)||0:lanes.gen,
+      fail:(seats&&seats.counts&&seats.counts.failedToday!=null)?Number(seats.counts.failedToday)||0:lanes.split,
+      guardPending:reviews&&reviews.counts&&reviews.counts.open!=null?Number(reviews.counts.open)||0:openClassify
+    };
+    markQueueLive(seats);
+    paintLiveLanes();
+    renderNumbers();
+  }
+  function syncQueueNumbers(){
+    function grab(url){
+      return fetch(url,{headers:{accept:'application/json'},cache:'no-store'}).then(function(r){
+        if (!r.ok) throw new Error('HTTP '+r.status);
+        return r.json();
+      });
+    }
+    return Promise.allSettled([
+      grab('/api/jobs?state=all&limit=80'),
+      grab('/api/seats?tasks=1'),
+      grab('/api/rail?range=1H'),
+      grab('/api/review/queue?state=all'),
+      grab('/api/mylike/job'),
+      grab('/api/library/download/job'),
+      grab('/__llm/status')
+    ]).then(function(res){
+      var jobs=res[0].status==='fulfilled'?res[0].value:null;
+      var reviews=res[3].status==='fulfilled'?res[3].value:null;
+      if (!(jobs&&jobs.counts)&&!(reviews&&Array.isArray(reviews.items))) return;
+      var llm=res[6].status==='fulfilled'?res[6].value:null;
+      applyQueueLive(
+        jobs,
+        res[1].status==='fulfilled'?res[1].value:null,
+        res[2].status==='fulfilled'?res[2].value:null,
+        reviews,
+        res[4].status==='fulfilled'?res[4].value:null,
+        res[5].status==='fulfilled'?res[5].value:null,
+        llm
+      );
+    });
+  }
   cacheMetrics();
   renderQueue();
+  syncQueueNumbers();
+  every(15000, syncQueueNumbers);
   dispatchFromWait();
   renderRoster();
   renderSlots();

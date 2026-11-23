@@ -151,3 +151,15 @@
   padding-bottom:4px;
 }
 #infraTabs .tabs-meta{ margin-left:auto; }
+
+#topic-queue .live-job{
+  border:1px solid var(--line);
+  background:var(--surface);
+  padding:8px 10px;
+  margin-bottom:6px;
+}
+#topic-queue .lj-top{display:flex;justify-content:space-between;gap:8px;font-size:12px}
+#topic-queue .lj-sub,#topic-queue .live-empty{color:var(--faint);font-size:11px;line-height:1.5}
+#topic-queue .lj-sup{margin-top:4px;font-family:var(--mono);font-size:10px;letter-spacing:.04em;color:var(--cyan)}
+#topic-queue .lj-err{color:var(--red);font-family:var(--mono);font-size:10px;margin-top:2px}
+
