@@ -12,6 +12,23 @@ services:
       HOST: "0.0.0.0"
       PORT: "5200"
       KOL_PROD: "1"
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: "5432"
+      POSTGRES_DB: kolindex
+      POSTGRES_USER: kolindex
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      MINIO_ENDPOINT: http://minio:9000
+      MEILI_HOST: http://meilisearch:7700
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      meilisearch:
+        condition: service_healthy
     read_only: true
     tmpfs:
       - /tmp:rw,noexec,nosuid,size=16m
@@ -19,4 +36,108 @@ services:
       - no-new-privileges:true
     cap_drop:
       - ALL
+    networks:
+      - edge
+      - data
     restart: unless-stopped
+
+  postgres:
+    image: postgres:16.16-bookworm@sha256:ce3efec6bc404f6b15ebf5d9bed6b45a9d4655aea238d7dacc3467ccb05a1175
+    environment:
+      POSTGRES_USER: kolindex
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in infra/compose/.env}
+      POSTGRES_DB: kolindex
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kolindex -d kolindex"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - data
+    restart: unless-stopped
+
+  redis:
+    image: redis:7.4.7-bookworm@sha256:976ab0f0939b78c06d802bcd3bea44c5142ea9a756a57b861e08819817f768c8
+    environment:
+      REDISCLI_AUTH: ${REDIS_PASSWORD:?set REDIS_PASSWORD in infra/compose/.env}
+    command:
+      - redis-server
+      - --appendonly
+      - "yes"
+      - --requirepass
+      - ${REDIS_PASSWORD:?set REDIS_PASSWORD in infra/compose/.env}
+    ports:
+      - "127.0.0.1:6379:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - data
+    restart: unless-stopped
+
+  minio:
+    image: quay.io/minio/minio:RELEASE.2025-10-15T17-29-55Z
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-kolindex}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?set MINIO_ROOT_PASSWORD in infra/compose/.env}
+    command: ["server", "/data", "--console-address", ":9001"]
+    ports:
+      - "127.0.0.1:9000:9000"
+      - "127.0.0.1:9001:9001"
+    volumes:
+      - miniodata:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - data
+    restart: unless-stopped
+
+  meilisearch:
+    image: getmeili/meilisearch:v1.57.0@sha256:91bf09897482c17205c8faeca8daa8d57999fb9de20d862763cdfa92ba4ec790
+    environment:
+      MEILI_ENV: production
+      MEILI_NO_ANALYTICS: "true"
+      MEILI_MASTER_KEY: ${MEILI_MASTER_KEY:?set MEILI_MASTER_KEY in infra/compose/.env}
+    ports:
+      - "127.0.0.1:7700:7700"
+    volumes:
+      - meilidata:/meili_data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:7700/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - data
+    restart: unless-stopped
+
+networks:
+  edge: {}
+  data:
+    internal: true
+
+volumes:
+  pgdata: {}
+  redisdata: {}
+  miniodata: {}
+  meilidata: {}

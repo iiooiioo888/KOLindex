@@ -1,4 +1,6 @@
 /.cursor
+.env
+infra/compose/.env
 /AGENTS.md
 /apps
 /CLAUDE.md
