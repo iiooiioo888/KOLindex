@@ -181,9 +181,9 @@ function reviewDetailHtml(x){
   var acts;
   if(x.state==='open'){
     acts='<div class="rv-acts">'+
-      '<button type="button" class="rv-btn ok" data-act="confirm">確認歸戶 <kbd>1</kbd></button>'+
-      '<button type="button" class="rv-btn no" data-act="reject">駁回 <kbd>2</kbd></button>'+
-      '<button type="button" class="rv-btn hold" data-act="defer">延後 <kbd>3</kbd></button>'+
+      '<button type="button" class="rv-btn ok" data-act="confirm">確認歸戶</button>'+
+      '<button type="button" class="rv-btn no" data-act="reject">駁回</button>'+
+      '<button type="button" class="rv-btn hold" data-act="defer">延後</button>'+
       '<span class="rv-ask">'+(R.busy?'寫入中…':'寫回 review_task · 留一筆 audit_log')+'</span>'+
     '</div>';
   }else{
@@ -212,7 +212,7 @@ function aiDetailHtml(x){
     '<li><span class="k">類型</span><span class="v">'+esc(AI_KIND[x.kind]||x.kind)+'</span></li>'+
     '<li><span class="k">摘要</span><span class="v">'+esc(x.summary||'')+'</span></li>'+rows;
   var acts=x.state==='open'
-    ? '<div class="rv-acts"><button type="button" class="rv-btn ok" data-act="ack">標記已處理 <kbd>1</kbd></button>'+
+    ? '<div class="rv-acts"><button type="button" class="rv-btn ok" data-act="ack">標記已處理</button>'+
       '<span class="rv-ask">AI 只產候選 · 處理後寫 audit_log</span></div>'
     : '<div class="rv-acts done">已處理 · audit_log 已留存</div>';
   return '<div class="rv-head"><div class="rv-hd">'+
@@ -423,20 +423,6 @@ on($('reviewDetail'),'click',function(e){
   var b=e.target&&e.target.closest?e.target.closest('[data-act]'):null;
   if(!b) return;
   act(b.getAttribute('data-act'));
-});
-
-on(document,'keydown',function(e){
-  if(!R.active) return;
-  var dlg=$('dlgMask');
-  if(dlg&&!dlg.hidden) return;
-  var tag=String((e.target&&e.target.tagName)||'').toLowerCase();
-  if(tag==='input'||tag==='textarea'||tag==='select') return;
-  if(e.metaKey||e.ctrlKey||e.altKey) return;
-  if(e.key==='1'){ e.preventDefault(); act('confirm'); }
-  else if(e.key==='2'){ e.preventDefault(); act('reject'); }
-  else if(e.key==='3'){ e.preventDefault(); act('defer'); }
-  else if(e.key==='j'||e.key==='ArrowDown'){ e.preventDefault(); move(1); }
-  else if(e.key==='k'||e.key==='ArrowUp'){ e.preventDefault(); move(-1); }
 });
 
 function onTopic(topic){

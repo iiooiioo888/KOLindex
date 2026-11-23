@@ -1082,15 +1082,6 @@ function bind(){
     if(e.target===$('libViewer')) closeViewer();
   });
 
-  document.addEventListener('keydown',function(e){
-    if(e.key==='Escape'&&M.open){ e.preventDefault(); mlClose(); return; }
-    var v=$('libViewer');
-    if(!v||v.hidden) return;
-    if(e.key==='Escape'){ e.preventDefault(); closeViewer(); return; }
-    if(e.key==='ArrowLeft'){ e.preventDefault(); step(-1); return; }
-    if(e.key==='ArrowRight'){ e.preventDefault(); step(1); }
-  });
-
   window.addEventListener('kolindex:api',function(e){
     var d=(e&&e.detail)||{};
     if(d.ok&&!L.loaded) reload(true);

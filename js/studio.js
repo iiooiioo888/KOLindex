@@ -218,9 +218,6 @@
   });
 
   form.addEventListener('submit', function (e) { e.preventDefault(); generate(); });
-  promptEl.addEventListener('keydown', function (e) {
-    if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); generate(); }
-  });
   densityEl.addEventListener('change', function () { stage.setAttribute('data-density', densityEl.value); });
   views.addEventListener('click', function (e) {
     var b = e.target.closest('button[data-view]');

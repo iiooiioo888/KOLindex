@@ -38,11 +38,6 @@
     tickerStamp=0;
     if (!document.hidden) tickClock();
   });
-  /* [P0-8] 輸入框防護 */
-  function isTyping(t){
-    return !!(t && (t.matches && t.matches('input,textarea,select,[contenteditable="true"]') || t.isContentEditable));
-  }
-
   /* ================= FIXTURES ================= */
   var FIXTURES={
     tasks:[
@@ -1103,18 +1098,6 @@
       sheet.scrollTop=p*Math.max(0, sheet.scrollHeight-sheet.clientHeight);
     });
     $('#outFindq').addEventListener('input', function(){ ide.findAt=-1; findNext(); });
-    document.addEventListener('keydown', function(e){
-      var inEditor=document.activeElement===$('#outCode')||document.activeElement===$('#outFindq');
-      if (!inEditor) return;
-      if (e.key==='Escape'){ $('#outFind').hidden=true; return; }
-      if ((e.metaKey||e.ctrlKey) && (e.key==='s'||e.key==='S')){ e.preventDefault(); saveAsNew(); }
-      if ((e.metaKey||e.ctrlKey) && (e.key==='f'||e.key==='F')){
-        e.preventDefault();
-        $('#outFind').hidden=false;
-        $('#outFindq').focus();
-        $('#outFindq').select();
-      }
-    });
   })();
   var SLOT_HOSTS=['slotGrid','slotGridRR','senseSlots','compressBoard','slotRail','pipeLive'];
   var SLOT_KIND={slotGrid:'slot',slotGridRR:'slot',senseSlots:'sync-card',compressBoard:'cmp-card',slotRail:'pip-row',pipeLive:'pipe-slot'};
@@ -1379,9 +1362,8 @@
       close();
       opt.onConfirm(who,reason);
     };
-    /* 簡易 focus trap */
+    /* 焦點留在對話框內，關閉用取消鈕 */
     dlgMask.onkeydown=function(e){
-      if (e.key==='Escape'){ e.preventDefault(); close(); return; }
       if (e.key!=='Tab') return;
       var f=$$('button,input',dlgMask);
       var first=f[0],last=f[f.length-1];
@@ -1795,26 +1777,12 @@
     if (el.matches('.topic-btn, .nav-item, .tab, .mini-btn[data-topic]'))
       el.addEventListener('click',function(){ setTopic(el.getAttribute('data-topic')); });
   });
-  function setupRoving(container,itemSel,onMove){
+  function setupRoving(container,itemSel){
     var items=$$(itemSel,container);
     items.forEach(function(it){ it.tabIndex=it.getAttribute('aria-selected')==='true'?0:-1; });
-    container.addEventListener('keydown',function(e){
-      var idx=items.indexOf(document.activeElement); if (idx<0) return;
-      var next=null;
-      if (e.key==='ArrowRight') next=(idx+1)%items.length;
-      else if (e.key==='ArrowLeft') next=(idx-1+items.length)%items.length;
-      else if (e.key==='Home') next=0;
-      else if (e.key==='End') next=items.length-1;
-      if (next!==null){
-        e.preventDefault();
-        items.forEach(function(x){ x.tabIndex=-1; });
-        items[next].tabIndex=0; items[next].focus();
-        if (onMove) onMove(items[next]);
-      }
-    });
   }
   setupRoving($('#topicBar'),'.topic-btn');
-  setupRoving($('#infraTabs'),'.tab-btn',function(btn){ btn.click(); });
+  setupRoving($('#infraTabs'),'.tab-btn');
 
   /* infra 子分頁 → #/infra/<pane> */
   $('#infraTabs').addEventListener('click',function(e){
@@ -2242,22 +2210,6 @@
     go({topic:'seat',pane:null,focus:id},'replace');
     toast('席位 '+id,'ok');
   });
-  seatWrap.addEventListener('keydown',function(e){
-    var seats=$$('.seat',seatWrap);
-    var idx=seats.indexOf(document.activeElement); if (idx<0) return;
-    var next=null;
-    if (e.key==='ArrowRight') next=Math.min(seats.length-1,idx+1);
-    else if (e.key==='ArrowLeft') next=Math.max(0,idx-1);
-    else if (e.key==='ArrowDown') next=Math.min(seats.length-1,idx+10);
-    else if (e.key==='ArrowUp') next=Math.max(0,idx-10);
-    else if (e.key==='Home') next=0;
-    else if (e.key==='End') next=seats.length-1;
-    if (next!==null){
-      e.preventDefault();
-      seats.forEach(function(s){ s.tabIndex=-1; });
-      seats[next].tabIndex=0; seats[next].focus();
-    }
-  });
 
   $('#seatLegend').addEventListener('click',function(e){
     var b=e.target.closest('.legend-btn'); if (!b) return;
@@ -2275,7 +2227,7 @@
   if (si) si.addEventListener('input',function(){ onSearchInput(si.value); });
   if (ms) ms.addEventListener('input',function(){ onSearchInput(ms.value); });
 
-  /* [P0-2] overlay：focus trap + ESC + 焦點歸還 */
+  /* 搜尋層：焦點留在層內，關閉用按鈕 */
   function openSearchOverlay(){
     overlay.classList.add('on');
     ms.focus();
@@ -2288,44 +2240,11 @@
   $('#searchOpen').addEventListener('click',openSearchOverlay);
   $('#searchClose').addEventListener('click',closeSearchOverlay);
   overlay.addEventListener('keydown',function(e){
-    if (e.key==='Escape'){ e.preventDefault(); closeSearchOverlay(); return; }
     if (e.key!=='Tab') return;
     var f=$$('input,button',overlay);
     var first=f[0],last=f[f.length-1];
     if (e.shiftKey&&document.activeElement===first){ e.preventDefault(); last.focus(); }
     else if (!e.shiftKey&&document.activeElement===last){ e.preventDefault(); first.focus(); }
-  });
-
-  /* ================= [P0-8] 全域快捷鍵（避開輸入框） ================= */
-  window.addEventListener('keydown',function(e){
-    var typing=isTyping(e.target);
-    if ((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='k'){
-      e.preventDefault();
-      if (window.innerWidth<=767) openSearchOverlay();
-      else if (si){ si.focus(); si.select(); }
-      return;
-    }
-    if (e.key==='Escape'){
-      if (overlay.classList.contains('on')){ e.preventDefault(); closeSearchOverlay(); }
-      else if (si&&document.activeElement===si){ si.value=''; runSearch(''); si.blur(); }
-      return;
-    }
-    if (typing) return;
-    if (e.code==='Space'&&!e.target.closest('button')){ e.preventDefault(); togglePause(); return; }
-    if ((e.metaKey||e.ctrlKey)&&e.shiftKey&&e.key.toLowerCase()==='a'){ e.preventDefault(); toggleAuto(); return; }
-    if ((e.metaKey||e.ctrlKey)&&!e.shiftKey&&e.key>='1'&&e.key<='9'){ var kb=TOPICS[parseInt(e.key,10)-1]; if (kb){ e.preventDefault(); setTopic(kb); } return; }
-    if ((e.metaKey||e.ctrlKey)&&e.shiftKey&&e.code==='Digit0'){ var kbr=TOPICS[10]; if (kbr){ e.preventDefault(); setTopic(kbr); } return; }
-    if ((e.metaKey||e.ctrlKey)&&e.shiftKey&&e.code==='Digit1'){ var kbl=TOPICS[11]; if (kbl){ e.preventDefault(); setTopic(kbl); } return; }
-    if ((e.metaKey||e.ctrlKey)&&e.key==='0'){ var kb0=TOPICS[9]; if (kb0){ e.preventDefault(); setTopic(kb0); } return; }
-    if (!e.metaKey && !e.ctrlKey && !e.altKey && (e.key==='ArrowLeft'||e.key==='ArrowRight')){
-      if (overlay.classList.contains('on') || ($('#dlgMask') && !$('#dlgMask').hidden)) return;
-      if (document.body.hasAttribute('data-lib-open')) return;
-      if (e.target.closest('#seats,#topicBar,#infraTabs,#seatLegend,#rangeRow')) return;
-      e.preventDefault();
-      var i=TOPICS.indexOf(routeState.topic||'queue');
-      var n=e.key==='ArrowRight'?(i+1)%TOPICS.length:(i-1+TOPICS.length)%TOPICS.length;
-      setTopic(TOPICS[n]);
-    }
   });
 
   /* ================= depth chart + cost charts（頁內 SVG / conic） ================= */
@@ -3351,7 +3270,6 @@
   function closePeek(){ if (peekEl) peekEl.hidden=true; }
   $('#peekClose').addEventListener('click', closePeek);
   peekEl.addEventListener('click', function(e){ if (e.target===peekEl) closePeek(); });
-  document.addEventListener('keydown', function(e){ if (e.key==='Escape' && peekEl && !peekEl.hidden) closePeek(); });
   function taskPeek(task, angle){
     var role=ROLES[task.role]||{};
     var prog=task.progress!=null?Math.round(task.progress):(task.waitPct!=null?Math.round(task.waitPct):null);
