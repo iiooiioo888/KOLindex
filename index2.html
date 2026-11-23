@@ -104,16 +104,16 @@
       <div class="rail-label">分頁 Topics<span id="railQueueCount">— 在列</span></div>
       <button class="nav-item" data-topic="collect"><svg class="ic"><use href="#i-inbox"/></svg><span class="nm">任務收集</span><span class="bd" id="navCollectBd">—</span></button>
       <button class="nav-item active" data-topic="queue"><svg class="ic"><use href="#i-queue"/></svg><span class="nm">任務隊列</span><span class="bd" id="navQueueBd">—</span></button>
-      <button class="nav-item" data-topic="sense"><svg class="ic"><use href="#i-opc"/></svg><span class="nm">感測上下文</span><span class="bd">8</span></button>
-      <button class="nav-item" data-topic="out"><svg class="ic"><use href="#i-cube"/></svg><span class="nm">產出庫</span><span class="bd" id="navOutBd">5</span></button>
-      <button class="nav-item" data-topic="seat"><svg class="ic"><use href="#i-tasks"/></svg><span class="nm">席位執行</span><span class="bd">80</span></button>
-      <button class="nav-item" data-topic="pipe"><svg class="ic"><use href="#i-monitor"/></svg><span class="nm">統一管線</span><span class="bd">6 段</span></button>
+      <button class="nav-item" data-topic="sense"><svg class="ic"><use href="#i-opc"/></svg><span class="nm">感測上下文</span><span class="bd" id="navSenseBd">—</span></button>
+      <button class="nav-item" data-topic="out"><svg class="ic"><use href="#i-cube"/></svg><span class="nm">產出庫</span><span class="bd" id="navOutBd">—</span></button>
+      <button class="nav-item" data-topic="seat"><svg class="ic"><use href="#i-tasks"/></svg><span class="nm">席位執行</span><span class="bd" id="navSeatBd">—</span></button>
+      <button class="nav-item" data-topic="pipe"><svg class="ic"><use href="#i-monitor"/></svg><span class="nm">統一管線</span><span class="bd" id="navPipeBd">—</span></button>
       <button class="nav-item" data-topic="infra"><svg class="ic"><use href="#i-docker"/></svg><span class="nm">基礎設施</span><span class="bd" id="navInfraBd">—</span></button>
-      <button class="nav-item" data-topic="oss"><svg class="ic"><use href="#i-git"/></svg><span class="nm">開源組件</span><span class="bd">17</span></button>
-      <button class="nav-item" data-topic="studio"><svg class="ic"><use href="#i-cube"/></svg><span class="nm">UI 生成</span><span class="bd">NEW</span></button>
-      <button class="nav-item" data-topic="person"><svg class="ic"><use href="#i-pulse"/></svg><span class="nm">人物檔案</span><span class="bd" id="navPersonBd">18.9k</span></button>
-      <button class="nav-item" data-topic="review"><svg class="ic"><use href="#i-shield"/></svg><span class="nm">審核台</span><span class="bd">LIVE</span></button>
-<button class="nav-item" data-topic="library"><svg class="ic"><use href="#i-cube"/></svg><span class="nm">素材庫</span><span class="bd" id="navLibraryBd">30.7k</span></button>
+      <button class="nav-item" data-topic="oss"><svg class="ic"><use href="#i-git"/></svg><span class="nm">開源組件</span><span class="bd" id="navOssBd">—</span></button>
+      <button class="nav-item" data-topic="studio"><svg class="ic"><use href="#i-cube"/></svg><span class="nm">UI 生成</span><span class="bd" id="navStudioBd">—</span></button>
+      <button class="nav-item" data-topic="person"><svg class="ic"><use href="#i-pulse"/></svg><span class="nm">人物檔案</span><span class="bd" id="navPersonBd">—</span></button>
+      <button class="nav-item" data-topic="review"><svg class="ic"><use href="#i-shield"/></svg><span class="nm">審核台</span><span class="bd" id="navReviewBd">—</span></button>
+<button class="nav-item" data-topic="library"><svg class="ic"><use href="#i-cube"/></svg><span class="nm">素材庫</span><span class="bd" id="navLibraryBd">—</span></button>
           </div>
 
     <div class="micro-card">
@@ -211,6 +211,14 @@
                 <select id="collectSource" name="source"></select>
               </label>
               <button type="submit" class="mini-btn">放入待收</button>
+            </form>
+            <form class="collect-form" id="discoverForm">
+              <div class="kicker">Sherlock 用戶名</div>
+              <label>公開用戶名
+                <input type="text" id="discoverName" name="discover" maxlength="32" placeholder="英數、點、底線或連字號" autocomplete="off" spellcheck="false" required>
+              </label>
+              <button type="submit" class="mini-btn" id="discoverAdd">呼叫 Sherlock</button>
+              <p class="note" id="discoverOut">送出後用本機 Docker 啟動官方映像 sherlock/sherlock 0.16.0 的固定摘要，查完即退出。只查這個公開用戶名。</p>
             </form>
             <div class="collect-list" id="collectList" aria-label="收集項"></div>
           </div>
@@ -921,7 +929,7 @@
     <section class="waterfall" id="topic-person" role="tabpanel" aria-labelledby="tab-person" aria-hidden="true">
       <div class="panel">
         <div class="panel-head">
-          <div class="panel-title">人物檔案<span class="en">douyin authors · 18.9k</span></div>
+          <div class="panel-title">人物檔案<span class="en" id="pnTitleEn">douyin authors</span></div>
           <div class="panel-tools">
             <span class="chip or" id="pnStatus">待連線</span>
             <span class="chip cyan" id="pnCount">—</span>
@@ -949,7 +957,7 @@
             <aside class="pn-side" id="pnSide"></aside>
           </div>
           <div class="p-cap">
-            <b>抖音作者就是這裡的人物。</b>清單是 <code>douyin_item</code> 依 <code>author</code> 聚合出來的 18,883 位；點一位進<b>人物檔案</b>，看作品時間軸（<code>/api/library/months</code>）、作品牆與容量，左上「← 人物清單」回來。縮圖開的是素材庫那個檢視器。這頁只讀，不會回抖音抓東西。
+            <b>抖音作者就是這裡的人物。</b>清單人數跟左欄徽章一樣，來自 <code>/api/library/authors</code>，不寫死。點一位進<b>人物檔案</b>，看作品時間軸、作品牆與容量，左上「← 人物清單」回來。縮圖開的是素材庫那個檢視器。這頁只讀，不會回抖音抓東西。
           </div>
         </div>
       </div>
@@ -1291,16 +1299,16 @@
 <script defer src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js" integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r" crossorigin="anonymous"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/tippy.js@6.3.7/dist/tippy.umd.min.js" integrity="sha384-pjtv4LzKGI/lGxchW/wd/upB/HsGOP/Q2iPYyDU8qo2bp4JLbN34hQkdAArvidZX" crossorigin="anonymous"></script>
 <script defer src="js/login.js?v=20261123"></script>
-<script defer src="js/index2.js?v=20261123e"></script>
+<script defer src="js/index2.js?v=20261123i"></script>
 <script defer src="js/wireframe.js?v=20261121"></script>
 <script defer src="js/studio.js?v=20261123c"></script>
 <script defer src="js/api.js?v=20261123"></script>
-<script defer src="js/review.js?v=20261123c"></script>
+<script defer src="js/review.js?v=20261123d"></script>
 <script defer src="js/infra.js?v=20261121"></script>
 <script defer src="js/jobs.js?v=20261123b"></script>
-<script defer src="js/library.js?v=20261123c"></script>
-<script defer src="js/person.js?v=20261123b"></script>
-<script defer src="js/seats.js?v=20261123b"></script>
+<script defer src="js/library.js?v=20261123d"></script>
+<script defer src="js/person.js?v=20261123c"></script>
+<script defer src="js/seats.js?v=20261123c"></script>
 <script defer src="js/rail.js?v=20261123b"></script>
 <script defer src="js/system.js?v=20261123"></script>
 </body>

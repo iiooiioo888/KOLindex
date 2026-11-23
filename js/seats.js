@@ -73,6 +73,8 @@
       return '<div class="fleet-kpi"><span class="fk-k">' + esc(c.k) + '</span>' +
         '<b class="fk-v">' + esc(c.v) + '</b><span class="fk-s">' + esc(c.s) + '</span></div>';
     }).join('');
+    var bd = $('navSeatBd');
+    if (bd) bd.textContent = seats.length ? String(seats.length) : '0';
   }
 
   function paintSeats(d) {

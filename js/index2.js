@@ -1068,7 +1068,7 @@
     var meta=$('#outKbMeta');
     if (meta && meta.textContent!==String(OUTPUTS.length)) meta.textContent=String(OUTPUTS.length);
     var nav=$('#navOutBd');
-    if (nav && nav.textContent!==String(OUTPUTS.length)) nav.textContent=String(OUTPUTS.length);
+    if (nav && nav.textContent!=='—') nav.textContent='—';
     if (!ide.booted){ ide.booted=1; openFile('ART-014'); return; }
     if (treeSig()!==ide.treeSig) paintTree();
     if (tabSig()!==ide.tabSig) paintTabs();
@@ -1557,9 +1557,9 @@
     infra:{label:'基礎設施',hint:'Docker Compose · 阿里雲唯讀'},
     oss:{label:'開源組件',hint:'GitHub 鎖定版本 · 候選不進主棧'},
     studio:{label:'UI 生成',hint:'一句話需求 → 線框圖 · 只出結構不出像素'},
-    person:{label:'人物檔案',hint:'抖音作者 18.9k 位 · 清單與檔案兩個檢視，只讀'},
+    person:{label:'人物檔案',hint:'抖音作者清單與檔案兩個檢視，人數以後端為準，只讀'},
     review:{label:'審核台',hint:'AI 只產候選 · 人工裁決寫回 review_task 並留審計'},
-    library:{label:'素材庫',hint:'抖音點讚／收藏 · 30.7k 件、18.9k 位作者，只讀不寫'}
+    library:{label:'素材庫',hint:'抖音點讚／收藏，件數以後端為準'}
   };
   var INFRA_PANES=['docker','ecs','bill','cost','conn','jobs'];
   var INFRA_LABEL={docker:'服務',ecs:'席位',bill:'儲存',cost:'磁碟',conn:'連接器',jobs:'排程工作'};
@@ -2583,7 +2583,7 @@
     {id:'douyin-api',cat:'抖音／TikTok／B站',name:'Douyin_TikTok_Download_API',repo:'Evil0ctal/Douyin_TikTok_Download_API',image:'evil0ctal/douyin_tiktok_download_api',imageSrc:'Docker Hub · evil0ctal',compose:'docker/compose.yml',license:'Apache-2.0',deploy:'compose up -d',pin:'docker/compose.yml',file:'docker/Dockerfile · docker/compose.yml',use:'官方主推 Docker Compose。生產編排含身份池、PostgreSQL 17 + TimescaleDB、Redis 8，另有 browser、downloader、transcriber 三個可選 profile。這頁只登記，不拉取、不啟動。',cmd:'git clone https://github.com/Evil0ctal/Douyin_TikTok_Download_API.git\ncd Douyin_TikTok_Download_API\ndocker compose -p dtk -f docker/compose.yml up -d'},
     {id:'douyin-dl',cat:'抖音（個人輕量）',name:'douyin-dl',repo:'Achaiccccc/douyin-dl',image:'—',imageSrc:'倉庫 Dockerfile，compose --build',compose:'docker-compose.yml',license:'Apache-2.0',deploy:'compose up -d --build · :18080',pin:'docker-compose.yml',file:'Dockerfile · docker-compose.yml',use:'DTK 的個人／家庭裁剪。沒有獨立的 Docker Hub 鏡像名，靠倉庫裡的 Dockerfile 與 compose 建置。對外埠 18080。compose 裡的 APP_PASSWORD 是範例 123456，註解要求暴露到公網前先改掉。這頁只登記，不建置、不啟動。',cmd:'git clone https://github.com/Achaiccccc/douyin-dl.git\ncd douyin-dl\ndocker compose up -d --build'},
     {id:'maigret',cat:'帳號發現／OSINT',name:'Maigret',repo:'soxoj/maigret',image:'soxoj/maigret',imageSrc:'Docker Hub · soxoj',compose:'—',license:'MIT',deploy:'docker run CLI',pin:'soxoj/maigret',file:'倉庫根目錄 Dockerfile',use:'作者 soxoj 維護的官方鏡像。Dockerfile 有 CLI 與 Web UI 兩個 stage。這頁只登記鏡像，不對任何帳號執行搜尋。',cmd:'docker pull soxoj/maigret\ndocker run -v "$(pwd)/reports:/app/reports" soxoj/maigret:latest USERNAME'},
-    {id:'sherlock',cat:'帳號發現／OSINT',name:'Sherlock',repo:'sherlock-project/sherlock',image:'sherlock/sherlock',imageSrc:'Docker Hub · sherlock',compose:'—',license:'MIT',deploy:'docker run CLI',pin:'sherlock/sherlock',file:'倉庫根目錄 Dockerfile',use:'Sherlock Project 維護的官方鏡像，一次跑完的 CLI。這頁只登記鏡像，不對任何帳號執行搜尋。',cmd:'docker pull sherlock/sherlock\ndocker run --rm -t -v "$PWD/results:/opt/sherlock/results" sherlock/sherlock USERNAME'}
+    {id:'sherlock',cat:'帳號發現／OSINT',name:'Sherlock',repo:'sherlock-project/sherlock',image:'sherlock/sherlock@sha256:9d6602b98179fb15ceab88433626fb0ae603ae9880e13cab886970317fe1475f',imageSrc:'Docker Hub · 0.16.0',compose:'—',license:'MIT',deploy:'docker run --rm',pin:'0.16.0',file:'倉庫根目錄 Dockerfile',use:'收集頁的用戶名會交給本機 Docker，用這枚固定摘要啟動一次性容器。容器沒有掛載 Docker socket，查完即退出。',cmd:'docker run --rm --cap-drop ALL --security-opt no-new-privileges --read-only sherlock/sherlock@sha256:9d6602b98179fb15ceab88433626fb0ae603ae9880e13cab886970317fe1475f USERNAME --print-found'}
   ];
   var ACQ_OUT=[
     {name:'MediaCrawler',why:'沒有官方 Dockerfile，也沒有官方命名鏡像。網上流傳的容器方案是第三方自己寫的，不要照搬那些鏡像位址。'},
@@ -2644,6 +2644,8 @@
   function renderOss(){
     var kpis=$('#ossKpis'), list=$('#ossList'), detail=$('#ossDetail');
     if (!list||!detail) return;
+    var ossBd=$('#navOssBd');
+    if (ossBd) ossBd.textContent=String(OSS_LIST.length);
     var wired=OSS_LIST.filter(function(x){ return x.state==='wired'; }).length;
     var cand=OSS_LIST.length-wired;
     if (kpis){
@@ -2954,6 +2956,7 @@
   });
 
   /* ================= 任務收集 ================= */
+  var DISCOVER=[];
   var COLLECT=[
     {id:'C-101',title:'小紅書筆記摘要待歸檔',source:'xhs',pri:'p1',priLabel:'P1',role:'分析席',state:'inbox',note:'官方容器只登記。這頁不拉取內容，確認後才進任務隊列。'},
     {id:'C-102',title:'抖音作品連結待核對',source:'douyin-api',pri:'p1',priLabel:'P1',role:'分析席',state:'inbox',note:'來源是 DTK 官方 Compose。入列前不呼叫下載。'},
@@ -3168,6 +3171,79 @@
     collectForm.reset();
     $('#collectPri').value='p1';
   });
+  function discoverItems(){
+    return DISCOVER.map(function(d){
+      return {board:'discover', state:'queued', ref:d.id, title:d.name, detail:'已記入待查', error:''};
+    });
+  }
+  function syncDiscoverBoard(){
+    if (!queueLive.ok) return;
+    queueLive.items=(queueLive.items||[]).filter(function(it){ return it.board!=='discover'; }).concat(discoverItems());
+    queueLive.lanes=tallyBoard(queueLive.items);
+    if (queueLive.metrics) queueLive.metrics.queueDepth=queueLive.lanes.queue;
+    paintLiveLanes();
+    renderNumbers();
+  }
+  function addDiscover(raw){
+    var name=String(raw||'').trim().replace(/^@/,'');
+    if (!/^[A-Za-z0-9._-]{2,32}$/.test(name)){
+      toast('用戶名用 2–32 位英數、點、底線或連字號','err');
+      return;
+    }
+    var btn=$('#discoverAdd');
+    var out=$('#discoverOut');
+    if (btn){ btn.disabled=true; btn.textContent='查詢中…'; }
+    if (out) out.textContent='正在用 Docker 啟動 Sherlock…';
+    fetch('/__sherlock',{
+      method:'POST',
+      credentials:'same-origin',
+      headers:{'content-type':'application/json'},
+      body:JSON.stringify({name:name})
+    }).then(function(r){
+      return r.text().then(function(t){
+        var j={};
+        try { j=t?JSON.parse(t):{}; } catch(e){ j={}; }
+        return {status:r.status, data:j};
+      });
+    }).then(function(res){
+      if (btn){ btn.disabled=false; btn.textContent='呼叫 Sherlock'; }
+      var d=res.data||{};
+      if (!d.ok){
+        var msg=d.message||(res.status===409?'已有一次查詢在跑':'Sherlock 沒有完成');
+        if (out) out.textContent=msg;
+        toast(msg,'err');
+        return;
+      }
+      var hits=Array.isArray(d.hits)?d.hits:[];
+      var id='D-'+(collectSeq++);
+      var brief=hits.slice(0,8).map(function(h){ return h.site; }).join('、');
+      var note='Sherlock 容器找到 '+hits.length+' 個公開頁面'+(brief?'：'+brief:'')+'。';
+      DISCOVER.unshift({id:id, name:name, count:hits.length});
+      COLLECT.unshift({
+        id:id, title:'Sherlock '+name, source:'sherlock', pri:'p2', priLabel:'P2', role:'審核席', state:'inbox',
+        note:note
+      });
+      collectFilter='inbox';
+      $$('#collectFilters [data-collect]').forEach(function(b){
+        b.setAttribute('aria-pressed',b.getAttribute('data-collect')==='inbox'?'true':'false');
+      });
+      renderCollect();
+      syncDiscoverBoard();
+      if (out) out.textContent=name+'：'+note;
+      toast(name+' 找到 '+hits.length+' 個公開頁面','ok');
+      var box=$('#discoverName');
+      if (box) box.value='';
+    }).catch(function(){
+      if (btn){ btn.disabled=false; btn.textContent='呼叫 Sherlock'; }
+      if (out) out.textContent='連不到本機的 /__sherlock。請用 node tests/dev-server.mjs 開這個站。';
+      toast('連不到本機 Sherlock 入口','err');
+    });
+  }
+  var discoverForm=$('#discoverForm');
+  if (discoverForm) discoverForm.addEventListener('submit', function(e){
+    e.preventDefault();
+    addDiscover($('#discoverName')&&$('#discoverName').value);
+  });
 
   /* ================= init ================= */
   function boardLane(item){
@@ -3221,10 +3297,11 @@
     if (dj&&dj.state==='running'){
       out.push({board:'crawl', state:'running', ref:'DL', title:'缺檔下載', detail:(dj.done||0)+' / '+(dj.total||'…'), error:''});
     }
+    discoverItems().forEach(function(d){ out.push(d); });
     return out;
   }
   function liveJobCard(j){
-    var kind=j.board==='classify'?'人物分類':'資料爬蟲';
+    var kind=j.board==='classify'?'人物分類':(j.board==='discover'?'待查':'資料爬蟲');
     var sup=queueLive.supervisor||'未接線';
     return '<article class="live-job">'+
       '<div class="lj-top"><b class="mono">'+esc(j.ref)+'</b><span>'+esc(kind)+'</span></div>'+

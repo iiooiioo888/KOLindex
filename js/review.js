@@ -56,6 +56,8 @@ function setCounts(){
   var a=$('reviewOpenN'), b=$('reviewAiN');
   if(a) a.textContent=String(c.open||0);
   if(b) b.textContent=String(c.ai_open||0);
+  var bd=$('navReviewBd');
+  if(bd&&R.loaded) bd.textContent=String(c.open||0);
 }
 
 /* ---------- 取資料 ---------- */

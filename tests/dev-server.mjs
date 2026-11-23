@@ -5,6 +5,7 @@ import fs from 'node:fs';
 import fsp from 'node:fs/promises';
 import path from 'node:path';
 import crypto from 'node:crypto';
+import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = path.resolve(process.argv[2] ?? '.');
@@ -227,6 +228,116 @@ function readBody(req, limit) {
   });
 }
 
+const SHERLOCK_NAME = /^[A-Za-z0-9._-]{2,32}$/;
+const SHERLOCK_IMAGE = process.env.SHERLOCK_DOCKER
+  || 'sherlock/sherlock@sha256:9d6602b98179fb15ceab88433626fb0ae603ae9880e13cab886970317fe1475f';
+const SHERLOCK_IMAGE_OK = /^[a-z0-9][a-z0-9._/-]*@sha256:[a-f0-9]{64}$/;
+let sherlockBusy = false;
+
+function parseSherlockHits(text) {
+  const hits = [];
+  for (const line of String(text || '').split(/\r?\n/)) {
+    const m = line.match(/\[\+\]\s+([^:]+):\s+(https?:\/\/\S+)/);
+    if (!m) continue;
+    hits.push({ site: m[1].trim().slice(0, 80), url: m[2].slice(0, 300) });
+    if (hits.length >= 80) break;
+  }
+  return hits;
+}
+
+function runSherlock(name) {
+  if (!SHERLOCK_IMAGE_OK.test(SHERLOCK_IMAGE)) {
+    const err = new Error('image');
+    err.code = 'image';
+    return Promise.reject(err);
+  }
+  const args = [
+    'run', '--rm',
+    '--network', 'bridge',
+    '--cap-drop', 'ALL',
+    '--security-opt', 'no-new-privileges',
+    '--read-only',
+    '--memory', '512m',
+    '--pids-limit', '128',
+    SHERLOCK_IMAGE,
+    name, '--print-found', '--no-color', '--timeout', '8',
+  ];
+  return new Promise((resolve, reject) => {
+    const child = spawn('docker', args, {
+      shell: false,
+      windowsHide: true,
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+    let out = '';
+    let errText = '';
+    const cap = 512 * 1024;
+    const timer = setTimeout(() => {
+      child.kill();
+      const err = new Error('timeout');
+      err.code = 'timeout';
+      reject(err);
+    }, 90000);
+    child.stdout.on('data', (buf) => {
+      if (out.length < cap) out += buf.toString('utf8');
+    });
+    child.stderr.on('data', (buf) => {
+      if (errText.length < 2000) errText += buf.toString('utf8');
+    });
+    child.on('error', (err) => {
+      clearTimeout(timer);
+      reject(err);
+    });
+    child.on('close', (code) => {
+      clearTimeout(timer);
+      const hits = parseSherlockHits(out);
+      if (code && !hits.length) {
+        const err = new Error('exit');
+        err.code = 'exit';
+        err.detail = errText.replace(/\s+/g, ' ').trim().slice(0, 180);
+        reject(err);
+        return;
+      }
+      resolve(hits);
+    });
+  });
+}
+
+function handleSherlock(req, res) {
+  if (PROD && process.env.KOL_SHERLOCK !== '1') {
+    return json(res, 404, { error: 'disabled' });
+  }
+  if (GATE && !currentSession(req)) {
+    return json(res, 401, { error: 'login_required' });
+  }
+  if (req.method !== 'POST') return json(res, 405, { error: 'method' });
+  if (sherlockBusy) return json(res, 409, { error: 'busy' });
+  return readBody(req, 4096).then(async (raw) => {
+    let body = {};
+    try { body = raw ? JSON.parse(raw) : {}; } catch { body = {}; }
+    const name = String(body.name || '').trim().replace(/^@/, '');
+    if (!SHERLOCK_NAME.test(name)) return json(res, 400, { error: 'name' });
+    sherlockBusy = true;
+    try {
+      const hits = await runSherlock(name);
+      console.log('[sherlock] docker hits ' + hits.length);
+      return json(res, 200, { ok: true, engine: 'docker', name, count: hits.length, hits });
+    } catch (err) {
+      if (err && err.code === 'ENOENT') {
+        return json(res, 503, { error: 'missing', message: '這台找不到 docker 指令。裝好 Docker 後再送出，會用官方映像的固定摘要啟動一次性容器。' });
+      }
+      if (err && err.code === 'image') {
+        return json(res, 500, { error: 'image', message: 'SHERLOCK_DOCKER 必須是名稱@sha256:64位摘要。' });
+      }
+      if (err && err.code === 'timeout') {
+        return json(res, 504, { error: 'timeout', message: 'Sherlock 容器超過 90 秒，已停止。' });
+      }
+      return json(res, 502, { error: 'failed', message: err && err.detail ? err.detail : 'Sherlock 容器沒有跑完。' });
+    } finally {
+      sherlockBusy = false;
+    }
+  }).catch((err) => json(res, 400, { error: err.message }));
+}
+
 // OpenAI 相容上游；失敗回 {status, txt}，由呼叫端決定怎麼回報
 async function callLLM(messages, temperature, useJson) {
   const ctrl = new AbortController();
@@ -284,6 +395,8 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (url.startsWith('/__auth')) return handleAuth(req, res, url);
+
+  if (url.startsWith('/__sherlock')) return handleSherlock(req, res);
 
   if (url.startsWith('/api/')) return proxyApi(req, res);
 
@@ -411,6 +524,7 @@ function listen(port, attempt = 0) {
     console.log('  live reload: ' + (PROD ? 'off' : 'on (edit index2.html / js / css, page refreshes itself)'));
     console.log('  llm        : ' + (LLM.key ? LLM.model + ' @ ' + LLM.base + ' → POST /__llm' : 'disabled (no LLM_API_KEY in .env)'));
     console.log('  api        : ' + API_BASE + ' → GET/POST /api/*  (沒跑就回 503，頁面自動退回示範資料)');
+    console.log('  sherlock   : ' + (PROD && process.env.KOL_SHERLOCK !== '1' ? 'off（正式環境要設 KOL_SHERLOCK=1）' : 'docker run ' + SHERLOCK_IMAGE + ' → POST /__sherlock'));
     console.log('  stop : Ctrl+C');
     console.log('');
     if (!PROD) watch();

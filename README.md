@@ -43,6 +43,8 @@ node tests/dev-server.mjs . 5200
 
 開 <http://127.0.0.1:5200/>。零依賴靜態伺服器，改檔案會自動重新整理；後端沒開時頁面照常運作，只是右上角顯示 `DEMO DATA`、資料退回示範值。
 
+任務收集的「呼叫 Sherlock」用本機 `docker run` 啟動官方映像 `sherlock/sherlock` 0.16.0 的固定摘要，查完就退出。它只查你送出的那個公開用戶名。網頁容器沒有掛載 Docker socket。正式環境要另外設 `KOL_SHERLOCK=1` 才開放這個入口。
+
 ### 配後端
 
 後端 `kolindex-api`（Node + `node:sqlite`，24 張表）在另一個 repo，跑起來後：

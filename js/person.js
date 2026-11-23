@@ -246,9 +246,25 @@ function renderKpis(){
     return '<div class="pn-kpi"><span>'+esc(x[0])+'</span><b>'+esc(x[1])+'</b></div>';
   }).join('');
   var cnt=$('pnCount');
-  if(cnt) cnt.textContent=nfmt(A.total)+' 位';
+  if(cnt) cnt.textContent=A.loaded?(nfmt(A.total)+' 位'):'—';
   var bd=$('navPersonBd');
-  if(bd&&c.authors) bd.textContent=(c.authors>=1000?(c.authors/1000).toFixed(1)+'k':String(c.authors));
+  var en=$('pnTitleEn');
+  if(!A.loaded){
+    if(bd) bd.textContent='—';
+    if(en) en.textContent='douyin authors';
+    return;
+  }
+  var authors=c.authors!=null?Number(c.authors):Number(A.total);
+  var label=compactCount(authors);
+  if(bd) bd.textContent=label;
+  if(en) en.textContent='douyin authors · '+label;
+}
+
+function compactCount(n){
+  n=Number(n);
+  if(!isFinite(n)) return '—';
+  if(n>=1000) return (n/1000).toFixed(1).replace(/\.0$/,'')+'k';
+  return String(Math.round(n));
 }
 
 function rowHtml(a){

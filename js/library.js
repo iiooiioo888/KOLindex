@@ -246,8 +246,16 @@ function renderKpis(){
   }).join('');
   var cnt=$('libCount');
   if(cnt) cnt.textContent=nfmt(L.total)+' / '+nfmt(c.all||0);
+  var all=c.all!=null?Number(c.all):Number(L.total);
   var bd=$('navLibraryBd');
-  if(bd&&c.all) bd.textContent=(c.all>=1000?(c.all/1000).toFixed(1)+'k':String(c.all));
+  if(bd&&L.loaded) bd.textContent=compactCount(all);
+}
+
+function compactCount(n){
+  n=Number(n);
+  if(!isFinite(n)) return '—';
+  if(n>=1000) return (n/1000).toFixed(1).replace(/\.0$/,'')+'k';
+  return String(Math.round(n));
 }
 
 function cardHtml(it){
