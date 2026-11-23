@@ -88,7 +88,7 @@ copy infra\compose\.env.example infra\compose\.env
 docker compose -f infra/compose/docker-compose.yml up -d --build
 ```
 
-`.env` 只留在本機。Compose 會拉起網頁，以及 PostgreSQL 16.16、Redis 7.4.7、MinIO `RELEASE.2025-10-15T17-29-55Z`、Meilisearch v1.57.0。資料庫、快取、物件儲存和搜尋只在內部網路互通，埠綁在 `127.0.0.1`。網頁容器讀得到這些主機名，現有頁面仍透過 `/api` 讀 kolindex-api，不會在這個映像裡建表。
+`.env` 只留在本機。Compose 的網頁服務是 `apps/web`（Next.js 16）。首頁在伺服器上詢問 PostgreSQL、Redis、MinIO、Meilisearch；`GET /health` 回這四項，`GET /ready` 在已設定的項目都有回應時回 200。十二個分頁的靜態原型仍可用 `node tests/dev-server.mjs` 開。資料庫、快取、物件儲存和搜尋只在內部網路互通，埠綁在 `127.0.0.1`。這個映像不建業務表。
 
 預設頁面聽 `127.0.0.1:5200`。網頁容器裡面聽 `0.0.0.0`，所以必須在 `.env` 設 `KOL_GATE`，否則行程拒絕啟動。角色用 `KOL_ROLE`（預設 `viewer`），名字用 `KOL_OPERATOR`；表單不能自選角色。前面再加你自己的反向代理。容器內 `KOL_PROD=1`：沒有自動重整、不列出目錄、預設不轉發 `/__llm`。沒有設定 `KOL_API` 時，收集與告警顯示未連線並清掉示範卡片，不把假資料留在畫面上。收集輪詢 60 秒，右欄 `rail.js` 是 15 秒。Sherlock 不在這組服務裡；呼叫它要在裝了 Docker 的機器上跑 `node tests/dev-server.mjs`。
 

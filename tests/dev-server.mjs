@@ -1,6 +1,7 @@
 // KOLindex local dev server — zero dependencies, live reload, no build step.
 // usage: node dev-server.mjs <site-dir> [port]
 import http from 'node:http';
+import net from 'node:net';
 import fs from 'node:fs';
 import fsp from 'node:fs/promises';
 import path from 'node:path';
@@ -339,6 +340,63 @@ function runSherlock(name) {
   });
 }
 
+function safeHost(value) {
+  return /^[a-zA-Z0-9._-]{1,253}$/.test(String(value || '')) ? String(value) : '';
+}
+
+function probeTcp(host, port) {
+  return new Promise((resolve) => {
+    if (!host) return resolve({ state: 'unset' });
+    const socket = net.connect({ host, port: Number(port) || 0 });
+    const timer = setTimeout(() => { socket.destroy(); resolve({ state: 'down' }); }, 1500);
+    socket.on('connect', () => { clearTimeout(timer); socket.end(); resolve({ state: 'up' }); });
+    socket.on('error', () => { clearTimeout(timer); resolve({ state: 'down' }); });
+  });
+}
+
+function probeHttp(raw) {
+  return new Promise((resolve) => {
+    let target;
+    try { target = new URL(raw); } catch { return resolve({ state: 'unset' }); }
+    if (target.protocol !== 'http:' && target.protocol !== 'https:') return resolve({ state: 'unset' });
+    if (target.username || target.password) return resolve({ state: 'unset' });
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 1500);
+    fetch(target, { signal: ctrl.signal }).then((r) => {
+      clearTimeout(timer);
+      resolve({ state: r.ok ? 'up' : 'down' });
+    }).catch(() => {
+      clearTimeout(timer);
+      resolve({ state: 'down' });
+    });
+  });
+}
+
+async function componentHealth() {
+  const pgHost = safeHost(process.env.POSTGRES_HOST);
+  const redisHost = safeHost(process.env.REDIS_HOST);
+  const minio = process.env.MINIO_ENDPOINT || '';
+  const meili = process.env.MEILI_HOST || '';
+  const [postgres, redis, minioHit, meiliHit] = await Promise.all([
+    probeTcp(pgHost, process.env.POSTGRES_PORT || 5432),
+    probeTcp(redisHost, process.env.REDIS_PORT || 6379),
+    probeHttp(minio ? minio.replace(/\/+$/, '') + '/minio/health/live' : ''),
+    probeHttp(meili ? meili.replace(/\/+$/, '') + '/health' : ''),
+  ]);
+  return [
+    { id: 'postgres', name: 'PostgreSQL', via: 'tcp', state: postgres.state },
+    { id: 'redis', name: 'Redis', via: 'tcp', state: redis.state },
+    { id: 'minio', name: 'MinIO', via: 'http', state: minioHit.state },
+    { id: 'meilisearch', name: 'Meilisearch', via: 'http', state: meiliHit.state },
+  ];
+}
+
+function handleComponentHealth(req, res) {
+  if (req.method !== 'GET' && req.method !== 'HEAD') return json(res, 405, { error: 'method' });
+  if (GATE && !currentSession(req)) return json(res, 401, { error: 'login_required' });
+  return componentHealth().then((items) => json(res, 200, { ok: true, items }));
+}
+
 function handleSherlock(req, res) {
   if (PROD && process.env.KOL_SHERLOCK !== '1') {
     return json(res, 404, { error: 'disabled' });
@@ -432,6 +490,8 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (url.startsWith('/__auth')) return handleAuth(req, res, url);
+
+  if (url.startsWith('/__health/components')) return handleComponentHealth(req, res);
 
   if (url.startsWith('/__sherlock')) return handleSherlock(req, res);
 

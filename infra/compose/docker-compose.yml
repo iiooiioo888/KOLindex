@@ -3,8 +3,8 @@ name: kolindex
 services:
   web:
     build:
-      context: ../..
-      dockerfile: infra/compose/Dockerfile
+      context: ../../apps/web
+      dockerfile: Dockerfile
     image: kolindex-web:2026.11.23
     ports:
       - "127.0.0.1:5200:5200"

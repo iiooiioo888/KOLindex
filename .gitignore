@@ -2,7 +2,8 @@
 .env
 infra/compose/.env
 /AGENTS.md
-/apps
+node_modules
+.next
 /CLAUDE.md
 /docs
 /kolindex

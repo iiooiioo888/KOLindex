@@ -71,6 +71,7 @@
   <div class="chip-row">
     <span class="chip green">自動認領 ON</span>
     <span class="chip or" id="dataChip" data-api="offline" title="示範資料：後端沒開時這頁照樣能看">DEMO DATA</span>
+    <span class="chip or" id="stackChip" title="PostgreSQL、Redis、MinIO、Meilisearch">元件 —</span>
     <span class="chip cyan">LLM 槽位 <span data-num="slotUsed">—</span>/8</span>
     <span class="chip red" id="guardChip">guard: <span data-num="guardPending">—</span> 待審</span>
   </div>
@@ -130,6 +131,14 @@
     <div class="micro-card">
       <h4>LLM 槽位 · 8</h4>
       <div class="slot-rail" id="slotRail"></div>
+    </div>
+
+    <div class="micro-card" id="stackCard">
+      <h4>元件</h4>
+      <div class="kv"><span>PostgreSQL</span><b id="stackPg">—</b></div>
+      <div class="kv"><span>Redis</span><b id="stackRedis">—</b></div>
+      <div class="kv"><span>MinIO</span><b id="stackMinio">—</b></div>
+      <div class="kv"><span>Meilisearch</span><b id="stackMeili">—</b></div>
     </div>
 
     <div class="micro-card">
@@ -1223,6 +1232,7 @@
   <div class="sb-item">pause＝暫停渲染 <b>訂閱保留</b></div>
   <div class="sb-item">ports <b id="sysFootPorts">—</b></div>
   <div class="sb-item">資料 <b id="sysFootData">未連線</b></div>
+  <div class="sb-item">元件 <b id="sysFootStack">—</b></div>
   <div class="sb-spacer"></div>
   <div class="sb-item sb-cmd" title="docker compose up -d · python -m backend.main · npm run dev">docker compose up -d · python -m backend.main · npm run dev</div>
 </footer>
@@ -1303,6 +1313,6 @@
 <script defer src="js/person.js?v=20261123c"></script>
 <script defer src="js/seats.js?v=20261123c"></script>
 <script defer src="js/rail.js?v=20261123b"></script>
-<script defer src="js/system.js?v=20261123"></script>
+<script defer src="js/system.js?v=20261123c"></script>
 </body>
 </html>

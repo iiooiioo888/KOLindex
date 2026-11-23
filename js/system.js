@@ -44,6 +44,40 @@
     set('sysFootPorts', (location.host || '—') + ' · /api');
   }
 
+  var STACK_IDS = { postgres: 'stackPg', redis: 'stackRedis', minio: 'stackMinio', meilisearch: 'stackMeili' };
+  var lastStack = null;
+
+  function stackWord(state) {
+    if (state === 'up') return '有回應';
+    if (state === 'unset') return '未設定';
+    if (state === 'down') return '沒回應';
+    return '沒檢查';
+  }
+
+  function paintStack(stack) {
+    lastStack = stack;
+    var items = (stack && stack.items) || [];
+    var by = {};
+    items.forEach(function (x) { by[x.id] = x; });
+    Object.keys(STACK_IDS).forEach(function (id) {
+      var x = by[id];
+      set(STACK_IDS[id], x ? stackWord(x.state) : '沒檢查');
+    });
+    var known = items.filter(function (x) { return x.state !== 'unset'; });
+    var up = known.filter(function (x) { return x.state === 'up'; }).length;
+    var chip = $('stackChip');
+    var foot = $('sysFootStack');
+    var text = !stack ? '沒檢查' : (!known.length ? '未設定' : (up + '/' + known.length));
+    if (chip) {
+      chip.textContent = '元件 ' + text;
+      chip.className = 'chip ' + (!stack || !known.length ? 'or' : (up === known.length ? 'green' : 'red'));
+    }
+    if (foot) foot.textContent = text;
+    try {
+      window.dispatchEvent(new CustomEvent('kolindex:health', { detail: { ok: !!stack, items: items } }));
+    } catch (e) { /* 事件是加分項 */ }
+  }
+
   function paintSummary(rail, seats, jobsOk) {
     var slots = (rail && rail.slots) || {};
     var storage = (rail && rail.storage) || {};
@@ -75,16 +109,40 @@
     return '<span class="pill ' + (ok ? 'green' : 'or') + '"><span class="sig ' + (ok ? 'ok' : 'warn') + '"></span>' + esc(label) + '</span>';
   }
 
-  function paintServices(rail, seats, jobs) {
+  function stackRows(stack) {
+    var order = [
+      ['postgres', 'PostgreSQL'],
+      ['redis', 'Redis'],
+      ['minio', 'MinIO'],
+      ['meilisearch', 'Meilisearch']
+    ];
+    var by = {};
+    ((stack && stack.items) || []).forEach(function (x) { by[x.id] = x; });
+    if (!stack) {
+      return order.map(function (pair) {
+        return [pair[1], '健康檢查', pill(false, '沒檢查'), '—'];
+      });
+    }
+    return order.map(function (pair) {
+      var x = by[pair[0]] || { state: 'unset', via: '' };
+      var label = x.state === 'up' ? '有回應' : x.state === 'unset' ? '未設定' : '沒回應';
+      var detail = x.state === 'up'
+        ? (x.via === 'http' ? '健康檢查通過' : '連接埠有回應')
+        : '—';
+      return [pair[1], x.via === 'http' ? 'HTTP 健康檢查' : 'TCP', pill(x.state === 'up', label), detail];
+    });
+  }
+
+  function paintServices(rail, seats, jobs, stack) {
     var body = $('sysServices');
     if (!body) return;
     var slots = (rail && rail.slots) || {};
-    var rows = [
+    var rows = stackRows(stack).concat([
       ['監控 /api/rail', '佇列、連接器、磁碟', rail ? pill(true, '有回應') : pill(false, '沒回應'), rail ? (num((rail.queue || {}).depth) + ' 佇列') : '—'],
       ['席位 /api/seats', 'worker pool', seats ? pill(true, '有回應') : pill(false, '沒回應'), seats ? (((seats.seats || []).length) + ' 席') : '—'],
       ['連接器', '憑證健康', rail ? pill(true, num(slots.active) + '/' + num(slots.total)) : pill(false, '沒回應'), rail ? ('冷卻 ' + num(slots.cooling) + ' · 過期 ' + num(slots.expired)) : '—'],
       ['排程 /api/jobs', 'crawl_job', jobs ? pill(true, '有回應') : pill(false, '沒回應'), jobs ? (num(jobs.total) + ' 筆') : '—']
-    ];
+    ]);
     body.innerHTML = rows.map(function (r) {
       return '<tr><td class="strong">' + esc(r[0]) + '</td><td class="mono">' + esc(r[1]) + '</td><td>' + r[2] + '</td><td class="mono">' + esc(r[3]) + '</td></tr>';
     }).join('');
@@ -164,13 +222,16 @@
     return Promise.allSettled([
       getJSON('/api/rail?range=1H'),
       getJSON('/api/seats?tasks=1'),
-      getJSON('/api/jobs?state=all&limit=1')
+      getJSON('/api/jobs?state=all&limit=1'),
+      getJSON('/__health/components')
     ]).then(function (res) {
       var rail = res[0].status === 'fulfilled' ? res[0].value : null;
       var seats = res[1].status === 'fulfilled' ? res[1].value : null;
       var jobs = res[2].status === 'fulfilled' ? res[2].value : null;
+      var stack = res[3].status === 'fulfilled' ? res[3].value : null;
       paintSummary(rail, seats, !!jobs);
-      paintServices(rail, seats, jobs);
+      paintStack(stack);
+      paintServices(rail, seats, jobs, stack);
       paintSeats(seats);
       paintStore(rail);
       paintDisk(rail);
@@ -191,4 +252,9 @@
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
   else boot();
+
+  window.KOLINDEX_HEALTH = {
+    load: load,
+    state: function () { return lastStack; }
+  };
 })();
