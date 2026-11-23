@@ -20,6 +20,7 @@
 <link rel="stylesheet" href="css/library.css?v=20261123e">
 <link rel="stylesheet" href="css/person.css?v=20261122">
 <link rel="stylesheet" href="css/seats.css?v=20261123">
+<link rel="stylesheet" href="css/queue.css?v=20261124">
 <link rel="stylesheet" href="css/login.css?v=20261123">
 <link rel="stylesheet" href="css/caps.css?v=20261123">
 </head>
@@ -238,7 +239,7 @@
             <span class="chip green" id="autoChip">AUTO-CLAIM ON</span>
             <span class="chip or" id="queueSrc">DEMO · 數字會自己跳</span>
             <span class="chip" id="queueSupervisor">監督模型 · —</span>
-            <span class="chip cyan">槽位 8</span>
+            <span class="chip cyan" id="queueSeatChip">席位 —/8</span>
           </div>
         </div>
         <div class="panel-body">
@@ -267,53 +268,51 @@
           <div class="par-now" id="parNow" aria-label="此刻並行"></div>
           <div class="lanes" id="lanes" aria-label="任務狀態">
             <div class="lane" data-lane="queue">
-              <div class="lane-head"><span class="lane-dot bg-cyan"></span><span class="lane-name">佇列 · 待拉取</span><span class="lane-par" hidden>並行</span><span class="lane-count" data-count="queue">0</span></div>
+              <div class="lane-head"><span class="lane-dot bg-cyan"></span><span class="lane-name">佇列 · 待處理</span><span class="lane-par" hidden>並行</span><span class="lane-count" data-count="queue">0</span></div>
               <div class="lane-body" id="body-queue"></div>
             </div>
             <div class="lane" data-lane="wait">
-              <div class="lane-head"><span class="lane-dot bg-orange"></span><span class="lane-name">已拉取 · 待空檔</span><span class="lane-par" hidden>並行</span><span class="lane-count" data-count="wait">0</span></div>
+              <div class="lane-head"><span class="lane-dot bg-orange"></span><span class="lane-name">等待 · 退避／受阻</span><span class="lane-par" hidden>並行</span><span class="lane-count" data-count="wait">0</span></div>
               <div class="lane-body" id="body-wait"></div>
             </div>
             <div class="lane" data-lane="proc">
-              <div class="lane-head"><span class="lane-dot bg-amber-hot"></span><span class="lane-name">LLM 執行 · 佔用槽位</span><span class="lane-par" hidden>並行</span><span class="lane-count" data-count="proc">0</span></div>
+              <div class="lane-head"><span class="lane-dot bg-amber-hot"></span><span class="lane-name">執行中 · 進行中</span><span class="lane-par" hidden>並行</span><span class="lane-count" data-count="proc">0</span></div>
               <div class="lane-body" id="body-proc"></div>
             </div>
             <div class="lane-fork">
               <div class="lane" data-lane="split">
-                <div class="lane-head"><span class="lane-dot bg-violet"></span><span class="lane-name">再分拆 · 回注</span><span class="lane-par" hidden>並行</span><span class="lane-count" data-count="split">0</span></div>
+                <div class="lane-head"><span class="lane-dot bg-violet"></span><span class="lane-name">失敗 · 待處理</span><span class="lane-par" hidden>並行</span><span class="lane-count" data-count="split">0</span></div>
                 <div class="lane-body" id="body-split"></div>
               </div>
               <div class="lane" data-lane="gen">
-                <div class="lane-head"><span class="lane-dot bg-green"></span><span class="lane-name">席位生成 · 完成前停留</span><span class="lane-par" hidden>並行</span><span class="lane-count" data-count="gen">0</span></div>
+                <div class="lane-head"><span class="lane-dot bg-green"></span><span class="lane-name">已完成 · 最近</span><span class="lane-par" hidden>並行</span><span class="lane-count" data-count="gen">0</span></div>
                 <div class="lane-body" id="body-gen"></div>
               </div>
             </div>
           </div>
           </div>
           <div class="p-cap">
-            <b>兩個角度，同一批任務。</b>同一波的步驟可以同時處於不同狀態：有的已在槽上執行，有的還在等空檔。進程上它們上下疊在同一欄；狀態欄各自停在自己的位置。單步完成後離開狀態欄，進程節點留到整件任務完成才一起移走。
+            <b>同一批真實工作。</b>來源是 crawl_job、review_task、seat_task 與 MyLike／下載工作；卡片只讀，不派工、不改歸戶。佇列與席位是兩套系統：爬蟲工作排在自己的表，八席只跑素材、審核、收集、排程、磁碟、審計六種掃描。
           </div>
 
-          <div class="mini-2col" style="margin-top:12px">
+          <div class="mini-2col queue-ops" style="margin-top:12px">
             <div>
-              <div class="kicker" style="margin-bottom:7px">自動認領策略 · auto-claim policy</div>
+              <div class="kicker" style="margin-bottom:7px">派工狀態 · dispatcher</div>
               <div class="micro-card" style="padding:9px 10px">
-                <div class="kv"><span>拉取模型</span><b class="ok">席位閒置自動 PULL</b></div>
-                <div class="kv"><span>匹配順序</span><b>角色 → 心跳 → 負載 → SLA</b></div>
-                <div class="kv"><span>執行門檻</span><b class="warn">等 LLM 空檔釋放才開跑</b></div>
-                <div class="kv"><span>保留槽位</span><b class="bad">1 席留給 P0 搶佔</b></div>
-                <div class="kv"><span>手動覆寫</span><b class="or">二次確認＋原因＋審計</b></div>
+                <div class="kv"><span>自動派工</span><b id="qdAuto">—</b></div>
+                <div class="kv"><span>檢查頻率</span><b id="qdTick">—</b></div>
+                <div class="kv"><span>自動週期</span><b id="qdEvery">—</b></div>
+                <div class="kv"><span>今日認領</span><b id="qdClaims">—</b></div>
+                <div class="kv"><span>今日退回</span><b id="qdReturns">—</b></div>
+                <div class="kv"><span>上次寫入</span><b id="qdLast">—</b></div>
+                <div class="kv"><span>掃描範圍</span><b id="qdScan">—</b></div>
               </div>
-              <div class="note">認領後任務只持有席位與 lock，<b>不佔 LLM</b>；空檔釋放時 dispatcher 按排位自動開跑。</div>
+              <div class="note" id="qdNote">正在讀取 /api/rail…</div>
             </div>
             <div>
-              <div class="kicker" style="margin-bottom:7px">LLM 空檔排程 · slot scheduler</div>
-              <div class="slot-grid" id="slotGrid"></div>
-              <div style="margin-top:10px">
-                <div class="quota-row"><span class="ql">Token 配額</span><div class="qtrack"><i class="fill-amber" data-pct="qToken"></i></div><span class="qv" data-num="quotaToken">—</span></div>
-                <div class="quota-row"><span class="ql">成本配額</span><div class="qtrack"><i class="fill-orange" data-pct="qCost"></i></div><span class="qv" data-num="quotaCost">—</span></div>
-                <div class="quota-row"><span class="ql">速率限制</span><div class="qtrack"><i class="fill-cyan" data-pct="qRate"></i></div><span class="qv" data-num="quotaRpm">—</span></div>
-              </div>
+              <div class="kicker" style="margin-bottom:7px">席位 · seats</div>
+              <div class="queue-seats" id="queueSeats" aria-label="席位狀態"><div class="live-empty">正在讀取 /api/seats…</div></div>
+              <div class="note">八席規則型掃描器（rule-v1）。佇列裡的爬蟲工作不會自動被席位執行，兩者是不同來源。</div>
             </div>
           </div>
         </div>

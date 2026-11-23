@@ -1,0 +1,75 @@
+/* 任務隊列 · 只作用在 #topic-queue */
+/* 原版「以狀態為主」規則把 KPI 數值與 lane 計數整個 display:none，這裡只在本頁打開 */
+#topic-queue .kpi .kv2,
+#topic-queue .kpi .ks { display: block; }
+#topic-queue .lane-count { display: inline-block; }
+
+#topic-queue .kpis { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+#topic-queue .queue-seats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px;
+  background: var(--line-soft);
+  border: 1px solid var(--line-soft);
+}
+#topic-queue .qs-card {
+  min-width: 0;
+  padding: 6px 7px 5px;
+  background: var(--surface);
+}
+#topic-queue .qs-card.is-busy {
+  background: color-mix(in srgb, var(--amber) 8%, var(--surface));
+}
+#topic-queue .qs-top {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+#topic-queue .qs-top b {
+  font: 600 11px/1 var(--mono);
+  color: var(--text);
+}
+#topic-queue .qs-dot {
+  width: 4px;
+  height: 4px;
+  margin-left: auto;
+  background: var(--line-strong);
+}
+#topic-queue .qs-card.is-busy .qs-dot { background: var(--amber); }
+#topic-queue .qs-card.is-ready .qs-dot { background: var(--green); }
+#topic-queue .qs-lane {
+  margin-top: 3px;
+  font: 400 9px/1 var(--mono);
+  color: var(--faint);
+  letter-spacing: .04em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+#topic-queue .qs-cur {
+  margin-top: 3px;
+  font: 400 9.5px/1.2 var(--cjk);
+  color: var(--dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+#topic-queue .qs-meta {
+  margin-top: 2px;
+  font: 400 9px/1.2 var(--mono);
+  color: var(--faint);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+#topic-queue .live-more {
+  padding: 6px 2px 0;
+  font: 400 9.5px/1.3 var(--mono);
+  color: var(--faint);
+}
+#topic-queue .queue-ops .note { line-height: 1.55; }
+
+@media (max-width: 720px) {
+  #topic-queue .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  #topic-queue .queue-seats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

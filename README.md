@@ -8,7 +8,7 @@
 
 12 個分頁各自是一塊真實介面，其中七塊（任務收集、席位執行的 worker pool、人物檔案、審核台、基礎設施的連接器與排程工作、素材庫）加上右欄監控面板，接本機的 `kolindex-api`（SQLite）真實資料；其餘分頁仍是示範資料。
 
-哪些頁面接真資料、哪些還是示範、規格書（v2.2）還缺哪些表與端點，都列在 **[ROADMAP.md](ROADMAP.md)**（2026-11-23）。
+哪些頁面接真資料、哪些還是示範、規格書（v2.2）還缺哪些表與端點，都列在 **[ROADMAP.md](ROADMAP.md)**（2026-11-24）。
 
 ![素材庫與右欄監控面板](screenshots/screenshot-library.jpg)
 
@@ -17,7 +17,7 @@
 | # | 分頁 | 內容 | 資料 |
 |---|---|---|---|
 | 01 | 任務收集 | 待歸戶帳號的收件匣，可「認領／退回」寫回後端 | 真（`GET /api/collect`、`POST /api/collect/:id/claim\|return`） |
-| 02 | 任務隊列 | 四條車道的排程動畫、任務卡 | 示範 |
+| 02 | 任務隊列 | 五條車道的真實工作看板：排程、歸戶複核、MyLike 同步、席位工單、補檔；KPI 與派工／席位面板即時更新 | 真（`/api/jobs`、`/api/seats`、`/api/rail`、`/api/review/queue`） |
 | 03 | 感測上下文 | 平台熱度、關鍵詞、情緒分佈 | 示範 |
 | 04 | 產出庫 | 已交付的內容與檢視器 | 示範 |
 | 05 | 席位執行 | 8 個席位的 worker pool：搶工單、掃資料庫／磁碟、寫回結果與耗時 | 真（`GET /api/seats`、`POST /api/seats/run\|auto`） |
@@ -114,8 +114,8 @@ docker compose -f infra/compose/docker-compose.yml up -d --build
 index2.html            12 個分頁的版面（單檔）
 css/index2.css         原版樣式
 css/ds/                設計系統四層：tokens → base → components → pages
-css/*.css              各分頁樣式（studio／person／review／connectors／jobs／library／seats）
-js/index2.js           分頁切換、示範資料、圖表、對話框
+css/*.css              各分頁樣式（studio／person／review／connectors／jobs／library／seats／queue）
+js/index2.js           分頁切換、示範資料、任務隊列的資料橋、圖表、對話框
 js/api.js              後端橋接（收集、告警）
 js/rail.js             右欄監控面板 → /api/rail
 js/seats.js            席位編隊 → /api/seats（派工、自動派工、工人狀態）
@@ -127,7 +127,7 @@ screenshots/           README 用的截圖
 
 ## 已知限制
 
-- 仍是原型：任務隊列、感測上下文、產出庫、統一管線、開源組件是示範資料，動畫用 `requestAnimationFrame` 產生。席位執行的 8 席 worker pool 是真的，但下方的 80 席角色表仍是示範。
+- 仍是原型：感測上下文、產出庫、統一管線、開源組件是示範資料，動畫用 `requestAnimationFrame` 產生。任務隊列、席位執行的 8 席 worker pool 是真的，但席位頁下方的 80 席角色表仍是示範。
 - 素材庫依賴本機已經抓下來的抖音媒體（數萬件作品、數十 GB），repo 裡沒有任何媒體檔；索引與媒體都只在本機。
 - 只有八組寫入路徑（審核裁決、AI 事件 ack、收集認領／退回、席位派工與工單結果、MyLike 索引同步、素材庫補檔、圖片無損清理、圖片衍生層），其餘分頁唯讀。「產生衍生層」只新增 `<原檔>.q50.webp` 並記血緣，**原檔與 sha256 不動**，所以不會釋放空間；要省空間得另外決定原檔的保留政策。
 - 外部依賴只有 jsdelivr 的 tippy.js／popper.js 與 highlight.js，三者都帶 sha384 SRI；離線時失效但頁面仍可載入。

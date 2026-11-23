@@ -1113,8 +1113,8 @@
     });
     $('#outFindq').addEventListener('input', function(){ ide.findAt=-1; findNext(); });
   })();
-  var SLOT_HOSTS=['slotGrid','slotGridRR','senseSlots','compressBoard','slotRail','pipeLive'];
-  var SLOT_KIND={slotGrid:'slot',slotGridRR:'slot',senseSlots:'sync-card',compressBoard:'cmp-card',slotRail:'pip-row',pipeLive:'pipe-slot'};
+  var SLOT_HOSTS=['slotGridRR','senseSlots','compressBoard','slotRail','pipeLive'];
+  var SLOT_KIND={slotGridRR:'slot',senseSlots:'sync-card',compressBoard:'cmp-card',slotRail:'pip-row',pipeLive:'pipe-slot'};
   var slotNodes={};
   var slotStructSig='';
   function bindCard(card){
@@ -1178,12 +1178,12 @@
   }
   function ensureSlotDom(){
     var sig=slotStructKey();
-    if (sig===slotStructSig && slotNodes.slotGrid && slotNodes.slotGrid.A1) return false;
+    if (sig===slotStructSig && Object.keys(slotNodes).length) return false;
     var gridHtml=store.slots.map(function(s){
       return '<div class="slot" data-slot="'+esc(s.id)+'"><div class="s-id"><span>'+esc(s.id)+'</span><span class="st" data-f="st"></span></div>'+
         '<div class="s-who" data-f="who"></div><div class="s-meta" data-f="meta"></div><div class="s-ttl"><i data-f="bar"></i></div></div>';
     }).join('');
-    ['slotGrid','slotGridRR'].forEach(function(id){
+    ['slotGridRR'].forEach(function(id){
       if (id==='slotGridRR'&&window.KOLINDEX_RAIL_LIVE) return;  // 右欄由 rail.js 用真實憑證資料畫
       var g=document.getElementById(id); if (g) g.innerHTML=gridHtml; });
     var sense=document.getElementById('senseSlots');
@@ -1218,7 +1218,7 @@
     return true;
   }
   function paintSlotValues(){
-    if (!slotNodes.slotGrid) ensureSlotDom();
+    if (!Object.keys(slotNodes).length) ensureSlotDom();
     var views={};
     store.slots.forEach(function(s){ views[s.id]=slotView(s); });
     SLOT_HOSTS.forEach(function(id){
@@ -1234,7 +1234,7 @@
           card.className=kind+' '+view.cls;
           card.setAttribute('data-cls', view.cls);
         }
-        if (id==='slotGrid'||id==='slotGridRR'){
+        if (id==='slotGridRR'){
           putText(card,'st',view.st); putText(card,'who',view.who); putText(card,'meta',view.meta);
           putBar(card, view.pct, view.color);
         } else if (id==='senseSlots'){
@@ -3268,7 +3268,7 @@
     });
     return lanes;
   }
-  function buildBoard(jobs,reviews,mylike,download){
+  function buildBoard(jobs,reviews,mylike,download,seats){
     var out=[];
     ((jobs&&jobs.items)||[]).forEach(function(j){
       var who=j.handle?('@'+j.handle):(j.platform||'');
@@ -3276,6 +3276,23 @@
         board:'crawl', state:j.state, ref:'#'+j.id,
         title:(j.job_type||'爬蟲')+(who?' · '+who:''),
         detail:j.connector||'排程工作', error:j.error_code||''
+      });
+    });
+    var mj=mylike&&mylike.job;
+    if (mj&&(mj.state==='running'||mj.state==='queued')){
+      out.push({
+        board:'mylike', state:mj.state, ref:'ML',
+        title:'MyLike '+(mj.targetName||mj.kind||'同步'),
+        detail:(mj.pages||0)+' 頁 · +'+(mj.added||0)+' 新', error:mj.error||''
+      });
+    }
+    ((seats&&seats.tasks)||[]).filter(function(t){
+      return t.status==='running'||t.status==='queued'||t.status==='failed';
+    }).slice(0,8).forEach(function(t){
+      out.push({
+        board:'seat', state:t.status, ref:'W-'+t.id,
+        title:(t.label||t.kind||'席位工單')+' · '+t.seat,
+        detail:t.status==='running'?'進行中':(t.status==='queued'?'排隊中':'失敗'), error:t.error||''
       });
     });
     ((reviews&&reviews.items)||[]).forEach(function(x){
@@ -3297,14 +3314,61 @@
     return out;
   }
   function liveJobCard(j){
-    var kind=j.board==='classify'?'人物分類':(j.board==='discover'?'待查':'資料爬蟲');
-    var sup=queueLive.supervisor||'未接線';
+    var kind={classify:'人物分類',discover:'待查',mylike:'MyLike 同步',seat:'席位工單',download:'補檔',crawl:'資料爬蟲'}[j.board]||'資料爬蟲';
+    var foot={classify:'人工複核 · 不改歸戶',discover:'待查 · 手動',mylike:'MyLike · 只補索引',seat:'席位 · 規則掃描',download:'補檔 · 只下載圖片',crawl:'排程工作 · 只讀'}[j.board]||'只讀';
     return '<article class="live-job">'+
       '<div class="lj-top"><b class="mono">'+esc(j.ref)+'</b><span>'+esc(kind)+'</span></div>'+
       '<div class="lj-sub">'+esc(j.title)+(j.detail?' · '+esc(j.detail):'')+'</div>'+
-      '<div class="lj-sup">已接線 · '+esc(sup)+' · 本次未推理</div>'+
+      '<div class="lj-sup">'+esc(foot)+'</div>'+
       (j.error?'<div class="lj-err">'+esc(j.error)+'</div>':'')+
     '</article>';
+  }
+  function queueLaneName(lane){
+    return {review:'審核掃描',library:'素材索引',collect:'收集統計',queue:'排程工作',disk:'磁碟探測',audit:'審計彙總'}[lane]||(lane||'未指定');
+  }
+  function qAgo(v){
+    if (!v) return '—';
+    var s=String(v), iso=/[zZ]|[+-]\d\d:?\d\d$/.test(s)?s:s.replace(' ','T')+'Z';
+    var t=Date.parse(iso);
+    if (isNaN(t)) return '—';
+    var d=Math.max(0,Math.round((Date.now()-t)/1000));
+    if (d<60) return d+' 秒前';
+    if (d<3600) return Math.round(d/60)+' 分鐘前';
+    if (d<86400) return Math.round(d/3600)+' 小時前';
+    return Math.round(d/86400)+' 天前';
+  }
+  function paintQueueOps(seats,rail){
+    var d=(rail&&rail.dispatcher)||null;
+    function put(id,text,cls){
+      var n=$('#'+id);
+      if (!n) return;
+      n.textContent=text;
+      if (cls) n.className=cls;
+    }
+    put('qdAuto',seats?(seats.auto?'開啟':'關閉'):'—',seats&&seats.auto?'ok':'warn');
+    put('qdTick',seats&&seats.tickMs?(seats.tickMs+' ms'):'—');
+    put('qdEvery','20 秒');
+    put('qdClaims',d?(Number(d.claimsToday)||0)+' 次':'—');
+    put('qdReturns',d?(Number(d.returnsToday)||0)+' 次':'—');
+    put('qdLast',d?qAgo(d.lastAt):'—');
+    put('qdScan',d?((Number(d.scanned)||0)+' 工作 · '+(Number(d.accounts)||0)+' 帳號'):'—');
+    var note=$('#qdNote');
+    if (note) note.textContent=(rail?'來源 /api/rail · 每 15 秒更新':'連不到 /api/rail，顯示上次結果');
+    var box=$('#queueSeats');
+    if (box&&seats&&seats.seats){
+      box.innerHTML=seats.seats.map(function(s){
+        var busy=!!s.current||s.state==='busy';
+        var cls=busy?'is-busy':(s.state==='ready'?'is-ready':'');
+        var cur=s.current?(s.current.label||s.current.kind||'執行中'):(s.state==='ready'?'待派工':s.state);
+        var title=s.id+' · '+queueLaneName(s.lane)+' · '+(s.current?('工單 #'+s.current.id):'沒有工單');
+        return '<div class="qs-card '+cls+'" title="'+esc(title)+'">'+
+          '<div class="qs-top"><b>'+esc(s.id)+'</b><span class="qs-dot"></span></div>'+
+          '<div class="qs-lane">'+esc(queueLaneName(s.lane))+'</div>'+
+          '<div class="qs-cur">'+esc(cur)+'</div>'+
+          '<div class="qs-meta">完成 '+esc(Number(s.done||0).toLocaleString('en-US'))+(s.failed?(' · 失敗 '+esc(String(s.failed))):'')+'</div>'+
+        '</div>';
+      }).join('');
+    }
   }
   function paintLiveLanes(){
     var buckets={queue:[],wait:[],proc:[],split:[],gen:[]};
@@ -3316,19 +3380,20 @@
       var body=document.getElementById('body-'+lane);
       if (!body) return;
       var rows=buckets[lane].slice(0,8);
-      body.innerHTML=rows.length?rows.map(liveJobCard).join(''):'<div class="live-empty">這個狀態沒有工作</div>';
+      var extra=buckets[lane].length-rows.length;
+      body.innerHTML=rows.length?rows.map(liveJobCard).join('')+(extra>0?'<div class="live-more">另有 '+extra+' 筆 · 只顯示前 8 筆</div>':''):'<div class="live-empty">這個狀態沒有工作</div>';
     });
     var flow=$('#flowBoard');
     if (flow) flow.innerHTML='<div class="live-empty">人物分類與資料爬蟲進同一塊看板。監督模型只標在卡片上，不啟動爬蟲、也不改歸戶。</div>';
     var par=$('#parNow');
     if (par) par.innerHTML='';
   }
-  function markQueueLive(seats){
+  function markQueueLive(seats,rail){
     var src=$('#queueSrc');
-    if (src){ src.textContent='LIVE · 分類與爬蟲'; src.className='chip green'; }
+    if (src){ src.textContent='LIVE · 更新 '+fmtTime(new Date()); src.className='chip green'; }
     var sup=$('#queueSupervisor');
     if (sup){
-      sup.textContent='已接線 · '+(queueLive.supervisor||'未接線')+' · 本次未推理';
+      sup.textContent=queueLive.supervisorOn?('監督模型 · '+(queueLive.supervisor||'—')+' · 只標註'):'監督模型 · 未接線';
       sup.className='chip '+(queueLive.supervisorOn?'cyan':'or');
     }
     var unit=$('#claimUnit');
@@ -3337,13 +3402,13 @@
     if (slotMax) slotMax.textContent='/'+((seats&&seats.seats&&seats.seats.length)||'—');
     var caps={
       claimRate:'今日認領',
-      queueDepth:'待分類／待爬',
-      claimedWait:'延後／受阻',
-      executing:'正在爬',
-      slotUsed:'席位執行中',
+      queueDepth:'待處理',
+      claimedWait:'等待／受阻',
+      executing:'執行中',
+      slotUsed:'席位忙線',
       slotWait:'平均耗時',
       split:'失敗／駁回',
-      thru:'已結束'
+      thru:'吞吐'
     };
     Object.keys(caps).forEach(function(k){
       var n=document.querySelector('#kpiBand [data-num="'+k+'"]');
@@ -3355,13 +3420,19 @@
       chip.textContent=seats.auto?'席位自動派工 ON':'席位自動派工 OFF';
       chip.className='chip '+(seats.auto?'green':'or');
     }
+    var seatChip=$('#queueSeatChip');
+    if (seatChip&&seats&&seats.seats){
+      var busy=seats.seats.filter(function(s){ return !!s.current||s.state==='busy'; }).length;
+      seatChip.textContent='席位 '+busy+'/'+seats.seats.length;
+    }
+    if (rail&&rail.dispatcher&&rail.dispatcher.lastAt) queueLive.lastAt=rail.dispatcher.lastAt;
   }
   function applyQueueLive(jobs,seats,rail,reviews,mylike,download,llm){
     var list=(seats&&seats.seats)||[];
     var busy=list.filter(function(s){ return s.current; }).length;
     var avg=seats&&seats.avgMs;
     var claims=rail&&rail.dispatcher?Number(rail.dispatcher.claimsToday)||0:0;
-    var items=buildBoard(jobs,reviews,mylike,download);
+    var items=buildBoard(jobs,reviews,mylike,download,seats);
     var lanes=tallyBoard(items);
     var openClassify=items.filter(function(it){ return it.board==='classify'&&it.state==='open'; }).length;
     queueLive.ok=true;
@@ -3379,11 +3450,12 @@
       slotWait:avg==null?0:Math.round(avg/100)/10,
       split:lanes.split,
       thru:lanes.gen,
-      done:(seats&&seats.counts&&seats.counts.today!=null)?Number(seats.counts.today)||0:lanes.gen,
-      fail:(seats&&seats.counts&&seats.counts.failedToday!=null)?Number(seats.counts.failedToday)||0:lanes.split,
+      done:(jobs&&jobs.counts&&jobs.counts.succeeded!=null)?Number(jobs.counts.succeeded)||0:lanes.gen,
+      fail:(jobs&&jobs.counts&&jobs.counts.failed!=null)?Number(jobs.counts.failed)||0:lanes.split,
       guardPending:reviews&&reviews.counts&&reviews.counts.open!=null?Number(reviews.counts.open)||0:openClassify
     };
-    markQueueLive(seats);
+    markQueueLive(seats,rail);
+    paintQueueOps(seats,rail);
     paintLiveLanes();
     renderNumbers();
   }
@@ -3396,7 +3468,7 @@
     }
     return Promise.allSettled([
       grab('/api/jobs?state=all&limit=80'),
-      grab('/api/seats?tasks=1'),
+      grab('/api/seats?tasks=40'),
       grab('/api/rail?range=1H'),
       grab('/api/review/queue?state=all'),
       grab('/api/mylike/job'),

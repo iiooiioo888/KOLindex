@@ -1,13 +1,13 @@
 # 功能現況與未實作清單
 
-更新：2026-11-23。圖例：**真**＝打後端真實資料；**半**＝部分接真、其餘示範；**假**＝`js/index2.js` 的 FIXTURES 或記憶體陣列，重新整理就還原。
+更新：2026-11-24。圖例：**真**＝打後端真實資料；**半**＝部分接真、其餘示範；**假**＝`js/index2.js` 的 FIXTURES 或記憶體陣列，重新整理就還原。
 
 ## 一、十二個分頁
 
 | # | 分頁 | 現況 | 資料來源 | 還缺什麼 |
 |---|---|---|---|---|
 | 01 | 任務收集 | 真 | `GET /api/collect`、認領／退回寫 `collect_decision` + `audit_log` | 收集項目前只來自抖音作者索引（candidate 帳號），沒有其他平台。**邊界**：認領只做工作分派（assignee/state），不改 `identity_state`、不建 `person`；`confirmed` 只能由審核台的人類裁決產生 |
-| 02 | 任務隊列 | 假 | `FIXTURES.tasks` + `requestAnimationFrame` 假調度（80 張卡、lane 移動、波形） | 後端沒有「任務隊列」語意的表；要嘛接 `crawl_job`（排程工作）要嘛新建 queue 表 |
+| 02 | 任務隊列 | 真 | 五條車道吃 `/api/jobs`、`/api/review/queue`、`/api/mylike/job`、`/api/seats`、`/api/library/download/job`；下方派工與席位面板吃 `/api/rail`、`/api/seats` | 沒有自己的 queue 表，是各真資料源的聚合視圖；派工仍要去席位頁按，這一頁唯讀 |
 | 03 | 感測上下文 | 假 | `index2.js:1846` 的 `sensors` 記憶體資料、`renderKnowledge()` | 沒有採集器、沒有特徵庫，卡片上的數字是寫死的 |
 | 04 | 產出庫 | 假 | `index2.js:825` 的 `OUTPUTS` 陣列、假編輯器 | 沒有產出物表／檔案儲存，存檔只改記憶體 |
 | 05 | 席位執行 | 半 | 上方 fleet 八席真的跑（`GET/POST /api/seats`，`seat`／`seat_task` 表）；下方 80 席、角色目錄、里程碑仍是示範 | 席位是規則型掃描器（rule-v1），不是 LLM agent；80 席 STANDARD_ROLES 沒有後端 |
@@ -15,9 +15,9 @@
 | 07 | 基礎設施 | 半 | 連接器 `GET /api/health/connectors`、排程工作 `GET /api/jobs` 是真資料 | **DOCKER／ECS／帳量／成本預算四個子頁全是寫死的**（容器名、CPU、¥6,180 預算） |
 | 08 | 開源組件 | 假 | 靜態清單與授權字串 | 沒有解析器、沒有授權掃描 |
 | 09 | UI 生成 | 真 | `POST /__llm` 本地代理 → OpenAI 相容 API（需 `.env` 的 `LLM_API_KEY`） | 產物是線框圖 JSON，不是可執行頁面；沒金鑰時只顯示示範線框 |
-| 10 | 人物檔案 | 半 | `GET /api/library/authors` 等，抖音作者 18,953 位 | **沒有跨平台歸戶**（`person` 表 0 筆）、沒有 F2 打分、沒有小紅書／微博／YouTube |
+| 10 | 人物檔案 | 半 | `GET /api/library/authors` 等，抖音作者 18,974 位 | **沒有跨平台歸戶**（`person` 表 0 筆）、沒有 F2 打分、沒有小紅書／微博／YouTube |
 | 11 | 審核台 | 真 | `review_task`、`POST /api/review/:id/verdict`、`GET /api/audit` | 佇列只有 6 筆人工造的候選；沒有真正的 F2 產生的 review_task |
-| 12 | 素材庫 | 真 | `GET /api/library`、`/api/library/authors`、`/api/library/:id`、MyLike 同步、無損清理、衍生層 | 954 件只有索引沒有本機檔；14 個收藏夾未索引；影片未處理。**衍生層不改原檔**（新增 `<原檔>.q50.webp` + `media_derivative` 血緣），所以不省空間 |
+| 12 | 素材庫 | 真 | `GET /api/library`、`/api/library/authors`、`/api/library/:id`、MyLike 同步、無損清理、衍生層 | 1,081 件只有索引沒有本機檔；14 個收藏夾未索引；影片未處理。**衍生層不改原檔**（新增 `<原檔>.q50.webp` + `media_derivative` 血緣），所以不省空間 |
 
 右欄監控（`/api/rail`）是真的：佇列深度、槽位、dispatcher、`audit_log`、儲存。但 **告警面板 0 筆**——`alert` 表在清掉示範資料後沒有產生器。
 
@@ -48,7 +48,7 @@
 
 **P1 可信度**（把剩下的示範頁接真）
 
-1. 任務隊列接 `GET /api/jobs`（後端現成，最省力）
+1. ~~任務隊列接真~~ 已完成（2026-11-24：五條車道、8 格 KPI、派工與席位面板；`test-queue.mjs` 27 項）
 2. 基礎設施：DOCKER 子頁改成讀 `docker ps`（或至少讀一個 JSON），ECS／帳量／成本預算改真或移除
 3. 產出庫：建 `output` 表 + `GET/POST /api/outputs`，編輯器落盤
 4. 感測上下文：需要真正的採集資料，否則刪掉或標示為示範
@@ -58,7 +58,7 @@
 **P2 抓取與媒體**
 
 7. 14 個抖音收藏夾（約 1.2 萬筆）尚未抓索引
-8. 954 件缺檔未下載（F: 只剩 5.5 GB，下載鈕已 disabled）
+8. 1,081 件缺檔未下載（F: 剩 15.8 GB，下載鈕已 disabled）
 9. 影片完全沒處理（衍生層只做圖集 `kind='gallery'`）
 10. 沒有縮圖管線（480px WebP）：目前直接吃原圖，列表載入慢
 11. MyLike 同步只補索引、不下載；沒有排程自動同步
