@@ -183,9 +183,9 @@ function reviewDetailHtml(x){
   var acts;
   if(x.state==='open'){
     acts='<div class="rv-acts">'+
-      '<button type="button" class="rv-btn ok" data-act="confirm">確認歸戶</button>'+
-      '<button type="button" class="rv-btn no" data-act="reject">駁回</button>'+
-      '<button type="button" class="rv-btn hold" data-act="defer">延後</button>'+
+      '<button type="button" class="rv-btn ok" data-act="confirm" data-cap="review">確認歸戶</button>'+
+      '<button type="button" class="rv-btn no" data-act="reject" data-cap="review">駁回</button>'+
+      '<button type="button" class="rv-btn hold" data-act="defer" data-cap="review">延後</button>'+
       '<span class="rv-ask">'+(R.busy?'寫入中…':'寫回 review_task · 留一筆 audit_log')+'</span>'+
     '</div>';
   }else{
@@ -214,7 +214,7 @@ function aiDetailHtml(x){
     '<li><span class="k">類型</span><span class="v">'+esc(AI_KIND[x.kind]||x.kind)+'</span></li>'+
     '<li><span class="k">摘要</span><span class="v">'+esc(x.summary||'')+'</span></li>'+rows;
   var acts=x.state==='open'
-    ? '<div class="rv-acts"><button type="button" class="rv-btn ok" data-act="ack">標記已處理</button>'+
+    ? '<div class="rv-acts"><button type="button" class="rv-btn ok" data-act="ack" data-cap="review">標記已處理</button>'+
       '<span class="rv-ask">AI 只產候選 · 處理後寫 audit_log</span></div>'
     : '<div class="rv-acts done">已處理 · audit_log 已留存</div>';
   return '<div class="rv-head"><div class="rv-hd">'+

@@ -1,0 +1,10 @@
+/* 角色能力（caps）：沒有權限的寫入控制直接收起，避免使用者點了才吃 403。
+   由 js/login.js 依 /__auth/* 回傳的 caps 設定 body[data-can-*]；
+   本地模式（沒有 KOL_GATE）一律是全開，所以這裡不會作用。
+
+   :not(#dsh-caps) 這個 id 不存在，只是把特異性拉到 (1,2,1)，
+   好壓過頁面裡用「#某個容器 .某個 class」寫的 display:inline-flex；
+   這樣就不必用強制覆蓋，也不會被後面載入的頁面樣式蓋掉。 */
+body[data-can-write="0"] [data-cap="write"]:not(#dsh-caps),
+body[data-can-review="0"] [data-cap="review"]:not(#dsh-caps),
+body[data-can-operate="0"] [data-cap="operate"]:not(#dsh-caps) { display: none; }

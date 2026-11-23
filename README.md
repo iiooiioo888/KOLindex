@@ -67,9 +67,11 @@ node tests/test-wireframe.js   # 線框圖渲染器（純函式）：XSS、深�
 node tests/test-page.mjs       # 站台輸出、資產 MIME、id 對齊、分頁註冊、CSS 載入順序
 node tests/test-ds.mjs         # 設計系統四層、權杖、單一 accent、零轉場
 node tests/test-balance.mjs    # HTML 標籤開閉配對（少一個 </section> 會整頁空白）
+node tests/test-authz.mjs      # 角色能力：viewer 只讀、reviewer 裁決、operator 全寫（自己起三個實例）
+node tests/test-caps.mjs       # 前端依 caps 收起按鈕：靜態與動態模板的 data-cap 標註
 ```
 
-四支都只打 `127.0.0.1:5200`，不需要後端；`check` job 在每次 `push`／`PR` 跑這組。更完整的十九支（含寫入端點、離線、瀏覽器截圖）在私有開發資料夾 `KOLindex-dev`，不在這個 repo。
+前四支只打 `127.0.0.1:5200`；`test-authz` 自己起 5390–5392 三個實例，`test-caps` 只讀檔，都不需要後端。`check` job 在每次 `push`／`PR` 跑這六支。更完整的二十支（含寫入端點、離線、瀏覽器截圖）在私有開發資料夾 `KOLindex-dev`，不在這個 repo。
 
 ## 部署
 
@@ -104,6 +106,8 @@ docker compose -f infra/compose/docker-compose.yml up -d --build
 
 同名主機一次只能掛一個 `KOL_ROLE`；要同時給三種人用，就開三個實例（各自 `KOL_ROLE`、共用同一個 API）再用反向代理分流。`tests/test-authz.mjs` 會起三個實例驗 401／403，CI 也會跑。
 
+前端也照同一份 `caps` 收起沒有權限的按鈕，避免使用者點了才吃 `403`：`viewer` 看不到任何寫入控制，`reviewer` 只看得到審核台的四顆裁決鍵（確認／駁回／延後／標記已處理），`operator` 全開。實作是 `js/login.js` 的 `applyCaps()` 把 `caps` 寫成 `body[data-can-write|review|operate]`，`css/caps.css` 再用三條 `[data-cap]` 選擇器隱藏；沒有 `KOL_GATE` 的本機模式一律全開。`tests/test-caps.mjs` 會靜態檢查靜態與動態模板的標註有沒有漏，CI 也會跑。
+
 ## 目錄
 
 ```
@@ -117,7 +121,7 @@ js/rail.js             右欄監控面板 → /api/rail
 js/seats.js            席位編隊 → /api/seats（派工、自動派工、工人狀態）
 js/*.js                各分頁邏輯（studio／person／review／infra／jobs／library／wireframe）
 fonts/                 自架 woff2（Chakra Petch、IBM Plex Mono）
-tests/                 四支靜態檢查 + 零依賴 dev-server
+tests/                 六支檢查（含角色與 caps）+ 零依賴 dev-server
 screenshots/           README 用的截圖
 ```
 

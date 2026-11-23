@@ -43,7 +43,8 @@ export function caps(role) {
   const r = normalizeRole(role);
   return {
     read: true,
-    write: r !== 'viewer',
+    // write 專指「一般寫入」（派工、抓取、下載、收集認領）；審核裁決走 review。
+    write: r === 'operator',
     review: r === 'reviewer' || r === 'operator',
     operate: r === 'operator',
   };

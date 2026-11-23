@@ -29,7 +29,7 @@ ok('未知角色退回 viewer', !apiAllowed('nobody', 'POST', '/api/review/1/ver
 ok('normalizeRole 大小寫', normalizeRole(' OPERATOR ') === 'operator');
 ok('pathOf 去 query', pathOf('/api/x?a=1') === '/api/x');
 ok('caps viewer', caps('viewer').write === false && caps('viewer').operate === false);
-ok('caps reviewer', caps('reviewer').write === true && caps('reviewer').review === true && caps('reviewer').operate === false);
+ok('caps reviewer', caps('reviewer').write === false && caps('reviewer').review === true && caps('reviewer').operate === false);
 ok('caps operator', caps('operator').operate === true);
 ok('describe 有中文', describe('viewer').includes('只讀'));
 

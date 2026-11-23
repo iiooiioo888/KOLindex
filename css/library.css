@@ -552,7 +552,7 @@
    直角、髮絲線、無漸層，沿用工程藍圖語言。
    ============================================================================ */
 
-#topic-library .mylike-btn{ display:inline-flex; align-items:center; gap:6px; }
+#topic-library .mylike-btn{ align-items:center; gap:6px; }
 #topic-library .ml-dot{ width:6px; height:6px; background:var(--faint); display:inline-block; flex:0 0 auto; }
 #topic-library .ml-dot.on{ background:var(--green); }
 #topic-library .ml-dot.run{ background:var(--amber); }

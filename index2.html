@@ -21,6 +21,7 @@
 <link rel="stylesheet" href="css/person.css?v=20261122">
 <link rel="stylesheet" href="css/seats.css?v=20261123">
 <link rel="stylesheet" href="css/login.css?v=20261123">
+<link rel="stylesheet" href="css/caps.css?v=20261123">
 </head>
 <body data-topic="queue">
 
@@ -214,7 +215,7 @@
               </label>
               <button type="submit" class="mini-btn">放入待收</button>
             </form>
-            <form class="collect-form" id="discoverForm">
+            <form class="collect-form" id="discoverForm" data-cap="operate">
               <div class="kicker">Sherlock 用戶名</div>
               <label>公開用戶名
                 <input type="text" id="discoverName" name="discover" maxlength="32" placeholder="英數、點、底線或連字號" autocomplete="off" spellcheck="false" required>
@@ -491,8 +492,8 @@
                 <option value="disk">磁碟容量探測</option>
                 <option value="audit">審計日誌彙總</option>
               </select>
-              <button class="mini-btn" id="fleetRun" type="button">派工</button>
-              <label class="fleet-auto"><input type="checkbox" id="fleetAuto" checked> 自動派工</label>
+              <button class="mini-btn" id="fleetRun" type="button" data-cap="write">派工</button>
+              <label class="fleet-auto" data-cap="write"><input type="checkbox" id="fleetAuto" checked> 自動派工</label>
               <button class="mini-btn" id="fleetRefresh" type="button">重新整理</button>
             </div>
             <div class="fleet-grid">
@@ -901,7 +902,7 @@
               </div>
               <div class="kicker">範例需求</div>
               <div class="studio-presets" id="studioPresets"></div>
-              <button type="submit" class="mini-btn primary" id="studioGo">生成線框</button>
+              <button type="submit" class="mini-btn primary" id="studioGo" data-cap="operate">生成線框</button>
               <div class="studio-hint" id="studioHint">輸出的是版面結構（線框），不是可執行的前端程式碼。按「生成線框」送出。</div>
             </form>
 
@@ -1036,12 +1037,12 @@
             </select>
             <span class="lib-acts">
               <button type="button" class="mini-btn" id="libReset">重置</button>
-              <button type="button" class="mini-btn mylike-btn" id="libMyLike" aria-expanded="false" aria-controls="libMyLikePanel">
+              <button type="button" class="mini-btn mylike-btn" id="libMyLike" aria-expanded="false" aria-controls="libMyLikePanel" data-cap="write">
                 <span class="ml-dot" id="libMyLikeDot" aria-hidden="true"></span>MyLike 同步
               </button>
-              <button type="button" class="mini-btn" id="libOptimize" title="剝掉 ICC／EXIF／XMP 等中介資料，像素完全不變">無損壓縮</button>
-              <button type="button" class="mini-btn" id="libDeriv" title="產生 q50 衍生檔（原檔保留，不改寫證據與 sha256；容量不會因此變小）">衍生層</button>
-              <button type="button" class="mini-btn" id="libDownloadMissing" title="把只有索引、還沒有本機檔案的抓下來">下載缺檔</button>
+              <button type="button" class="mini-btn" id="libOptimize" data-cap="write" title="剝掉 ICC／EXIF／XMP 等中介資料，像素完全不變">無損壓縮</button>
+              <button type="button" class="mini-btn" id="libDeriv" data-cap="write" title="產生 q50 衍生檔（原檔保留，不改寫證據與 sha256；容量不會因此變小）">衍生層</button>
+              <button type="button" class="mini-btn" id="libDownloadMissing" data-cap="write" title="把只有索引、還沒有本機檔案的抓下來">下載缺檔</button>
             </span>
           </div>
           <div class="lib-chipbar" id="libAuthorChip" hidden>
@@ -1070,9 +1071,9 @@
               <div class="ml-cards" id="mlCards"></div>
 
               <div class="ml-row">
-                <button type="button" class="mini-btn" id="mlWake">喚醒抖音頁</button>
-                <button type="button" class="mini-btn primary" data-ml-sync="likes">同步點讚</button>
-                <button type="button" class="mini-btn primary" data-ml-sync="favorites">同步收藏</button>
+                <button type="button" class="mini-btn" id="mlWake" data-cap="write">喚醒抖音頁</button>
+                <button type="button" class="mini-btn primary" data-ml-sync="likes" data-cap="write">同步點讚</button>
+                <button type="button" class="mini-btn primary" data-ml-sync="favorites" data-cap="write">同步收藏</button>
                 <select id="mlPages" class="lib-select" aria-label="每輪抓幾頁">
                   <option value="5">每輪 5 頁</option>
                   <option value="15">每輪 15 頁</option>
@@ -1089,7 +1090,7 @@
               <div class="ml-sec">
                 <div class="ml-sec-head">
                   <span>收藏夾<span class="ml-dim" id="mlFolderCount"></span></span>
-                  <button type="button" class="mini-btn" id="mlRefresh">重新抓收藏夾</button>
+                  <button type="button" class="mini-btn" id="mlRefresh" data-cap="write">重新抓收藏夾</button>
                 </div>
                 <div class="ml-folders" id="mlFolders"></div>
               </div>

@@ -358,7 +358,7 @@ function paintViewer(){
     var r=(det.remote||[])[0];
     m.innerHTML='<div class="lv-none"><b>本機沒有這件的檔案</b>'+
       (r?'只有索引，存的網址可能已經過期。':'只有索引，抖音上的網址要即時重取。')+
-      '<div class="lv-none-act"><button type="button" class="mini-btn primary" data-lv-dl>下載到本機</button></div>'+
+      '<div class="lv-none-act"><button type="button" class="mini-btn primary" data-lv-dl data-cap="write">下載到本機</button></div>'+
       '<div style="margin-top:10px"><a href="'+esc(det.url)+'" target="_blank" rel="noopener">'+esc(det.url)+'</a></div></div>';
   }
   var head=$('libViewHead');
@@ -380,7 +380,7 @@ function paintViewer(){
       return '<div class="lv-row"><span>'+esc(r[0])+'</span><b>'+esc(r[1])+'</b></div>';
     }).join('')+
     '<div class="lv-actions">'+
-      '<button type="button" class="mini-btn primary" id="libDownload">'+(det.fileCount?'重新下載':'下載到本機')+'</button>'+
+      '<button type="button" class="mini-btn primary" id="libDownload" data-cap="write">'+(det.fileCount?'重新下載':'下載到本機')+'</button>'+
       '<a class="mini-btn" href="'+esc(det.url)+'" target="_blank" rel="noopener">原始網址</a>'+
       '<button type="button" class="mini-btn" id="libViewAuthor">這位作者</button>'+
       '<button type="button" class="mini-btn" id="libCopyPath">複製目錄</button>'+
@@ -830,7 +830,7 @@ function mlFolders(d){
       '<span class="mf-n">'+nfmt(f.total)+'</span>'+
       '<span class="mf-tag">'+nfmt(f.dbItems)+'</span>'+
       '<span class="mf-time">'+esc(ago(f.syncedAt))+'</span>'+
-      '<button type="button" class="mini-btn" data-ml-folder="'+esc(f.id)+'">抓索引</button>'+
+      '<button type="button" class="mini-btn" data-ml-folder="'+esc(f.id)+'" data-cap="write">抓索引</button>'+
     '</div>';
   }).join('');
 }

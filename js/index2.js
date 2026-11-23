@@ -3004,7 +3004,7 @@
       var isApi=!!x.accountId;
       var actions=x.state==='inbox'
         ? (isApi
-          ? '<button type="button" class="mini-btn" data-collect-claim="'+esc(x.id)+'">認領</button><button type="button" class="mini-btn" data-collect-return="'+esc(x.id)+'">退回</button>'
+          ? '<button type="button" class="mini-btn" data-collect-claim="'+esc(x.id)+'" data-cap="write">認領</button><button type="button" class="mini-btn" data-collect-return="'+esc(x.id)+'" data-cap="write">退回</button>'
           : '<button type="button" class="mini-btn" data-collect-take="'+esc(x.id)+'">收入隊列</button><button type="button" class="mini-btn" data-collect-skip="'+esc(x.id)+'">略過</button>')
         : '<span class="pill '+(x.state==='queued'?'green':'')+'">'+(x.state==='queued'?(isApi?'已認領 ':'已入列 ')+(x.taskId||''):(isApi?'已退回':'已略過'))+'</span>';
       return '<article class="ccard'+(routeState.focus===x.id&&routeState.topic==='collect'?' linked':'')+'" data-id="'+esc(x.id)+'" data-search>'+

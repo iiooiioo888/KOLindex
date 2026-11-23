@@ -42,6 +42,8 @@ jobs:
         run: node tests/test-balance.mjs
       - name: 角色能力（401／403）
         run: node tests/test-authz.mjs
+      - name: 前端依 caps 收起按鈕
+        run: node tests/test-caps.mjs
       - name: 伺服器日誌
         if: always()
         run: cat /tmp/dev-server.log || true

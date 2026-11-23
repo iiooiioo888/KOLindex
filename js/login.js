@@ -26,14 +26,39 @@
     el.textContent = msg || '';
   }
 
+  // 本地模式（沒有 KOL_GATE）是單人開發，一律給全部能力；伺服器模式才看 caps。
+  function capsOf(session) {
+    if (!session || session.mode !== 'server') {
+      return { read: true, write: true, review: true, operate: true };
+    }
+    var c = session.caps;
+    if (!c || typeof c !== 'object') {
+      // 舊版伺服器沒有回 caps：用角色推一個保守值。
+      return { read: true, write: session.role === 'operator', review: session.role !== 'viewer', operate: session.role === 'operator' };
+    }
+    return { read: c.read !== false, write: !!c.write, review: !!c.review, operate: !!c.operate };
+  }
+
+  function applyCaps(session) {
+    var can = capsOf(session);
+    document.body.setAttribute('data-gate', session.mode === 'server' ? 'server' : 'local');
+    document.body.setAttribute('data-can-write', can.write ? '1' : '0');
+    document.body.setAttribute('data-can-review', can.review ? '1' : '0');
+    document.body.setAttribute('data-can-operate', can.operate ? '1' : '0');
+    window.KOLINDEX_CAN = can;
+    return can;
+  }
+
   function enter(session) {
     document.documentElement.classList.remove('need-login');
     var gate = $('loginGate');
     if (gate) gate.hidden = true;
+    var can = applyCaps(session);
     var av = $('opAvatar');
     if (av) {
       av.textContent = initials(session.name);
-      av.title = (ROLE[session.role] || '操作者') + ' ' + session.name + ' · 點一下登出';
+      var scope = can.write ? '' : (can.review ? ' · 只能審核' : ' · 只讀');
+      av.title = (ROLE[session.role] || '操作者') + ' ' + session.name + scope + ' · 點一下登出';
     }
     var who = $('dlgWho');
     if (who) who.value = session.name;
@@ -83,7 +108,7 @@
       if (res.status === 429) { showErr((res.data && res.data.message) || '請稍後再試'); return; }
       if (res.status === 401) { showErr('通行碼不對'); return; }
       if (!res.data || !res.data.ok) { showErr('登入沒有完成'); return; }
-      enter({ name: res.data.name || name, role: res.data.role || 'viewer', mode: res.data.gate ? 'server' : 'local' });
+      enter({ name: res.data.name || name, role: res.data.role || 'viewer', mode: res.data.gate ? 'server' : 'local', caps: res.data.caps || null });
       write(window.KOLINDEX_SESSION);
       showErr('');
     }).catch(function () {
@@ -106,14 +131,14 @@
           lead.textContent = '這台沒有設定通行碼，填操作者就能進入。要擋住未登入的人，啟動時加上 KOL_GATE。';
         }
         if (d && d.ok && d.name) {
-          var session = { name: d.name, role: d.role || 'viewer', mode: 'server' };
+          var session = { name: d.name, role: d.role || 'viewer', mode: 'server', caps: d.caps || null };
           write(session);
           enter(session);
           return;
         }
         if (d && d.gate) { clear(); showGate(); return; }
         var saved = read();
-        if (saved && saved.name && !d.gate) { enter(saved); return; }
+        if (saved && saved.name && !d.gate) { saved.mode = 'local'; enter(saved); return; }
         showGate();
       })
       .catch(function () {
