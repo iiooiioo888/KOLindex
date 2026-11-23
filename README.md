@@ -94,6 +94,16 @@ docker compose -f infra/compose/docker-compose.yml up -d --build
 
 打開站會先看到登入頁。沒有 `KOL_GATE` 時，填操作者就能進入，通行碼不核對。要擋住未登入的人和 `/api`，啟動時加上 `KOL_GATE`（只放在伺服器環境變數，不要寫進倉庫）。登入後右上角名字可點，用來登出。
 
+角色只有三種，規則寫在 `tests/authz.mjs`；`KOL_GATE` 開啟時 dev-server 會擋不屬於該角色的寫入（`401` 未登入、`403` 角色不足）：
+
+| 角色 | 讀取 | 審核裁決 `POST /api/review/:id/verdict`、`POST /api/ai/events/:id/ack` | 其他 `/api` 寫入 |
+| --- | --- | --- | --- |
+| `viewer` 只讀 | 可 | 不可 | 不可 |
+| `reviewer` 審核 | 可 | 可 | 不可 |
+| `operator` 操作者 | 可 | 可 | 可 |
+
+同名主機一次只能掛一個 `KOL_ROLE`；要同時給三種人用，就開三個實例（各自 `KOL_ROLE`、共用同一個 API）再用反向代理分流。`tests/test-authz.mjs` 會起三個實例驗 401／403，CI 也會跑。
+
 ## 目錄
 
 ```

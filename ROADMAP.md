@@ -40,7 +40,7 @@
 
 **P0 治理（規格 v4.0，原型全缺）**
 
-1. 寫入端點沒有認證／RBAC：八組寫入（審核裁決、AI 事件 ack、收集認領／退回、席位派工、MyLike 同步、補檔、無損清理、衍生層）都只靠本機綁 127.0.0.1；生產需要本機 token + 角色 + `agent_action_log`
+1. 寫入端點沒有自己的認證：dev-server 在 `KOL_GATE` 下已用 `tests/authz.mjs` 擋角色（viewer 唯讀、reviewer 只能裁決與 ack、operator 其餘），但 kolindex-api 本身仍是無認證的 localhost 服務；把 5210 曝露出去就等於繞過角色。生產還需要 API 自己的本機 token + `agent_action_log`
 2. 缺 6 張治理表：`asset_registry`、`connector_registry`、`approval_token`、`cost_ledger`、`egress_policy`、`agent_action_log`
 3. 多實例無選主：8 席 auto 模式若起兩個後端會重複派工（鐵律①）；需要 DB／檔案鎖 + fencing token
 4. 保留政策未掛鉤：`retention_days` 沒有排程清理，`deletion_tombstone` 沒流程

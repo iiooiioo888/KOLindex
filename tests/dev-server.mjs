@@ -8,6 +8,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { apiAllowed, caps, pathOf, ROLE_LABEL, normalizeRole } from './authz.mjs';
 
 const ROOT = path.resolve(process.argv[2] ?? '.');
 const START_PORT = Number(process.argv[3] ?? process.env.PORT ?? 5200);
@@ -40,7 +41,7 @@ const LLM = {
 // ── 後端 API（kolindex-api）：/api/* 反向代理，同源就沒有 CORS 問題 ────
 const API_BASE = (process.env.KOL_API || 'http://127.0.0.1:5210').replace(/\/+$/, '');
 const GATE = process.env.KOL_GATE || '';
-const SERVER_ROLE = ['viewer', 'operator', 'reviewer'].includes(process.env.KOL_ROLE) ? process.env.KOL_ROLE : 'viewer';
+const SERVER_ROLE = normalizeRole(process.env.KOL_ROLE);
 const SERVER_OPERATOR = String(process.env.KOL_OPERATOR || '').trim();
 const SESSION_MS = 12 * 60 * 60 * 1000;
 const sessions = new Map();
@@ -116,7 +117,7 @@ function clearSessionCookie(res) {
 function handleAuth(req, res, url) {
   if (url.startsWith('/__auth/session')) {
     const row = currentSession(req);
-    if (row) return json(res, 200, { ok: true, gate: true, name: row.name, role: row.role });
+    if (row) return json(res, 200, { ok: true, gate: true, name: row.name, role: row.role, caps: caps(row.role) });
     return json(res, 200, { ok: false, gate: Boolean(GATE) });
   }
   if (url.startsWith('/__auth/logout')) {
@@ -134,7 +135,7 @@ function handleAuth(req, res, url) {
     if (!name || /[\u0000-\u001f]/.test(name)) return json(res, 400, { error: 'name' });
     const ip = clientIp(req);
     if (loginBlocked(ip)) return json(res, 429, { error: 'slow', message: '登入失敗次數太多，請稍後再試。' });
-    if (!GATE) return json(res, 200, { ok: true, gate: false, mode: 'local', name, role: 'viewer' });
+    if (!GATE) return json(res, 200, { ok: true, gate: false, mode: 'local', name, role: 'viewer', caps: caps('viewer') });
     if (SERVER_OPERATOR && name !== SERVER_OPERATOR) {
       noteLoginFail(ip);
       return json(res, 401, { error: 'bad_pass' });
@@ -148,13 +149,25 @@ function handleAuth(req, res, url) {
     sessions.set(token, { name: SERVER_OPERATOR || name, role: SERVER_ROLE, exp: Date.now() + SESSION_MS });
     const secure = process.env.KOL_COOKIE_SECURE === '1' || req.headers['x-forwarded-proto'] === 'https';
     setSessionCookie(res, token, secure);
-    return json(res, 200, { ok: true, gate: true, mode: 'server', name: SERVER_OPERATOR || name, role: SERVER_ROLE });
+    return json(res, 200, { ok: true, gate: true, mode: 'server', name: SERVER_OPERATOR || name, role: SERVER_ROLE, caps: caps(SERVER_ROLE) });
   }).catch((err) => json(res, 400, { error: err.message }));
 }
 
 async function proxyApi(req, res) {
-  if (GATE && !currentSession(req)) {
+  const sess = GATE ? currentSession(req) : null;
+  if (GATE && !sess) {
     return json(res, 401, { error: 'login_required' });
+  }
+  // 角色只管寫入：viewer 唯讀；reviewer 只多裁決與 ack；operator 全部。
+  if (GATE && !apiAllowed(sess.role, req.method, req.url)) {
+    return json(res, 403, {
+      error: 'forbidden',
+      message: '角色「' + (ROLE_LABEL[sess.role] || sess.role) + '」不能 ' + req.method + ' ' + pathOf(req.url),
+      role: sess.role,
+      method: req.method,
+      path: pathOf(req.url),
+      caps: caps(sess.role),
+    });
   }
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), 8000);
@@ -401,8 +414,12 @@ function handleSherlock(req, res) {
   if (PROD && process.env.KOL_SHERLOCK !== '1') {
     return json(res, 404, { error: 'disabled' });
   }
-  if (GATE && !currentSession(req)) {
+  const sess = GATE ? currentSession(req) : null;
+  if (GATE && !sess) {
     return json(res, 401, { error: 'login_required' });
+  }
+  if (GATE && sess && !caps(sess.role).operate) {
+    return json(res, 403, { error: 'forbidden', message: '只有操作者可以送出用戶名查詢', role: sess.role });
   }
   if (req.method !== 'POST') return json(res, 405, { error: 'method' });
   if (sherlockBusy) return json(res, 409, { error: 'busy' });
@@ -513,6 +530,13 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (url.startsWith('/__llm')) {
+    if (GATE) {
+      const s = currentSession(req);
+      if (!s) return json(res, 401, { error: 'login_required' });
+      if (!caps(s.role).operate) {
+        return json(res, 403, { error: 'forbidden', message: '只有操作者可以呼叫 LLM 代理', role: s.role });
+      }
+    }
     if (req.method !== 'POST') return json(res, 405, { error: { message: '只接受 POST' } });
     if (!LLM.key) {
       return json(res, 503, {

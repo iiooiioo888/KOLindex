@@ -4,6 +4,10 @@ infra/compose/.env
 /AGENTS.md
 node_modules
 .next
+__pycache__/
+*.pyc
+.pytest_cache/
+*.tsbuildinfo
 /CLAUDE.md
 /docs
 /kolindex
