@@ -36,6 +36,14 @@ function bytes(n){
   if(n>=1e3) return Math.round(n/1e3)+' KB';
   return n+' B';
 }
+function asUnix(v){
+  if(v==null||v==='') return 0;
+  if(typeof v==='number'&&isFinite(v)) return v>1e12?Math.round(v/1000):v;
+  var s=String(v).trim();
+  if(/^\d+(\.\d+)?$/.test(s)){ var n=Number(s); return n>1e12?Math.round(n/1000):n; }
+  var p=Date.parse(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}/.test(s)?s.replace(' ','T')+'Z':s);
+  return p&&!isNaN(p)?Math.round(p/1000):0;
+}
 function day(v){
   var t=Number(v);
   if(!t) return '—';
@@ -103,7 +111,10 @@ function load(reset){
 
 function loadWorks(reset){
   if(!A.sel) return Promise.resolve(false);
-  if(A.worksLoading){ A.wQueued=!!(reset||A.wQueued); return Promise.resolve(false); }
+  if(A.worksLoading){
+    A.wQueued=reset?true:(A.wQueued===true?true:'append');
+    return Promise.resolve(false);
+  }
   if(reset){ A.worksOffset=0; A.works=[]; }
   var tok=++A.wtok, who=A.sel;
   A.worksLoading=true; renderSide();
@@ -119,8 +130,22 @@ function loadWorks(reset){
     renderSide();
     return true;
   }).catch(function(){
-    if(tok!==A.wtok) return false;
-    A.worksLoading=false; renderSide(); return false;
+    if(tok!==A.wtok||who!==A.sel) return false;
+    A.worksLoading=false;
+    renderSide();
+    return false;
+  }).then(function(v){
+    if(tok!==A.wtok) return v;
+    var stuck=A.worksLoading;
+    A.worksLoading=false;
+    if(who!==A.sel) A.wQueued=true;
+    if(A.wQueued){
+      var again=A.wQueued===true;
+      A.wQueued=false;
+      return loadWorks(again);
+    }
+    if(stuck) renderSide();
+    return v;
   });
   return A.wPending;
 }
@@ -187,7 +212,7 @@ function platformHtml(){
     (pf.profile?'<a class="pp-link" href="'+esc(pf.profile)+'" target="_blank" rel="noopener noreferrer">抖音主頁<span aria-hidden="true"> ↗</span></a>':'')+
     '<div class="pp-stats">'+statHtml+'</div>'+
     '<div class="pp-line">平均每件：'+avgBits+'</div>'+
-    '<div class="pp-line">首發 '+esc(day((pf.first?Date.parse(pf.first)/1000:0)))+' · 最近 '+esc(day((pf.last?Date.parse(pf.last)/1000:0)))+'</div>'+
+    '<div class="pp-line">首發 '+esc(day(asUnix(pf.first)))+' · 最近 '+esc(day(asUnix(pf.last)))+'</div>'+
     (top?'<div class="pp-cap">互動最高</div><div class="pp-tops">'+top+'</div>':'')+
   '</div>';
 }

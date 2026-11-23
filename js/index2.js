@@ -2313,7 +2313,7 @@
     if (typing) return;
     if (e.code==='Space'&&!e.target.closest('button')){ e.preventDefault(); togglePause(); return; }
     if ((e.metaKey||e.ctrlKey)&&e.shiftKey&&e.key.toLowerCase()==='a'){ e.preventDefault(); toggleAuto(); return; }
-    if ((e.metaKey||e.ctrlKey)&&e.key>='1'&&e.key<='9'){ var kb=TOPICS[parseInt(e.key,10)-1]; if (kb){ e.preventDefault(); setTopic(kb); } return; }
+    if ((e.metaKey||e.ctrlKey)&&!e.shiftKey&&e.key>='1'&&e.key<='9'){ var kb=TOPICS[parseInt(e.key,10)-1]; if (kb){ e.preventDefault(); setTopic(kb); } return; }
     if ((e.metaKey||e.ctrlKey)&&e.shiftKey&&e.code==='Digit0'){ var kbr=TOPICS[10]; if (kbr){ e.preventDefault(); setTopic(kbr); } return; }
     if ((e.metaKey||e.ctrlKey)&&e.shiftKey&&e.code==='Digit1'){ var kbl=TOPICS[11]; if (kbl){ e.preventDefault(); setTopic(kbl); } return; }
     if ((e.metaKey||e.ctrlKey)&&e.key==='0'){ var kb0=TOPICS[9]; if (kb0){ e.preventDefault(); setTopic(kb0); } return; }
@@ -3731,7 +3731,7 @@
     version:'2026-11-21',
     /* 用 kolindex-api 的收集清單換掉 COLLECT 並重繪 */
     setCollect:function(items){
-      if (!Array.isArray(items)||!items.length) return false;
+      if (!Array.isArray(items)) return false;
       var STATE_MAP={inbox:'inbox',claimed:'queued',returned:'skip'};
       COLLECT=items.map(function(x){
         if (x.srcName) COLLECT_SRC[String(x.source)]={name:String(x.srcName),cat:String(x.srcCat||'—'),license:String(x.srcLicense||'—')};

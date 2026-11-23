@@ -69,8 +69,9 @@ function req(path,opt){
   });
 }
 
+function sameId(a,b){ return a!=null&&b!=null&&String(a)===String(b); }
 function listOf(){ return R.mode==='ai'?R.events:R.items; }
-function current(){ var rows=listOf(); for(var i=0;i<rows.length;i++) if(rows[i].id===R.sel) return rows[i]; return null; }
+function current(){ var rows=listOf(); for(var i=0;i<rows.length;i++) if(sameId(rows[i].id,R.sel)) return rows[i]; return null; }
 function firstOpen(){
   var rows=listOf();
   for(var i=0;i<rows.length;i++) if(rows[i].state==='open') return rows[i].id;
@@ -117,7 +118,7 @@ function load(force){
 
 /* ---------- 畫左邊清單 ---------- */
 function cardHtml(x){
-  var on=x.id===R.sel?'true':'false';
+  var on=sameId(x.id,R.sel)?'true':'false';
   if(R.mode==='ai'){
     var sev=Number(x.severity)||1;
     return '<button type="button" class="rv-item ai sev'+sev+' s-'+esc(x.state)+'" data-id="'+esc(x.id)+'" aria-pressed="'+on+'">'+
@@ -264,9 +265,9 @@ function select(id){ R.sel=id; renderList(); renderDetail(); }
 
 function nextAfter(id){
   var rows=listOf(), idx=-1, i;
-  for(i=0;i<rows.length;i++) if(rows[i].id===id) idx=i;
+  for(i=0;i<rows.length;i++) if(sameId(rows[i].id,id)) idx=i;
   for(i=idx+1;i<rows.length;i++) if(rows[i].state==='open') return rows[i].id;
-  for(i=0;i<rows.length;i++) if(rows[i].state==='open'&&rows[i].id!==id) return rows[i].id;
+  for(i=0;i<rows.length;i++) if(rows[i].state==='open'&&!sameId(rows[i].id,id)) return rows[i].id;
   return id;
 }
 
@@ -294,7 +295,7 @@ function finish(res,okMsg,failMsg){
 function sendVerdict(id,verdict,who,reason){
   if(R.busy) return Promise.resolve(false);
   R.busy=true; renderDetail();
-  return req('/api/review/'+id+'/verdict',{
+  return req('/api/review/'+encodeURIComponent(id)+'/verdict',{
     method:'POST',
     headers:{'content-type':'application/json'},
     body:JSON.stringify({verdict:verdict,actor:who||'local-operator',note:reason||''})
@@ -303,7 +304,7 @@ function sendVerdict(id,verdict,who,reason){
     var ok=finish(res,'已'+nice+' · 寫入 audit_log','裁決失敗');
     if(ok){
       for(var i=0;i<R.items.length;i++){
-        if(R.items[i].id===id){
+        if(sameId(R.items[i].id,id)){
           R.items[i].state=res.data.state;
           R.items[i].decided_by=who||'local-operator';
           R.items[i].decided_at=new Date().toISOString();
@@ -326,14 +327,14 @@ function sendVerdict(id,verdict,who,reason){
 function sendAck(id){
   if(R.busy) return Promise.resolve(false);
   R.busy=true; renderDetail();
-  return req('/api/ai/events/'+id+'/ack',{
+  return req('/api/ai/events/'+encodeURIComponent(id)+'/ack',{
     method:'POST',
     headers:{'content-type':'application/json'},
     body:JSON.stringify({actor:'local-operator'})
   }).then(function(res){
     var ok=finish(res,'已標記處理','處理失敗');
     if(ok){
-      for(var i=0;i<R.events.length;i++) if(R.events[i].id===id) R.events[i].state='acked';
+      for(var i=0;i<R.events.length;i++) if(sameId(R.events[i].id,id)) R.events[i].state='acked';
       loadAudit();
     }
     render();
@@ -378,7 +379,10 @@ function ack(){
 }
 
 function act(name){
-  if(R.mode==='ai') return ack();
+  if(R.mode==='ai'){
+    if(name!=='confirm'&&name!=='ack') return Promise.resolve(false);
+    return ack();
+  }
   var map={confirm:'confirm',reject:'reject',defer:'defer'};
   if(!map[name]) return Promise.resolve(false);
   return decide(name);
@@ -388,7 +392,7 @@ function move(delta){
   var rows=listOf();
   if(!rows.length) return;
   var idx=-1, i;
-  for(i=0;i<rows.length;i++) if(rows[i].id===R.sel) idx=i;
+  for(i=0;i<rows.length;i++) if(sameId(rows[i].id,R.sel)) idx=i;
   var n=(idx+delta+rows.length)%rows.length;
   select(rows[n].id);
 }
@@ -412,7 +416,7 @@ on($('reviewModes'),'click',function(e){
 on($('reviewList'),'click',function(e){
   var b=e.target&&e.target.closest?e.target.closest('[data-id]'):null;
   if(!b) return;
-  select(Number(b.getAttribute('data-id')));
+  select(b.getAttribute('data-id'));
 });
 
 on($('reviewDetail'),'click',function(e){
@@ -467,7 +471,7 @@ setStatus(R.loaded?'已連線':'待連線','or');
 window.KOLINDEX_REVIEW={
   version:'2026-11-21',
   state:function(){ return R; },
-  esc:esc, rel:rel, ts:ts, trim:trim,
+  esc:esc, rel:rel, ts:ts, trim:trim, sameId:sameId,
   req:req, load:load, loadAudit:loadAudit,
   render:render, renderList:renderList, renderDetail:renderDetail, renderLog:renderLog,
   cardHtml:cardHtml, detailHtml:detailHtml, gaugeHtml:gaugeHtml,

@@ -50,7 +50,9 @@
     return (dt.getMonth() + 1) + '/' + dt.getDate();
   }
   function hhmm(at) {
-    var t = Date.parse(String(at).replace(' ', 'T') + 'Z');
+    if (at == null || at === '') return '—';
+    var raw = String(at);
+    var t = typeof at === 'number' ? at : Date.parse(raw.replace(' ', 'T') + (/Z|[+-]\d\d:?\d\d$/.test(raw) ? '' : 'Z'));
     if (!isFinite(t)) return '—';
     var d = new Date(t);
     return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');

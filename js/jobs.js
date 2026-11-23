@@ -117,13 +117,15 @@ function load(force){
   if(J.loading) return Promise.resolve(J);
   if(J.loaded && !force && (Date.now()-J.at)<POLL_MS) return Promise.resolve(J);
   J.loading=true;
-  var url=BASE+'/api/jobs?state='+encodeURIComponent(J.filter)+'&limit='+LIMIT;
+  var wanted=J.filter;
+  var url=BASE+'/api/jobs?state='+encodeURIComponent(wanted)+'&limit='+LIMIT;
   return fetch(url,{headers:{accept:'application/json'},cache:'no-store'})
     .then(function(r){
       if(!r.ok) throw new Error('HTTP '+r.status);
       return r.json();
     })
     .then(function(d){
+      if(wanted!==J.filter) return J;
       J.items=(d&&Array.isArray(d.items))?d.items:[];
       J.counts=(d&&d.counts&&typeof d.counts==='object')?d.counts:{};
       J.total=Number(d&&d.total)||0;
@@ -132,12 +134,17 @@ function load(force){
       return J;
     })
     .catch(function(e){
+      if(wanted!==J.filter) return J;
       J.ok=false; J.error=String((e&&e.message)||e);
       if(!J.items.length) J.loaded=false;
       render();
       return J;
     })
-    .then(function(v){ J.loading=false; return v; });
+    .then(function(v){
+      J.loading=false;
+      if(wanted!==J.filter) return load(true);
+      return v;
+    });
 }
 
 function topicOf(){

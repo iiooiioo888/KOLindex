@@ -206,8 +206,6 @@
   function bind() {
     var runBtn = $('fleetRun');
     if (runBtn) runBtn.addEventListener('click', run);
-    var sel = $('fleetKind');
-    if (sel) sel.addEventListener('change', function () { run(); });
     var auto = $('fleetAuto');
     if (auto) auto.addEventListener('change', function () { setAuto(auto.checked); });
     var rf = $('fleetRefresh');

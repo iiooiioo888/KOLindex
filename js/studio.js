@@ -172,7 +172,7 @@
     var devLabel = { desktop: '桌面 1440', tablet: '平板 834', mobile: '手機 390' }[deviceEl.value];
     var messages = [
       { role: 'system', content: SYSTEM },
-      { role: 'user', content: '需求：' + prompt + '\n裝置：' + devLabel + '\n密度：' + densityEl.selectedOptions[0].textContent + '\n只輸出 JSON。' }
+      { role: 'user', content: '需求：' + prompt + '\n裝置：' + devLabel + '\n密度：' + ((densityEl.options && densityEl.selectedIndex >= 0 && densityEl.options[densityEl.selectedIndex]) ? densityEl.options[densityEl.selectedIndex].textContent : densityEl.value) + '\n只輸出 JSON。' }
     ];
     busy(true);
     var t0 = Date.now(), raw = '';

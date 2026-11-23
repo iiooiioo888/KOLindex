@@ -466,6 +466,7 @@ function downloadItem(){
   updateDownloadUi();
   post('/api/library/'+encodeURIComponent(det.id)+'/download',{force:!!det.fileCount}).then(function(res){
     D.busy=false;
+    updateDownloadUi();
     var d=res&&res.data||{};
     if(res.ok&&d.ok){
       toast(d.skipped?'本機已經有檔案':('已下載 '+d.files+' 個檔案 · '+bytes(d.bytes)));
@@ -991,7 +992,7 @@ function bind(){
     var row=e.target.closest('.lib-author');
     if(row){ setAuthor(row.getAttribute('data-author')); return; }
     var card=e.target.closest('.lib-card');
-    if(card) openViewer(card.getAttribute('data-id'));
+    if(card&&!card.classList.contains('is-skel')&&card.getAttribute('data-id')) openViewer(card.getAttribute('data-id'));
   });
 
   var seg=$('libMode');
