@@ -75,6 +75,18 @@ node tests/test-balance.mjs    # HTML 標籤開閉配對（少一個 </section> 
 
 Pages 是純靜態，沒有 `/api`：接後端的分頁會顯示示範資料，UI 生成也沒有代理可用。要看真實資料請在本機跑。
 
+### VPS
+
+映像只含這個網頁，含素材庫的 MyLike 同步面板。它會把 `/api/mylike` 轉到你另外準備的 API；映像裡沒有 Chrome、沒有登入態，開機也不會自己去同步抖音。
+
+在倉庫根目錄：
+
+```
+docker compose -f infra/compose/docker-compose.yml up -d --build
+```
+
+預設只聽 `127.0.0.1:5200`。前面再加你自己的反向代理。容器內 `KOL_PROD=1`：沒有自動重整、不列出目錄、預設不轉發 `/__llm`。沒有設定 `KOL_API` 時，同步按鈕會顯示後端未連線，頁面其餘部分用示範資料。
+
 ## 目錄
 
 ```

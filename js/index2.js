@@ -2572,7 +2572,8 @@
   var ACQ_OUT=[
     {name:'MediaCrawler',why:'沒有官方 Dockerfile，也沒有官方命名鏡像。網上流傳的容器方案是第三方自己寫的，不要照搬那些鏡像位址。'},
     {name:'feedgrab',why:'官方安裝是 pip install。沒有官方 Dockerfile，也沒有官方鏡像。'},
-    {name:'sociopath',why:'Go CLI／函式庫，官方沒有容器交付。搜尋結果裡的 Docker 是它能讀 Docker Hub 用戶資料，不是這個專案自己的容器方案。'}
+    {name:'sociopath',why:'Go CLI／函式庫，官方沒有容器交付。搜尋結果裡的 Docker 是它能讀 Docker Hub 用戶資料，不是這個專案自己的容器方案。'},
+    {name:'麦田 mdldm-maitian',why:'官方倉庫 CzzzzzzJ/mdldm-maitian，授權 MIT。根目錄沒有 Dockerfile，也沒有官方鏡像；安裝腳本是遠端管線，這頁不執行。它是操作者自己帳號的發布工作台，用專用 Chrome 填寫創作者後台，不能當採集 Connector，也不進主棧。'}
   ];
   function acqById(id){ return ACQ.filter(function(x){ return x.id===id; })[0]; }
 
@@ -2593,7 +2594,8 @@
     {id:'douyin-api',name:'Douyin_TikTok_Download_API',repo:'Evil0ctal/Douyin_TikTok_Download_API',license:'待核對',pin:'未鎖定',face:'Sandbox 候選',state:'candidate',use:'規格中的採集候選。版本、授權與摘要都要另建 ConnectorVersion 才可測試。'},
     {id:'douyin-dl',name:'douyin-dl',repo:'官方倉庫待核對',license:'待核對',pin:'未鎖定',face:'Sandbox 候選',state:'candidate',use:'名稱在候選清單。官方來源未核對前不給連結、不拉取。'},
     {id:'maigret',name:'Maigret',repo:'soxoj/maigret',license:'待核對',pin:'未鎖定',face:'Sandbox 候選',state:'candidate',use:'帳號發現候選。只許在隔離沙箱評估，不能直連主庫。'},
-    {id:'sherlock',name:'Sherlock',repo:'sherlock-project/sherlock',license:'待核對',pin:'未鎖定',face:'Sandbox 候選',state:'candidate',use:'帳號發現候選。候選不是能力，不能當已接入的 Connector。'}
+    {id:'sherlock',name:'Sherlock',repo:'sherlock-project/sherlock',license:'待核對',pin:'未鎖定',face:'Sandbox 候選',state:'candidate',use:'帳號發現候選。候選不是能力，不能當已接入的 Connector。'},
+    {id:'maitian',name:'麦田',repo:'CzzzzzzJ/mdldm-maitian',license:'MIT',pin:'未鎖定',face:'自有帳號發布台 · 未收錄',state:'candidate',load:'block',sample:true,use:'操作者自己的多平台發布與創作者後台數據工作台。沒有官方 Docker。這頁只登記來源，不啟動 Chrome、不登入、不發布、不採數。'}
   ];
   ACQ.forEach(function(a){
     if (a.lane==null) a.lane=2;
@@ -2615,7 +2617,7 @@
   });
   var ossFilter='all';
   var ossPick='skill-evaluator';
-  var OSS_BLOCK={scrapling:1,xhs:1,'douyin-api':1,'douyin-dl':1,maigret:1,sherlock:1};
+  var OSS_BLOCK={scrapling:1,xhs:1,'douyin-api':1,'douyin-dl':1,maigret:1,sherlock:1,maitian:1};
   function ossLoadOf(x){
     if (x.load) return x.load;
     if (x.state==='wired') return 'on';

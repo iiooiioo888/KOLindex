@@ -1,0 +1,22 @@
+name: kolindex
+
+services:
+  web:
+    build:
+      context: ../..
+      dockerfile: infra/compose/Dockerfile
+    image: kolindex-web:2026.11.23
+    ports:
+      - "127.0.0.1:5200:5200"
+    environment:
+      HOST: "0.0.0.0"
+      PORT: "5200"
+      KOL_PROD: "1"
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=16m
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    restart: unless-stopped

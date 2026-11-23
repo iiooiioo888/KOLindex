@@ -546,4 +546,130 @@
   #topic-library .lib-kpis{ grid-template-columns:repeat(2,minmax(0,1fr)); }
   #topic-library .lib-viewer{ padding:8px; gap:8px; }
 }
-\n\n/* ============================================================================\n   MyLike 同步面板 —— 素材庫右側抽屜（借用 MyLike 的登入態抖音頁補索引）\n   直角、髮絲線、無漸層，沿用工程藍圖語言。\n   ============================================================================ */\n\n#topic-library .mylike-btn{ display:inline-flex; align-items:center; gap:6px; }\n#topic-library .ml-dot{ width:6px; height:6px; background:var(--faint); display:inline-block; flex:0 0 auto; }\n#topic-library .ml-dot.on{ background:var(--green); }\n#topic-library .ml-dot.run{ background:var(--amber); }\n\n#topic-library .mylike-panel{\n  position:fixed; top:var(--topbar-h); right:0; bottom:var(--statusbar-h);\n  width:432px; max-width:100vw; display:flex; flex-direction:column;\n  background:var(--surface-2); border-left:1px solid var(--line);\n  box-shadow:var(--e-3); z-index:var(--z-toast);\n}\n#topic-library .mylike-panel[hidden]{ display:none; }\n\n#topic-library .ml-head{\n  display:flex; align-items:center; justify-content:space-between; gap:8px;\n  padding:var(--s-5) var(--s-6); border-bottom:1px solid var(--line);\n  background:var(--surface-3);\n}\n#topic-library .ml-title{ font-size:var(--fs-body); color:var(--text); }\n#topic-library .ml-title .en{\n  display:block; margin-top:2px; font-family:var(--mono); font-size:9px;\n  letter-spacing:.14em; text-transform:uppercase; color:var(--faint);\n}\n#topic-library .ml-head-right{ display:flex; align-items:center; gap:var(--s-4); }\n#topic-library .ml-x{\n  width:22px; height:22px; border:1px solid var(--line); background:transparent;\n  color:var(--dim); cursor:pointer; font-size:14px; line-height:1; border-radius:var(--r-ctl);\n}\n#topic-library .ml-x:hover{ color:var(--text); border-color:var(--line-strong); }\n\n#topic-library .ml-body{\n  flex:1; min-height:0; overflow:auto; padding:var(--s-6);\n  display:flex; flex-direction:column; gap:var(--s-7);\n}\n\n#topic-library .ml-cards{ display:grid; grid-template-columns:1fr 1fr; gap:var(--s-3); }\n#topic-library .ml-card{\n  display:flex; flex-direction:column; gap:1px; min-width:0;\n  padding:var(--s-3) var(--s-4); border:1px solid var(--line-soft); background:var(--surface);\n}\n#topic-library .mc-k{\n  font-family:var(--mono); font-size:9px; letter-spacing:.12em;\n  text-transform:uppercase; color:var(--faint);\n}\n#topic-library .ml-card b{\n  font-family:var(--mono); font-size:var(--fs-ui); font-weight:500; color:var(--text);\n  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;\n}\n#topic-library .ml-card b.ok{ color:var(--green); }\n#topic-library .ml-card b.bad{ color:var(--red); }\n#topic-library .mc-v{\n  font-size:10px; color:var(--faint); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;\n}\n\n#topic-library .ml-row{ display:flex; flex-wrap:wrap; align-items:center; gap:var(--s-3); }\n#topic-library .ml-row #mlPages{ max-width:132px; }\n\n#topic-library .ml-prog{ display:flex; flex-direction:column; gap:var(--s-2); }\n#topic-library .ml-prog[hidden]{ display:none; }\n#topic-library .ml-track{ height:4px; background:var(--track); border:1px solid var(--line-soft); }\n#topic-library .ml-bar{ display:block; height:100%; width:0; background:var(--cyan); transition:width var(--dur-3) var(--ease); }\n#topic-library .ml-prog-text{ font-family:var(--mono); font-size:10px; color:var(--dim); }\n\n#topic-library .ml-sec{ display:flex; flex-direction:column; gap:var(--s-3); }\n#topic-library .ml-sec-head{\n  display:flex; align-items:center; justify-content:space-between; gap:var(--s-4);\n  padding-bottom:var(--s-2); border-bottom:1px solid var(--line);\n  font-family:var(--mono); font-size:10px; letter-spacing:.12em;\n  text-transform:uppercase; color:var(--faint);\n}\n#topic-library .ml-dim{ color:var(--line-strong); letter-spacing:0; text-transform:none; margin-left:4px; }\n\n#topic-library .ml-folder{\n  display:grid; grid-template-columns:minmax(0,1fr) 52px 52px 46px auto;\n  align-items:center; gap:var(--s-3);\n  padding:var(--s-2) 0; border-bottom:1px solid var(--line-soft);\n}\n#topic-library .ml-folder:last-child{ border-bottom:0; }\n#topic-library .mf-name{\n  font-size:var(--fs-ui); color:var(--text);\n  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;\n}\n#topic-library .mf-n,#topic-library .mf-tag,#topic-library .mf-time{\n  font-family:var(--mono); font-size:10px; text-align:right; color:var(--dim);\n  font-variant-numeric:tabular-nums;\n}\n#topic-library .mf-tag{ color:var(--cyan); }\n#topic-library .mf-time{ color:var(--faint); }\n\n#topic-library .ml-run{\n  display:grid; grid-template-columns:minmax(0,1fr) 44px 44px 48px auto 40px;\n  align-items:center; gap:var(--s-3);\n  padding:var(--s-2) 0; border-bottom:1px solid var(--line-soft);\n  font-size:var(--fs-meta);\n}\n#topic-library .ml-run:last-child{ border-bottom:0; }\n#topic-library .mr-kind{ color:var(--text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }\n#topic-library .mr-num,#topic-library .mr-pages,#topic-library .mr-time{\n  font-family:var(--mono); font-size:10px; text-align:right; color:var(--dim);\n  font-variant-numeric:tabular-nums;\n}\n#topic-library .mr-num{ color:var(--green); }\n#topic-library .mr-num.dim{ color:var(--faint); }\n#topic-library .mr-pages{ color:var(--dim); }\n#topic-library .mr-time{ color:var(--faint); }\n#topic-library .mr-state{ font-size:10px; color:var(--amber); text-align:right; }\n#topic-library .mr-state.ok{ color:var(--green); }\n#topic-library .mr-state.bad{ color:var(--red); }\n\n#topic-library .ml-empty{ font-size:var(--fs-meta); color:var(--faint); padding:var(--s-3) 0; }\n#topic-library .ml-note{\n  font-size:var(--fs-meta); line-height:1.65; color:var(--faint);\n  border-top:1px solid var(--line-soft); padding-top:var(--s-4);\n}\n#topic-library .ml-note code{ font-family:var(--mono); font-size:10px; color:var(--dim); }\n\n@media (max-width:640px){\n  #topic-library .mylike-panel{ width:100%; }\n  #topic-library .ml-cards{ grid-template-columns:1fr; }\n}\n
+
+/* ============================================================================
+   MyLike 同步面板 —— 素材庫右側抽屜（借用 MyLike 的登入態抖音頁補索引）
+   直角、髮絲線、無漸層，沿用工程藍圖語言。
+   ============================================================================ */
+
+#topic-library .mylike-btn{ display:inline-flex; align-items:center; gap:6px; }
+#topic-library .ml-dot{ width:6px; height:6px; background:var(--faint); display:inline-block; flex:0 0 auto; }
+#topic-library .ml-dot.on{ background:var(--green); }
+#topic-library .ml-dot.run{ background:var(--amber); }
+
+#topic-library .mylike-panel{
+  position:fixed; top:var(--topbar-h); right:0; bottom:var(--statusbar-h);
+  width:432px; max-width:100vw; display:flex; flex-direction:column;
+  background:var(--surface-2); border-left:1px solid var(--line);
+  box-shadow:var(--e-3); z-index:var(--z-toast);
+}
+#topic-library .mylike-panel[hidden]{ display:none; }
+
+#topic-library .ml-head{
+  display:flex; align-items:center; justify-content:space-between; gap:8px;
+  padding:var(--s-5) var(--s-6); border-bottom:1px solid var(--line);
+  background:var(--surface-3);
+}
+#topic-library .ml-title{ font-size:var(--fs-body); color:var(--text); }
+#topic-library .ml-title .en{
+  display:block; margin-top:2px; font-family:var(--mono); font-size:9px;
+  letter-spacing:.14em; text-transform:uppercase; color:var(--faint);
+}
+#topic-library .ml-head-right{ display:flex; align-items:center; gap:var(--s-4); }
+#topic-library .ml-x{
+  width:22px; height:22px; border:1px solid var(--line); background:transparent;
+  color:var(--dim); cursor:pointer; font-size:14px; line-height:1; border-radius:var(--r-ctl);
+}
+#topic-library .ml-x:hover{ color:var(--text); border-color:var(--line-strong); }
+
+#topic-library .ml-body{
+  flex:1; min-height:0; overflow:auto; padding:var(--s-6);
+  display:flex; flex-direction:column; gap:var(--s-7);
+}
+
+#topic-library .ml-cards{ display:grid; grid-template-columns:1fr 1fr; gap:var(--s-3); }
+#topic-library .ml-card{
+  display:flex; flex-direction:column; gap:1px; min-width:0;
+  padding:var(--s-3) var(--s-4); border:1px solid var(--line-soft); background:var(--surface);
+}
+#topic-library .mc-k{
+  font-family:var(--mono); font-size:9px; letter-spacing:.12em;
+  text-transform:uppercase; color:var(--faint);
+}
+#topic-library .ml-card b{
+  font-family:var(--mono); font-size:var(--fs-ui); font-weight:500; color:var(--text);
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+#topic-library .ml-card b.ok{ color:var(--green); }
+#topic-library .ml-card b.bad{ color:var(--red); }
+#topic-library .mc-v{
+  font-size:10px; color:var(--faint); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+
+#topic-library .ml-row{ display:flex; flex-wrap:wrap; align-items:center; gap:var(--s-3); }
+#topic-library .ml-row #mlPages{ max-width:132px; }
+
+#topic-library .ml-prog{ display:flex; flex-direction:column; gap:var(--s-2); }
+#topic-library .ml-prog[hidden]{ display:none; }
+#topic-library .ml-track{ height:4px; background:var(--track); border:1px solid var(--line-soft); }
+#topic-library .ml-bar{ display:block; height:100%; width:0; background:var(--cyan); transition:width var(--dur-3) var(--ease); }
+#topic-library .ml-prog-text{ font-family:var(--mono); font-size:10px; color:var(--dim); }
+
+#topic-library .ml-sec{ display:flex; flex-direction:column; gap:var(--s-3); }
+#topic-library .ml-sec-head{
+  display:flex; align-items:center; justify-content:space-between; gap:var(--s-4);
+  padding-bottom:var(--s-2); border-bottom:1px solid var(--line);
+  font-family:var(--mono); font-size:10px; letter-spacing:.12em;
+  text-transform:uppercase; color:var(--faint);
+}
+#topic-library .ml-dim{ color:var(--line-strong); letter-spacing:0; text-transform:none; margin-left:4px; }
+
+#topic-library .ml-folder{
+  display:grid; grid-template-columns:minmax(0,1fr) 52px 52px 46px auto;
+  align-items:center; gap:var(--s-3);
+  padding:var(--s-2) 0; border-bottom:1px solid var(--line-soft);
+}
+#topic-library .ml-folder:last-child{ border-bottom:0; }
+#topic-library .mf-name{
+  font-size:var(--fs-ui); color:var(--text);
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+#topic-library .mf-n,#topic-library .mf-tag,#topic-library .mf-time{
+  font-family:var(--mono); font-size:10px; text-align:right; color:var(--dim);
+  font-variant-numeric:tabular-nums;
+}
+#topic-library .mf-tag{ color:var(--cyan); }
+#topic-library .mf-time{ color:var(--faint); }
+
+#topic-library .ml-run{
+  display:grid; grid-template-columns:minmax(0,1fr) 44px 44px 48px auto 40px;
+  align-items:center; gap:var(--s-3);
+  padding:var(--s-2) 0; border-bottom:1px solid var(--line-soft);
+  font-size:var(--fs-meta);
+}
+#topic-library .ml-run:last-child{ border-bottom:0; }
+#topic-library .mr-kind{ color:var(--text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+#topic-library .mr-num,#topic-library .mr-pages,#topic-library .mr-time{
+  font-family:var(--mono); font-size:10px; text-align:right; color:var(--dim);
+  font-variant-numeric:tabular-nums;
+}
+#topic-library .mr-num{ color:var(--green); }
+#topic-library .mr-num.dim{ color:var(--faint); }
+#topic-library .mr-pages{ color:var(--dim); }
+#topic-library .mr-time{ color:var(--faint); }
+#topic-library .mr-state{ font-size:10px; color:var(--amber); text-align:right; }
+#topic-library .mr-state.ok{ color:var(--green); }
+#topic-library .mr-state.bad{ color:var(--red); }
+
+#topic-library .ml-empty{ font-size:var(--fs-meta); color:var(--faint); padding:var(--s-3) 0; }
+#topic-library .ml-note{
+  font-size:var(--fs-meta); line-height:1.65; color:var(--faint);
+  border-top:1px solid var(--line-soft); padding-top:var(--s-4);
+}
+#topic-library .ml-note code{ font-family:var(--mono); font-size:10px; color:var(--dim); }
+
+@media (max-width:640px){
+  #topic-library .mylike-panel{ width:100%; }
+  #topic-library .ml-cards{ grid-template-columns:1fr; }
+}
+

@@ -8,7 +8,8 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = path.resolve(process.argv[2] ?? '.');
 const START_PORT = Number(process.argv[3] ?? process.env.PORT ?? 5200);
-const HOST = '127.0.0.1';
+const HOST = process.env.HOST || '127.0.0.1';
+const PROD = process.env.KOL_PROD === '1';
 const ENTRY = 'index2.html';
 
 // ── .env（可選）：放在這個腳本旁邊，KEY=VALUE，一行一組 ─────────────
@@ -190,6 +191,7 @@ const server = http.createServer(async (req, res) => {
   const url = req.url || '/';
 
   if (url.startsWith('/__reload')) {
+    if (PROD) return send(res, 404, 'text/plain; charset=utf-8', 'Not Found');
     res.writeHead(200, {
       'Content-Type': 'text/event-stream',
       'Cache-Control': 'no-store',
@@ -203,6 +205,10 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (url.startsWith('/api/')) return proxyApi(req, res);
+
+  if (url.startsWith('/__llm') && PROD && process.env.KOL_LLM !== '1') {
+    return send(res, 404, 'text/plain; charset=utf-8', 'Not Found');
+  }
 
   if (url.startsWith('/__llm/status')) {
     let baseHost = LLM.base;
@@ -264,6 +270,11 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (target.dir) {
+    if (PROD) {
+      return send(res, 404, 'text/html; charset=utf-8',
+        '<meta charset="utf-8"><body style="font:14px ui-monospace,monospace;background:#0b0d0f;color:#e6e8ea;padding:40px">' +
+        '<h1 style="color:#f0a500;margin:0 0 8px">404</h1><p><a style="color:#4aa8ff" href="/">回到首頁</a></p>');
+    }
     let entries = [];
     try { entries = await fsp.readdir(target.dir, { withFileTypes: true }); } catch { /* ignore */ }
     const list = entries
@@ -284,9 +295,11 @@ const server = http.createServer(async (req, res) => {
 
   if (ext === '.html') {
     let html = await fsp.readFile(target.file, 'utf8');
-    html = html.includes('</body>')
-      ? html.replace(/<\/body>/i, LIVE + '</body>')
-      : html + LIVE;
+    if (!PROD) {
+      html = html.includes('</body>')
+        ? html.replace(/<\/body>/i, LIVE + '</body>')
+        : html + LIVE;
+    }
     return send(res, 200, type, html);
   }
 
@@ -301,7 +314,7 @@ const server = http.createServer(async (req, res) => {
 
 function listen(port, attempt = 0) {
   server.once('error', (err) => {
-    if (err.code === 'EADDRINUSE' && attempt < 20) {
+    if (!PROD && err.code === 'EADDRINUSE' && attempt < 20) {
       listen(port + 1, attempt + 1);
     } else {
       console.error('[server] failed:', err.message);
@@ -313,12 +326,13 @@ function listen(port, attempt = 0) {
     console.log('  KOLindex dev server');
     console.log('  root : ' + ROOT);
     console.log('  url  : http://' + HOST + ':' + port + '/');
-    console.log('  live reload: on (edit index2.html / js / css, page refreshes itself)');
+    console.log('  mode : ' + (PROD ? 'prod（無自動重整、無關目錄、預設不轉發 LLM）' : 'dev'));
+    console.log('  live reload: ' + (PROD ? 'off' : 'on (edit index2.html / js / css, page refreshes itself)'));
     console.log('  llm        : ' + (LLM.key ? LLM.model + ' @ ' + LLM.base + ' → POST /__llm' : 'disabled (no LLM_API_KEY in .env)'));
     console.log('  api        : ' + API_BASE + ' → GET/POST /api/*  (沒跑就回 503，頁面自動退回示範資料)');
     console.log('  stop : Ctrl+C');
     console.log('');
-    watch();
+    if (!PROD) watch();
   });
 }
 
