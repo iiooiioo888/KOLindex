@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-Hant">
+<html lang="zh-Hant" class="need-login">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -20,8 +20,32 @@
 <link rel="stylesheet" href="css/library.css?v=20261123e">
 <link rel="stylesheet" href="css/person.css?v=20261122">
 <link rel="stylesheet" href="css/seats.css?v=20261123">
+<link rel="stylesheet" href="css/login.css?v=20261123">
 </head>
 <body data-topic="queue">
+
+<div class="login-gate" id="loginGate">
+  <form class="login-card" id="loginForm" autocomplete="on">
+    <div class="login-kicker">靈境 · Linkin</div>
+    <h1>進入工作台</h1>
+    <p class="login-lead">先核對操作者，通過後才打開分頁。通行碼只送到這台伺服器，不寫進瀏覽器儲存。</p>
+    <label for="loginName">操作者
+      <input id="loginName" name="username" autocomplete="username" required maxlength="40" placeholder="例如 AD">
+    </label>
+    <label for="loginPass">通行碼
+      <input id="loginPass" name="password" type="password" autocomplete="current-password" maxlength="200">
+    </label>
+    <label for="loginRole">角色
+      <select id="loginRole" name="role">
+        <option value="operator">操作者</option>
+        <option value="reviewer">審核</option>
+        <option value="viewer">只讀</option>
+      </select>
+    </label>
+    <p class="login-err" id="loginErr" hidden></p>
+    <button type="submit" class="mini-btn primary" id="loginSubmit">進入</button>
+  </form>
+</div>
 
 <svg class="sprite" aria-hidden="true">
   <symbol id="i-opc" viewBox="0 0 16 16"><rect x="4" y="4" width="8" height="8" rx="1"/><path d="M8 1.2V4M8 12v2.8M1.2 8H4M12 8h2.8M4 4L2 2M12 4l2-2M4 12l-2 2M12 12l2 2"/></symbol>
@@ -69,7 +93,7 @@
     <button class="icon-btn" id="pauseBtn" aria-pressed="false" title="暫停即時渲染">⏸</button>
     <div class="live" id="liveTag"><span class="dot"></span>LIVE</div>
     <div class="clock" id="clock">--:--:--</div>
-    <div class="avatar" title="操作者 AD">AD</div>
+    <button type="button" class="avatar" id="opAvatar" title="登出">AD</button>
   </div>
 </header>
 
@@ -1318,6 +1342,7 @@
 
 <script defer src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js" integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r" crossorigin="anonymous"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/tippy.js@6.3.7/dist/tippy.umd.min.js" integrity="sha384-pjtv4LzKGI/lGxchW/wd/upB/HsGOP/Q2iPYyDU8qo2bp4JLbN34hQkdAArvidZX" crossorigin="anonymous"></script>
+<script defer src="js/login.js?v=20261123"></script>
 <script defer src="js/index2.js?v=20261123d"></script>
 <script defer src="js/wireframe.js?v=20261121"></script>
 <script defer src="js/studio.js?v=20261123c"></script>

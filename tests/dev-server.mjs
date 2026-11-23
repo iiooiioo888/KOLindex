@@ -4,6 +4,7 @@ import http from 'node:http';
 import fs from 'node:fs';
 import fsp from 'node:fs/promises';
 import path from 'node:path';
+import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = path.resolve(process.argv[2] ?? '.');
@@ -36,8 +37,86 @@ const LLM = {
 
 // ── 後端 API（kolindex-api）：/api/* 反向代理，同源就沒有 CORS 問題 ────
 const API_BASE = (process.env.KOL_API || 'http://127.0.0.1:5210').replace(/\/+$/, '');
+const GATE = process.env.KOL_GATE || '';
+const SESSION_MS = 12 * 60 * 60 * 1000;
+const sessions = new Map();
+const ROLES = new Set(['operator', 'reviewer', 'viewer']);
+
+function sameSecret(a, b) {
+  const ha = crypto.createHash('sha256').update(String(a), 'utf8').digest();
+  const hb = crypto.createHash('sha256').update(String(b), 'utf8').digest();
+  return crypto.timingSafeEqual(ha, hb);
+}
+
+function readCookies(req) {
+  const out = {};
+  String(req.headers.cookie || '').split(';').forEach((part) => {
+    const i = part.indexOf('=');
+    if (i < 0) return;
+    const k = part.slice(0, i).trim();
+    try { out[k] = decodeURIComponent(part.slice(i + 1).trim()); }
+    catch { out[k] = ''; }
+  });
+  return out;
+}
+
+function currentSession(req) {
+  if (!GATE) return null;
+  const token = readCookies(req).kol_session;
+  if (!token) return null;
+  const row = sessions.get(token);
+  if (!row) return null;
+  if (row.exp < Date.now()) { sessions.delete(token); return null; }
+  return row;
+}
+
+function setSessionCookie(res, token) {
+  res.setHeader('Set-Cookie', [
+    'kol_session=' + token,
+    'HttpOnly',
+    'SameSite=Lax',
+    'Path=/',
+    'Max-Age=' + Math.floor(SESSION_MS / 1000),
+  ].join('; '));
+}
+
+function clearSessionCookie(res) {
+  res.setHeader('Set-Cookie', 'kol_session=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0');
+}
+
+function handleAuth(req, res, url) {
+  if (url.startsWith('/__auth/session')) {
+    const row = currentSession(req);
+    if (row) return json(res, 200, { ok: true, gate: true, name: row.name, role: row.role });
+    return json(res, 200, { ok: false, gate: Boolean(GATE) });
+  }
+  if (url.startsWith('/__auth/logout')) {
+    const token = readCookies(req).kol_session;
+    if (token) sessions.delete(token);
+    clearSessionCookie(res);
+    return json(res, 200, { ok: true });
+  }
+  if (!url.startsWith('/__auth/login')) return json(res, 404, { error: 'not_found' });
+  if (req.method !== 'POST') return json(res, 405, { error: 'method' });
+  return readBody(req, 4096).then((raw) => {
+    let body = {};
+    try { body = raw ? JSON.parse(raw) : {}; } catch { body = {}; }
+    const name = String(body.name || '').trim().slice(0, 40);
+    const role = ROLES.has(body.role) ? body.role : 'operator';
+    if (!name || /[\u0000-\u001f]/.test(name)) return json(res, 400, { error: 'name' });
+    if (!GATE) return json(res, 200, { ok: true, gate: false, mode: 'local', name, role });
+    if (!sameSecret(body.password || '', GATE)) return json(res, 401, { error: 'bad_pass' });
+    const token = crypto.randomBytes(32).toString('hex');
+    sessions.set(token, { name, role, exp: Date.now() + SESSION_MS });
+    setSessionCookie(res, token);
+    return json(res, 200, { ok: true, gate: true, mode: 'server', name, role });
+  }).catch((err) => json(res, 400, { error: err.message }));
+}
 
 async function proxyApi(req, res) {
+  if (GATE && !currentSession(req)) {
+    return json(res, 401, { error: 'login_required' });
+  }
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), 8000);
   try {
@@ -203,6 +282,8 @@ const server = http.createServer(async (req, res) => {
     req.on('close', () => { clearInterval(ping); clients.delete(res); });
     return;
   }
+
+  if (url.startsWith('/__auth')) return handleAuth(req, res, url);
 
   if (url.startsWith('/api/')) return proxyApi(req, res);
 
