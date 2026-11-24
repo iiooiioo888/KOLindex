@@ -13,13 +13,16 @@ var LIMIT=100;
 var STATE={
   queued:{label:'待跑',tone:''},
   running:{label:'跑中',tone:'amber'},
-  backoff:{label:'退避',tone:'orange'},
-  blocked:{label:'受阻',tone:'violet'},
+  waiting_review:{label:'待審',tone:'orange'},
+  stopped:{label:'已停',tone:'violet'},
+  timeout:{label:'逾時',tone:'orange'},
+  cancelled:{label:'已取消',tone:''},
   failed:{label:'失敗',tone:'red'},
   succeeded:{label:'完成',tone:'green'}
 };
-var ORDER=['queued','running','backoff','blocked','failed','succeeded'];
-var FILTER_LABEL={all:'全部',queued:'待跑',running:'跑中',backoff:'退避',blocked:'受阻',failed:'失敗',succeeded:'完成'};
+var LEGACY={backoff:'timeout',blocked:'stopped'};
+var ORDER=['queued','running','waiting_review','stopped','timeout','cancelled','failed','succeeded'];
+var FILTER_LABEL={all:'全部',queued:'待跑',running:'跑中',waiting_review:'待審',stopped:'已停',timeout:'逾時',cancelled:'已取消',failed:'失敗',succeeded:'完成'};
 
 var J={ok:false,loaded:false,loading:false,active:false,filter:'all',items:[],counts:{},total:0,error:'',at:0};
 
@@ -56,7 +59,9 @@ function statHtml(label,n,tone){
   return '<span class="jobs-kv '+(tone||'')+'">'+esc(label)+' <b>'+esc(n)+'</b></span>';
 }
 function rowHtml(j){
-  var st=STATE[j&&j.state]||{label:(j&&j.state)||'—',tone:''};
+  var raw=(j&&j.state)||'';
+  var key=STATE[raw]?raw:(LEGACY[raw]||'');
+  var st=STATE[key]||{label:'—',tone:''};
   var who=(j&&j.handle)?('<span class="mono">@'+esc(j.handle)+'</span> <span class="dim">'+esc(j.platform||'')+'</span>'):'<span class="dim">—</span>';
   var when=(j&&(j.finished_at||j.started_at))?(rel(j.finished_at||j.started_at)+'<span class="dim">'+(j.finished_at?' 完成':' 起')+'</span>'):'<span class="dim">—</span>';
   return '<tr class="jobs-row" data-state="'+esc(j&&j.state)+'">'+
@@ -88,7 +93,9 @@ function render(){
     var parts=[statHtml('全部',total,'')];
     ORDER.forEach(function(k){
       var n=countOf(k);
-      if(n) parts.push(statHtml(STATE[k].label,n,STATE[k].tone==='amber'?'warn':(k==='failed'||k==='blocked'?'bad':'')));
+      var key=STATE[k]?k:(LEGACY[k]||'');
+      if(!STATE[key]) return;
+      if(n) parts.push(statHtml(STATE[key].label,n,STATE[key].tone==='amber'?'warn':(key==='failed'?'bad':'')));
     });
     sum.innerHTML=parts.join('');
   }
@@ -118,12 +125,13 @@ function load(force){
   if(J.loaded && !force && (Date.now()-J.at)<POLL_MS) return Promise.resolve(J);
   J.loading=true;
   var wanted=J.filter;
-  var url=BASE+'/api/jobs?state='+encodeURIComponent(wanted)+'&limit='+LIMIT;
-  return fetch(url,{headers:{accept:'application/json'},cache:'no-store'})
-    .then(function(r){
+  var url='/api/jobs?state='+encodeURIComponent(wanted)+'&limit='+LIMIT;
+  var call=window.KOL&&window.KOL.request;
+  var pending=call?call(url):fetch(url,{headers:{accept:'application/json'},cache:'no-store'}).then(function(r){
       if(!r.ok) throw new Error('HTTP '+r.status);
       return r.json();
-    })
+    });
+  return pending
     .then(function(d){
       if(wanted!==J.filter) return J;
       J.items=(d&&Array.isArray(d.items))?d.items:[];
@@ -159,6 +167,11 @@ function maybeLoad(){
 
 function onApi(detail){
   var d=detail||{};
+  if(!d.ok&&d.reason){
+    J.items=[]; J.counts={}; J.total=0; J.ok=false; J.loaded=false; J.error=d.reason;
+    render();
+    return;
+  }
   if(d.ok){
     if(!J.loaded) load();
     else if(J.active && Date.now()-J.at>POLL_MS*1.5) load(true);

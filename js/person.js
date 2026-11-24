@@ -54,7 +54,8 @@ function day(v){
 function mediaUrl(p){
   if(!p) return '';
   if(/^https?:/i.test(p)) return p;
-  return 'http://127.0.0.1:5400/'+String(p).replace(/^\/+/,'');
+  var base=(typeof window!=='undefined'&&window.KOLINDEX_MEDIA)||'/media';
+  return String(base).replace(/\/$/,'')+'/'+String(p).replace(/^\/+/,'');
 }
 function displayAuthor(a){ if(!a) return '未命名'; return a==='unnamed'?'未命名':a; }
 function on(el,ev,fn){ if(el&&el.addEventListener) el.addEventListener(ev,fn); }
@@ -65,6 +66,8 @@ function setStatus(text,tone){
 
 /* ---------- 取資料 ---------- */
 function req(path){
+  var call=window.KOL&&window.KOL.requestStatus;
+  if(call) return call(path);
   return fetch(BASE+path,{headers:{accept:'application/json'}}).then(function(r){
     return r.text().then(function(t){
       var j={};
@@ -235,6 +238,14 @@ function monthsHtml(){
 /* ---------- 畫面 ---------- */
 function renderKpis(){
   var box=$('pnKpis'); if(!box) return;
+  if(!A.loaded){
+    box.innerHTML=['人物','已命名','純數字帳號','未命名作品'].map(function(name){
+      return '<div class="pn-kpi"><span>'+esc(name)+'</span><b>—</b></div>';
+    }).join('');
+    var cnt0=$('pnCount'); if(cnt0) cnt0.textContent='—';
+    var bd0=$('navPersonBd'); if(bd0) bd0.textContent='—';
+    return;
+  }
   var c=A.counts||{};
   var cells=[
     ['人物', nfmt(c.authors||A.total)],
@@ -453,6 +464,12 @@ function bind(){
 
   window.addEventListener('kolindex:api',function(e){
     var d=(e&&e.detail)||{};
+    if(!d.ok&&d.reason){
+      A.items=[]; A.works=[]; A.months=[]; A.counts=null; A.total=0; A.ok=false; A.loaded=false;
+      renderAll();
+      setStatus(d.reason==='401'?'需要登入':'來源錯誤','or');
+      return;
+    }
     if(d.ok&&!A.loaded) load(true);
     else if(d.ok&&A.active&&Date.now()-A.at>POLL_MS) load(true);
   });

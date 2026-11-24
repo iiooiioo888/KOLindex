@@ -1,4 +1,5 @@
 /.cursor
+/data/
 .env
 infra/compose/.env
 /AGENTS.md
@@ -9,5 +10,11 @@ __pycache__/
 .pytest_cache/
 *.tsbuildinfo
 /CLAUDE.md
-/docs
+/docs/**
+!/docs/adr/
+!/docs/adr/**
+secrets/**
+!secrets/api-tokens.example.yaml
+*.sops.yaml
+!/.sops.yaml
 /kolindex

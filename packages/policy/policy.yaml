@@ -1,0 +1,32 @@
+version: "2026-11-24.1"
+max_failures: 2
+relation_whitelist:
+  - mention
+  - collection
+  - citation
+  - same_stage
+rate_limit_per_minute: 30
+kill_switch: false
+label_whitelist:
+  - text
+  - object
+  - logo
+  - scene
+  - safety
+time_fact_sources:
+  - public_post
+time_candidate_sources:
+  - file_time
+place_fact_sources:
+  - public_post
+place_blocked_sources:
+  - file_place
+task_states:
+  - queued
+  - running
+  - succeeded
+  - failed
+  - stopped
+  - timeout
+  - cancelled
+  - waiting_review

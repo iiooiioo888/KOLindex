@@ -62,6 +62,8 @@ function setCounts(){
 
 /* ---------- 取資料 ---------- */
 function req(path,opt){
+  var call=window.KOL&&window.KOL.requestStatus;
+  if(call) return call(BASE+path,opt);
   return fetch(BASE+path,opt).then(function(r){
     return r.text().then(function(t){
       var j={};
@@ -438,6 +440,11 @@ function onTopic(topic){
 
 on(window,'kolindex:api',function(e){
   var d=(e&&e.detail)||{};
+  if(!d.ok&&d.reason){
+    R.items=[]; R.events=[]; R.audit=[]; R.counts=null; R.loaded=false; R.ok=false;
+    render();
+    return;
+  }
   if(!d.ok) return;
   if(R.active){
     if(!R.loaded) load();

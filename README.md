@@ -2,9 +2,9 @@
 
 [![pages](https://github.com/iiooiioo888/KOLindex/actions/workflows/pages.yml/badge.svg)](https://github.com/iiooiioo888/KOLindex/actions/workflows/pages.yml)
 
-網紅索引與監控平台的介面原型，照《KOL-Index 項目計劃書／架構書／驗收規格 v2.2》做的「自動認領 × LLM 空檔排程」執行時畫面。純靜態：HTML + CSS + 原生 JS，沒有框架、沒有建置步驟、沒有 npm 依賴。
+網紅索引與監控平台的介面原型。時間表、技術表、技術目標和格式要求在 [PROJECT.md](PROJECT.md)。畫面語意對齊較早的 v2.2；開發約束以 KOL-SPEC-001 v4.1 為準。現用畫面是 HTML + CSS + 原生 JS。`apps/web` 另有一套 Next.js 骨架，還沒取代這個畫面。
 
-> 本原型對齊規格 **v2.2 的 UX 語意**；資料模型與治理模型以 **v4.0** 為準（治理層、31 張表、Sandbox／Egress 分離、F14／F15）。原型尚未實作治理層，落差列在 ROADMAP。
+> 畫面語意對齊 v2.2。開發約束以 KOL-SPEC-001 v4.1 為準。治理層還沒做，落差列在 ROADMAP。時間表和技術表在 PROJECT.md。
 
 12 個分頁各自是一塊真實介面，其中七塊（任務收集、席位執行的 worker pool、人物檔案、審核台、基礎設施的連接器與排程工作、素材庫）加上右欄監控面板，接本機的 `kolindex-api`（SQLite）真實資料；其餘分頁仍是示範資料。
 
@@ -79,20 +79,66 @@ node tests/test-caps.mjs       # 前端依 caps 收起按鈕：靜態與動態�
 
 Pages 是純靜態，沒有 `/api`：接後端的分頁會顯示示範資料，UI 生成也沒有代理可用。要看真實資料請在本機跑。
 
-### VPS
+### 本機 NAS
 
-映像只含這個網頁，含素材庫的 MyLike 同步面板。它會把 `/api/mylike` 轉到你另外準備的 API；映像裡沒有 Chrome、沒有登入態，開機也不會自己去同步抖音。
-
-在倉庫根目錄：
+這組服務要在家裡的 NAS 上跑，不靠 GitHub Pages。預設埠只聽 `127.0.0.1`，可用 `.env` 的 `*_BIND` 改。資料卷落在 NAS 的磁碟上。
 
 ```
 copy infra\compose\.env.example infra\compose\.env
 docker compose -f infra/compose/docker-compose.yml up -d --build
 ```
 
-`.env` 只留在本機。Compose 的網頁服務是 `apps/web`（Next.js 16）。首頁在伺服器上詢問 PostgreSQL、Redis、MinIO、Meilisearch；`GET /health` 回這四項，`GET /ready` 在已設定的項目都有回應時回 200。十二個分頁的靜態原型仍可用 `node tests/dev-server.mjs` 開。資料庫、快取、物件儲存和搜尋只在內部網路互通，埠綁在 `127.0.0.1`。這個映像不建業務表。
+`.env` 只留在 NAS 上。Compose 的網頁服務用 `infra/compose/Dockerfile` 提供現用的 `index2.html`，映像標籤是 `kolindex-site:2026.11.24`。`apps/web` 的 Next.js 映像不在這組服務裡。第一版拉起網頁、PostgreSQL 16.16（pgvector 0.8.7）和 Meilisearch v1.57.0。PostgreSQL 是真相，Meilisearch 是衍生索引，重建用 `node scripts/rebuild-meilisearch.mjs`。Redis 與 MinIO 不在這個檔裡，定義留在 `docker-compose.later.yml`，預設不啟動。媒體放 `KOL_NAS_ROOT`。初始化 SQL 是 `infra/compose/postgres/init/001-schema.sql`，只在空資料目錄第一次啟動時執行。MongoDB 不在這組服務裡。
 
-預設頁面聽 `127.0.0.1:5200`。網頁容器裡面聽 `0.0.0.0`，所以必須在 `.env` 設 `KOL_GATE`，否則行程拒絕啟動。角色用 `KOL_ROLE`（預設 `viewer`），名字用 `KOL_OPERATOR`；表單不能自選角色。前面再加你自己的反向代理。容器內 `KOL_PROD=1`：沒有自動重整、不列出目錄、預設不轉發 `/__llm`。沒有設定 `KOL_API` 時，收集與告警顯示未連線並清掉示範卡片，不把假資料留在畫面上。收集輪詢 60 秒，右欄 `rail.js` 是 15 秒。Sherlock 不在這組服務裡；呼叫它要在裝了 Docker 的機器上跑 `node tests/dev-server.mjs`。
+可在 `.env` 調整的項目：時區 `TZ`、業務 API 位址 `KOL_API`（留空則容器經 `host.docker.internal:5210` 找宿主機上的 API）、各服務的監聽位址（`WEB_BIND` 等，預設 `127.0.0.1`）、記憶體與 CPU 上限。上限是容器配額，不是這台機器的測量結果。日誌每個容器最多 3 個 10MB 檔。網頁容器把 `KOL_DOCKER`、`KOL_SHERLOCK`、`KOL_LLM` 固定為 `0`，也不掛 Docker socket。PostgreSQL 的資料目錄要讓容器內的 postgres 使用者可寫。慢查詢日誌由 `PG_LOG_MIN_DURATION_MS` 打開，預設 `0` 是為了開始記錄，不是已測量的門檻。兩週數據出來之前，不依這個日誌加索引。
+
+控制面另開一個行程，不放進網頁容器：
+
+```
+set KOL_TOKEN_VIEWER=...
+set KOL_TOKEN_REVIEWER=...
+set KOL_TOKEN_OPERATOR=...
+set KOL_DATABASE_URL=postgresql://kolindex:...@127.0.0.1:5432/kolindex
+python apps/control/app.py
+```
+
+沒有 `KOL_DATABASE_URL` 時，它把 SQLite 放在 `KOL_NAS_ROOT/buffer/`，只當 intake buffer。`KOL_PROD=1` 時拒絕這樣啟動。寫入要帶 `Authorization: Bearer`。viewer 不能寫，reviewer 只能 `POST /decisions`，operator 可以打四個寫入端點。秘密檔用 `.sops.yaml` 的規則加密，明文範例在 `secrets/api-tokens.example.yaml`，不能拿來登入。age 公鑰還沒寫進 `.sops.yaml`，所以現在還沒有加密後的秘密檔。
+
+上線前先核對下面五項。判定和現況寫在 [PROJECT.md](PROJECT.md) 第 7 節。
+
+| # | 檢查 |
+|---|---|
+| 1 | PostgreSQL、Meilisearch、Sherlock 的映像要有這台 NAS 的 CPU 架構。家用 NAS 常是 ARM。Redis 與 MinIO 不在第一版 |
+| 2 | 這個階段用 Docker。規格裡的 rootless Podman 延後，等確認 NAS 的容器工具支援之後再改 |
+| 3 | 若用 DDNS、QuickConnect 或 Tailscale 從外面看，先核對業務 API 自己有沒有認證。`KOL_GATE` 只擋這個網頁行程 |
+| 4 | 媒體目錄和知識庫只給跑這個站的帳號讀，不開放給 NAS 上的其他家庭帳號 |
+| 5 | 磁碟陣列不是備份。異地備份和還原演練仍待做 |
+
+容器監測和開關不在網頁容器裡做，也不掛 Docker socket。在 NAS 上另開這個站的行程，並設 `KOL_DOCKER=1`：
+
+```
+set KOL_DOCKER=1
+node tests/dev-server.mjs . 5200
+```
+
+基礎設施頁會列出 web、postgres、redis、minio、meilisearch。只有伺服器角色是操作者時，才能啟動、重啟或停止這五個服務。
+
+預設頁面聽 `127.0.0.1:5200`。網頁容器裡面聽 `0.0.0.0`，所以必須在 `.env` 設 `KOL_GATE`，否則行程拒絕啟動。角色用 `KOL_ROLE`（預設 `viewer`），名字用 `KOL_OPERATOR`；表單不能自選角色。前面再加你自己的反向代理。容器內 `KOL_PROD=1`：沒有自動重整、不列出目錄、預設不轉發 `/__llm`。沒有設定 `KOL_API` 時，收集與告警顯示未連線並清掉示範卡片，不把假資料留在畫面上。收集輪詢 60 秒，右欄 `rail.js` 是 15 秒。Sherlock 不在主 Compose 裡。收集頁要呼叫它，仍是在裝了 Docker 的機器上跑 `node tests/dev-server.mjs`，並設 `KOL_SHERLOCK=1`。
+
+開源候選另外放在 `infra/compose/docker-compose.oss.yml`，專案名 `kolindex-oss`，profile 是 `oss`。`docker compose -f infra/compose/docker-compose.yml up -d` 不會啟動它們，基礎設施頁的開關也不包含它們。它們使用自己的 `oss` 網路，不加入主檔的 `data` 網路，也不掛 Docker socket。埠只綁 `127.0.0.1`。工作目錄在 `KOL_NAS_ROOT/oss/`，不掛媒體庫，也不讀 `.env` 裡的資料庫密碼。
+
+| 服務 | 映像 | 這份檔實際包含的 |
+|---|---|---|
+| `sherlock` | `sherlock/sherlock` 0.16.0 的固定摘要 | 一次性查詢。收集頁仍走原本的 `docker run` |
+| `maigret` | `soxoj/maigret` 標籤 `327c2bc` 的固定摘要 | CLI。不開它的 Web UI |
+| `xhs-downloader` | `joeanamier/xhs-downloader` 2.8 的固定摘要 | 官方映像的預設命令。工作目錄是 `oss/xhs` |
+| `douyin-tiktok-api` | `evil0ctal/douyin_tiktok_download_api` 5.1.13 的固定摘要 | 只有 API。不接本專案的 PostgreSQL、Redis、MinIO。不含上游的 browser、downloader、transcriber |
+
+douyin-dl 沒有可釘住的 Docker Hub 映像，麦田沒有官方映像，兩份 Compose 都沒有它們。摘要是 2026-11-24 向 Docker Hub 讀到的 manifest list。這台開發機沒有 Docker，所以這些服務還沒有在這裡啟動過。
+
+```
+docker compose --env-file infra/compose/.env -f infra/compose/docker-compose.oss.yml --profile oss run --rm sherlock --help
+```
 
 打開站會先看到登入頁。沒有 `KOL_GATE` 時，填操作者就能進入，通行碼不核對。要擋住未登入的人和 `/api`，啟動時加上 `KOL_GATE`（只放在伺服器環境變數，不要寫進倉庫）。登入後右上角名字可點，用來登出。
 

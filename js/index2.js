@@ -10,8 +10,9 @@
   function $$(sel,root){ return Array.prototype.slice.call((root||document).querySelectorAll(sel)); }
   function fmtTime(d){ var p=function(n){return String(n).padStart(2,'0');}; return p(d.getHours())+':'+p(d.getMinutes())+':'+p(d.getSeconds()); }
   var tickerJobs=[];
+  var DEMO=document.documentElement.getAttribute('data-demo')==='1';
   function every(ms, fn, opt){
-    tickerJobs.push({ms:ms, acc:0, fn:fn, clock:!!(opt&&opt.clock)});
+    tickerJobs.push({ms:ms, acc:0, fn:fn, clock:!!(opt&&opt.clock), demo:!(opt&&(opt.clock||opt.live))});
   }
   var tickerStamp=0;
   function pumpTicker(now){
@@ -27,6 +28,7 @@
         job.acc+=dt;
         if (job.acc<job.ms) continue;
         job.acc%=job.ms;
+        if (job.demo && !DEMO) continue;
         if (paused && !job.clock) continue;
         try { job.fn(); }
         catch (err) { if (window.console) console.error(err); }
@@ -39,65 +41,8 @@
     if (!document.hidden) tickClock();
   });
   /* ================= FIXTURES ================= */
-  var FIXTURES={
-    tasks:[
-      {id:'Q-121',title:'V-22 閥開度調整（62%→54%）並複核回饋',pri:'p0',priLabel:'P0',lane:'queue',role:'工業席',
-       sensors:['TXT-SEE','CTX-WIN'],tags:[{t:'處理',c:'t-proc'},{t:'需 工業席',c:''},{t:'行動候選',c:''}],
-       meta:'T-2841·M3 · <b>SLA 4m22s/6m</b> · 保留槽位可搶',sla:73,stamp:['等待自動拉取 <b class="warn">2m14s</b>','匹配席位 ×2']},
-      {id:'Q-122',title:'TT-101／PT-207 異常門檻再校準',pri:'p1',priLabel:'P1',lane:'queue',role:'分析席',
-       sensors:['CTX-WIN','CTX-CMP'],tags:[{t:'分析',c:'t-anlz'},{t:'需 分析席',c:''}],
-       meta:'T-2841·M2 · <b>SLA 1m08s/12m</b>',sla:9,stamp:['等待自動拉取 <b>0m48s</b>','匹配席位 ×3']},
-      {id:'Q-124',title:'巡檢報告版型生成功能席',pri:'p2',priLabel:'P2',lane:'queue',role:'報告席',
-       sensors:[],tags:[{t:'席位生成',c:'t-seat'},{t:'需 報告席',c:''}],
-       meta:'T-2841·M4 · <b>SLA 30m</b>',sla:2,stamp:['等待自動拉取 <b>0m12s</b>','匹配席位 ×1']},
-      {id:'Q-119',title:'M1 補採 XV-12 閥位回饋（5m 窗口）',pri:'p1',priLabel:'P1',lane:'wait',role:'分析席',
-       sensors:['CTX-CMP'],tags:[{t:'待空檔',c:'t-wait'},{t:'S-24 已拉取',c:''}],
-       meta:'排位 <b>#1</b> · 等 LLM 空檔 · 預估 3s',waitPct:35,stamp:['拉取 <b>S-24 · 分析席</b>','lock 生效']},
-      {id:'Q-126',title:'泵浦效率比對（Q-117 子任務）',pri:'p2',priLabel:'P2',lane:'wait',role:'工業席',
-       sensors:[],tags:[{t:'待空檔',c:'t-wait'},{t:'S-15 已拉取',c:''}],
-       meta:'排位 <b>#2</b> · 等 LLM 空檔 · 預估 9s',waitPct:18,stamp:['拉取 <b>S-15 · 工業席</b>','繼承 SLA 15m']},
-      {id:'Q-118',title:'T-301 溫度趨勢分析與基準比對',pri:'p0',priLabel:'P0',lane:'proc',role:'工業席',
-       sensors:['CTX-WIN'],tags:[{t:'執行中',c:'t-proc'},{t:'槽位 A1',c:''}],
-       meta:'S-03 · 工業席 · 12.4K tok · call_llm 中',progress:68,stamp:['進度 <b>68%</b>','槽位剩 2m10s']},
-      {id:'Q-120',title:'異常門檻判定邏輯複核',pri:'p1',priLabel:'P1',lane:'proc',role:'審核席',
-       sensors:['CTX-CMP'],tags:[{t:'執行中',c:'t-proc'},{t:'將再分拆',c:'t-split'}],
-       meta:'S-28 · 審核席 · 槽位 B2 · 子任務 ×2',progress:31,stamp:['進度 <b>31%</b>','槽位剩 5m44s']},
-      {id:'Q-117',title:'冷卻迴路建模 → 拆 3 子任務回注',pri:'p1',priLabel:'P1',lane:'split',role:'工業席',
-       sensors:['CTX-CMP'],tags:[{t:'再分拆',c:'t-split'},{t:'槽位已釋放',c:''}],
-       meta:'Q-125 / Q-126 / Q-127 已入列',progress:100,stamp:['<b style="color:var(--violet)">回注完成</b>','深度 +3']},
-      {id:'Q-116',title:'報表渲染席 · 動態擴編',pri:'p2',priLabel:'P2',lane:'gen',role:'報告席',
-       sensors:[],tags:[{t:'席位生成',c:'t-seat'},{t:'不佔槽位',c:''}],
-       meta:'S-GEN-07 已啟用 · report_render',progress:100,stamp:['席位池 <b>87/120</b>','回收 3']}
-    ],
-    seats:[
-      {id:'S-03',role:'工業席',color:'var(--amber)',task:'Q-118',status:'run',statusLabel:'執行中',pill:'amber',slot:'A1',prog:68,tok:'12.4K'},
-      {id:'S-24',role:'分析席',color:'var(--cyan)',task:'Q-119',status:'wait',statusLabel:'待空檔',pill:'or',slot:'#1',prog:0,tok:'—'},
-      {id:'S-28',role:'審核席',color:'var(--violet)',task:'Q-120',status:'run',statusLabel:'執行中',pill:'amber',slot:'B2',prog:31,tok:'2.4K'},
-      {id:'S-15',role:'工業席',color:'var(--amber)',task:'Q-126',status:'wait',statusLabel:'待空檔',pill:'or',slot:'#2',prog:0,tok:'—'},
-      {id:'S-GEN-07',role:'渲染席',color:'var(--violet)',task:'Q-116',status:'gen',statusLabel:'動態生成',pill:'vi',slot:'—',prog:12,tok:'0.8K'},
-      {id:'S-62',role:'工業席',color:'var(--red)',task:'Q-121',status:'lock',statusLabel:'鎖定·guard',pill:'red',slot:'—',prog:0,tok:'—'}
-    ],
-    locks:[
-      {seat:'S-03',color:'var(--amber)',li1:'Q-118 · 執行中 · 槽位 A1',li2:['工業席','心跳 3s','68%'],ttl:372,max:900},
-      {seat:'S-24',color:'var(--orange)',li1:'Q-119 · 待空檔 #1',li2:['分析席','已拉取','排位 1'],ttl:185,max:900},
-      {seat:'S-28',color:'var(--red)',li1:'Q-120 · 執行中 · 槽位 B2',li2:['審核席','心跳 11s','31%'],ttl:42,max:900}
-    ],
-    alerts:[
-      {id:'al-1',tone:'or',icon:'i-slot',title:'槽位佔滿 · 待空檔排隊',desc:'3 項待空檔 · 平均等待 4.2s',time:'剛剛'},
-      {id:'al-2',tone:'amber',icon:'i-lock',title:'claim lock 心跳過慢',desc:'S-28 心跳 11s · 建議重派',time:'2m'},
-      {id:'al-3',tone:'red',icon:'i-warn',title:'P0 接近 SLA',desc:'Q-121 待拉取 · SLA 4m22s/6m',time:'14m'}
-    ],
-    slots:[
-      {id:'A1',state:'busy',who:'S-03·Q-118',ttl:210,max:360,reserve:false},
-      {id:'A2',state:'busy',who:'S-28·Q-120',ttl:280,max:360,reserve:false},
-      {id:'A3',state:'busy',who:'S-41·Q-98',ttl:95,max:360,reserve:false},
-      {id:'A4',state:'busy',who:'S-55·Q-101',ttl:310,max:360,reserve:false},
-      {id:'B1',state:'busy',who:'S-07·Q-112',ttl:150,max:360,reserve:false},
-      {id:'B2',state:'busy',who:'S-19·Q-105',ttl:240,max:360,reserve:false},
-      {id:'B3',state:'free',who:null,ttl:0,max:360,reserve:false},
-      {id:'B4',state:'free',who:null,ttl:0,max:360,reserve:true}
-    ]
-  };
+  var EMPTY_FIX={tasks:[],seats:[],locks:[],alerts:[],slots:[],collect:[],metrics:null};
+  var FIXTURES=DEMO&&window.KOL_FIXTURES?window.KOL_FIXTURES:EMPTY_FIX;
 
   var ROLES={
     '工業席':{code:'industrial_ops',color:'var(--amber)',duty:'讀現場證據，提出調整方案',prompt:'依閥位與溫度提出現場調整，不直接寫入',cannot:'不得寫入現場，行動句只做候選',reads:'本槽壓縮稿 · 世界庫',writes:'任務庫增量',skills:'上下文壓縮 · 文本感知'},
@@ -125,23 +70,27 @@
   var PARENT_TITLE={'T-2841':'工業區閥門巡檢與異常讀數彙報'};
 
   /* ================= STORE ================= */
-  var store={
-    tasks:FIXTURES.tasks.map(function(t){
+  function blankMetrics(){ return {claimRate:null,slotWait:null,split:null,thru:null,queries:null,guardPending:null,done:null,fail:null,tokenUsed:null,tokenMax:null,costUsed:null,costMax:null,rpm:null,rpmMax:null,bill1:null,bill2:null,bill3:null,t1:null,t2:null,t3:null,t4:null,t5:null,t6:null}; }
+  function tasksFrom(src){
+    return (src.tasks||[]).map(function(t){
       var seed=FLOW_SEED[t.id]||{};
       var copy=Object.assign({},t,seed,{parent:'T-2841',prompt:ROLE_PROMPT[t.role]||''});
       if (copy.lane==='split'||copy.lane==='gen') copy.departAt=Date.now()+7000;
       return copy;
-    }),
-    seats:FIXTURES.seats.slice(),
-    locks:FIXTURES.locks.map(function(l){ return Object.assign({},l); }),
-    alerts:FIXTURES.alerts.slice(),
-    slots:FIXTURES.slots.map(function(s){ return Object.assign({},s); }),
+    });
+  }
+  var store={
+    tasks:DEMO?tasksFrom(FIXTURES):[],
+    seats:DEMO?FIXTURES.seats.slice():[],
+    locks:DEMO?FIXTURES.locks.map(function(l){ return Object.assign({},l); }):[],
+    alerts:DEMO?FIXTURES.alerts.slice():[],
+    slots:DEMO?FIXTURES.slots.map(function(s){ return Object.assign({},s); }):[],
     audits:[],
-    paused:false, autoClaim:true, evPaused:false, lastSync:new Date(),
-    metrics:{claimRate:6.1,slotWait:4.2,split:23,thru:31,queries:1284,guardPending:1,done:18,fail:1,
-      tokenUsed:128,tokenMax:200,costUsed:84,costMax:120,rpm:42,rpmMax:100,
-      bill1:72,bill2:62,bill3:88,t1:14,t2:26,t3:8,t4:58,t5:5,t6:88}
+    paused:false, autoClaim:false, evPaused:false, lastSync:null,
+    metrics:DEMO&&FIXTURES.metrics?Object.assign({},FIXTURES.metrics):blankMetrics(),
+    source:DEMO?'demo':''
   };
+
   var tipInstances=[];
   var tipSingleton=null;
   var tipHide=function(){
@@ -155,6 +104,15 @@
   function derived(){
     var m=store.metrics;
     var live=queueLive.ok&&queueLive.metrics;
+    if (!live && !DEMO){
+      return {
+        queueDepth:null,claimedWait:null,executing:null,slotUsed:null,
+        claimRate:null,slotWait:null,split:null,thru:null,
+        guardPending:null,done:null,fail:null,
+        quotaToken:'—',quotaCost:'—',quotaRpm:'—',
+        bars:{claimRate:0,queue:0,wait:0,exec:0,slot:0,slotWait:0,split:0,thru:0,qToken:0,qCost:0,qRate:0,t1:0,t2:0,t3:0,t4:0,t5:0,t6:0,bill1:0,bill2:0,bill3:0}
+      };
+    }
     var slotUsed=live?live.slotUsed:store.slots.filter(function(s){ return s.state==='busy'; }).length;
     var slotMax=live&&live.slotMax?live.slotMax:8;
     var q=live?live.queueDepth:laneCount('queue');
@@ -266,6 +224,9 @@
       var k=el.getAttribute('data-num');
       if (d[k]===undefined) return;
       var v=d[k];
+      var src=queueLive.ok?('/api/jobs @ '+(queueLive.at||'')):(DEMO?'demo':'');
+      if (src) el.setAttribute('data-source', src); else el.removeAttribute('data-source');
+      if (v==null){ el.textContent='—'; delete el.dataset.n; return; }
       var decimals=k==='slotWait'?1:((k==='claimRate'&&!queueLive.ok)?1:0);
       var text=(typeof v==='number')?formatNum(v,decimals):String(v);
       if (typeof v==='number') tweenText(el,text,v,decimals);
@@ -279,23 +240,24 @@
     });
     metricNodes.counts.forEach(function(el){
       var k=el.getAttribute('data-count');
+      if (!queueLive.ok && !DEMO){ el.textContent='—'; el.removeAttribute('data-source'); return; }
       if (laneN[k]===undefined) return;
       var text=String(laneN[k]);
       if (el.textContent!==text){ el.textContent=text; el.dataset.n=text; }
     });
     if (metricNodes.rc){
-      var rail=(d.queueDepth+d.claimedWait+d.executing)+' 在列';
+      var rail=(d.queueDepth==null)?'—':((d.queueDepth+d.claimedWait+d.executing)+' 在列');
       if (metricNodes.rc.textContent!==rail) metricNodes.rc.textContent=rail;
     }
     if (metricNodes.nb){
-      var badge=String(d.queueDepth+d.claimedWait);
+      var badge=(d.queueDepth==null)?'—':String(d.queueDepth+d.claimedWait);
       if (metricNodes.nb.textContent!==badge) metricNodes.nb.textContent=badge;
     }
     if (metricNodes.ls){
-      var sync=fmtTime(store.lastSync);
+      var sync=store.lastSync?fmtTime(store.lastSync):'—';
       if (metricNodes.ls.textContent!==sync) metricNodes.ls.textContent=sync;
     }
-    if (metricNodes.gc){
+    if (metricNodes.gc && d.guardPending!=null){
       var chip='chip '+(d.guardPending>0?'red':'green');
       if (metricNodes.gc.className!==chip) metricNodes.gc.className=chip;
     }
@@ -2262,10 +2224,11 @@
   });
 
   /* ================= depth chart + cost charts（頁內 SVG / conic） ================= */
-  var depthSeries=[6,7,5,8,7,9,11,10,12,9,13,11,12,16,14,13,15,12,14,16,13,15,14,14];
+  var depthSeries=DEMO?[6,7,5,8,7,9,11,10,12,9,13,11,12,16,14,13,15,12,14,16,13,15,14,14]:[];
   function renderDepth(){
-    if (window.KOLINDEX_RAIL_LIVE) return;  // 走勢圖改由 rail.js 用 audit_log 分桶畫
+    if (window.KOLINDEX_RAIL_LIVE) return;
     var c=document.getElementById('depthChart'); if (!c) return;
+    if (!depthSeries.length){ c.textContent='—'; return; }
     var w=300,h=62,pad=4,len=depthSeries.length;
     var min=Math.min.apply(null,depthSeries)-2,max=Math.max.apply(null,depthSeries)+2,span=(max-min)||1;
     var pts=depthSeries.map(function(v,i){
@@ -2451,7 +2414,7 @@
 
   /* ================= dispatcher ================= */
   var strip=$('#pulseStrip');
-  if (strip){ for (var s2=0;s2<24;s2++){ var bar=document.createElement('i');
+  if (strip && DEMO){ for (var s2=0;s2<24;s2++){ var bar=document.createElement('i');
     bar.style.height=(20+Math.random()*70)+'%';
     if (Math.random()>0.7) bar.classList.add('hot'); else if (Math.random()>0.5) bar.classList.add('cool');
     strip.appendChild(bar); } }
@@ -2579,11 +2542,11 @@
 
   /* ================= 官方容器採集目錄 ================= */
   var ACQ=[
-    {id:'xhs',cat:'小紅書採集',name:'XHS-Downloader',repo:'JoeanAmier/XHS-Downloader',image:'joeanamier/xhs-downloader',imageSrc:'Docker Hub · joeanamier',compose:'—',license:'GPL-3.0',deploy:'docker run · :5556',pin:'joeanamier/xhs-downloader',file:'倉庫根目錄 Dockerfile',use:'官方鏡像在 Docker Hub，倉庫根目錄也有 Dockerfile。CLI、API、MCP、TUI 同一行程，埠 5556。這頁只登記，不拉取、不啟動。',cmd:'docker pull joeanamier/xhs-downloader\ndocker run -p 5556:5556 -v xhs_data:/app/Volume joeanamier/xhs-downloader'},
-    {id:'douyin-api',cat:'抖音／TikTok／B站',name:'Douyin_TikTok_Download_API',repo:'Evil0ctal/Douyin_TikTok_Download_API',image:'evil0ctal/douyin_tiktok_download_api',imageSrc:'Docker Hub · evil0ctal',compose:'docker/compose.yml',license:'Apache-2.0',deploy:'compose up -d',pin:'docker/compose.yml',file:'docker/Dockerfile · docker/compose.yml',use:'官方主推 Docker Compose。生產編排含身份池、PostgreSQL 17 + TimescaleDB、Redis 8，另有 browser、downloader、transcriber 三個可選 profile。這頁只登記，不拉取、不啟動。',cmd:'git clone https://github.com/Evil0ctal/Douyin_TikTok_Download_API.git\ncd Douyin_TikTok_Download_API\ndocker compose -p dtk -f docker/compose.yml up -d'},
-    {id:'douyin-dl',cat:'抖音（個人輕量）',name:'douyin-dl',repo:'Achaiccccc/douyin-dl',image:'—',imageSrc:'倉庫 Dockerfile，compose --build',compose:'docker-compose.yml',license:'Apache-2.0',deploy:'compose up -d --build · :18080',pin:'docker-compose.yml',file:'Dockerfile · docker-compose.yml',use:'DTK 的個人／家庭裁剪。沒有獨立的 Docker Hub 鏡像名，靠倉庫裡的 Dockerfile 與 compose 建置。對外埠 18080。compose 裡的 APP_PASSWORD 是範例 123456，註解要求暴露到公網前先改掉。這頁只登記，不建置、不啟動。',cmd:'git clone https://github.com/Achaiccccc/douyin-dl.git\ncd douyin-dl\ndocker compose up -d --build'},
-    {id:'maigret',cat:'帳號發現／OSINT',name:'Maigret',repo:'soxoj/maigret',image:'soxoj/maigret',imageSrc:'Docker Hub · soxoj',compose:'—',license:'MIT',deploy:'docker run CLI',pin:'soxoj/maigret',file:'倉庫根目錄 Dockerfile',use:'作者 soxoj 維護的官方鏡像。Dockerfile 有 CLI 與 Web UI 兩個 stage。這頁只登記鏡像，不對任何帳號執行搜尋。',cmd:'docker pull soxoj/maigret\ndocker run -v "$(pwd)/reports:/app/reports" soxoj/maigret:latest USERNAME'},
-    {id:'sherlock',cat:'帳號發現／OSINT',name:'Sherlock',repo:'sherlock-project/sherlock',image:'sherlock/sherlock@sha256:9d6602b98179fb15ceab88433626fb0ae603ae9880e13cab886970317fe1475f',imageSrc:'Docker Hub · 0.16.0',compose:'—',license:'MIT',deploy:'docker run --rm',pin:'0.16.0',file:'倉庫根目錄 Dockerfile',use:'收集頁的用戶名會交給本機 Docker，用這枚固定摘要啟動一次性容器。容器沒有掛載 Docker socket，查完即退出。',cmd:'docker run --rm --cap-drop ALL --security-opt no-new-privileges --read-only sherlock/sherlock@sha256:9d6602b98179fb15ceab88433626fb0ae603ae9880e13cab886970317fe1475f USERNAME --print-found'}
+    {id:'xhs',cat:'小紅書採集',name:'XHS-Downloader',repo:'JoeanAmier/XHS-Downloader',image:'joeanamier/xhs-downloader@sha256:5878c0972cc1236cd8ac4e069f9202152434d8402df52bf427210229b8a53fb9',imageSrc:'Docker Hub · 2.8',compose:'infra/compose/docker-compose.oss.yml',license:'GPL-3.0',deploy:'profile oss · 127.0.0.1:5556',pin:'2.8',file:'倉庫根目錄 Dockerfile',use:'官方映像 2.8 的摘要已寫進獨立 Compose。預設不啟動，不接主棧資料庫。這頁不拉取、不啟動。',cmd:'docker compose -f infra/compose/docker-compose.oss.yml --profile oss up xhs-downloader'},
+    {id:'douyin-api',cat:'抖音／TikTok／B站',name:'Douyin_TikTok_Download_API',repo:'Evil0ctal/Douyin_TikTok_Download_API',image:'evil0ctal/douyin_tiktok_download_api@sha256:c0907e1bf08f4b7eda0a79c8157b29523a0b28f63bb26670bf666f4c88f50c00',imageSrc:'Docker Hub · 5.1.13',compose:'infra/compose/docker-compose.oss.yml',license:'Apache-2.0',deploy:'profile oss · 127.0.0.1:8000',pin:'5.1.13',file:'docker/Dockerfile',use:'只收官方 API 映像 5.1.13。不接本專案資料庫，不含上游的 browser、downloader、transcriber。這頁不拉取、不啟動。',cmd:'docker compose -f infra/compose/docker-compose.oss.yml --profile oss up douyin-tiktok-api'},
+    {id:'douyin-dl',cat:'抖音（個人輕量）',name:'douyin-dl',repo:'Achaiccccc/douyin-dl',image:'—',imageSrc:'沒有可釘住的 Docker Hub 映像',compose:'未納入',license:'Apache-2.0',deploy:'不建置',pin:'未鎖定',file:'上游 Dockerfile',use:'沒有可釘住的官方 Hub 映像，所以沒有寫進本倉庫的 Compose。這頁不建置、不啟動。',cmd:'—'},
+    {id:'maigret',cat:'帳號發現／OSINT',name:'Maigret',repo:'soxoj/maigret',image:'soxoj/maigret@sha256:0dba1e81178a4ce62bc73167ae68687217320ebb62b59ced094ba3cb879615e7',imageSrc:'Docker Hub · 327c2bc',compose:'infra/compose/docker-compose.oss.yml',license:'MIT',deploy:'profile oss · CLI',pin:'327c2bc',file:'倉庫根目錄 Dockerfile',use:'CLI 映像的固定摘要已寫進獨立 Compose。不使用 latest，也不開 Web UI。這頁不對任何帳號執行搜尋。',cmd:'docker compose -f infra/compose/docker-compose.oss.yml --profile oss run --rm maigret --help'},
+    {id:'sherlock',cat:'帳號發現／OSINT',name:'Sherlock',repo:'sherlock-project/sherlock',image:'sherlock/sherlock@sha256:9d6602b98179fb15ceab88433626fb0ae603ae9880e13cab886970317fe1475f',imageSrc:'Docker Hub · 0.16.0',compose:'infra/compose/docker-compose.oss.yml',license:'MIT',deploy:'docker run --rm',pin:'0.16.0',file:'倉庫根目錄 Dockerfile',use:'收集頁的用戶名會交給本機 Docker，用這枚固定摘要啟動一次性容器。同一摘要也在獨立 Compose。容器沒有掛載 Docker socket，查完即退出。',cmd:'docker run --rm --cap-drop ALL --security-opt no-new-privileges --read-only sherlock/sherlock@sha256:9d6602b98179fb15ceab88433626fb0ae603ae9880e13cab886970317fe1475f USERNAME --print-found'}
   ];
   var ACQ_OUT=[
     {name:'MediaCrawler',why:'沒有官方 Dockerfile，也沒有官方命名鏡像。網上流傳的容器方案是第三方自己寫的，不要照搬那些鏡像位址。'},
@@ -2606,11 +2569,11 @@
     {id:'noto',name:'Noto Sans TC',repo:'notofonts/noto-cjk',license:'OFL',pin:'系統字',face:'正文字型',state:'wired',use:'中文走系統字堆疊（蘋方、微軟正黑體、思源黑體）。不向 Google Fonts 取字。'},
     {id:'plex',name:'IBM Plex Mono',repo:'IBM/plex',license:'OFL',pin:'自託管 5.2.6',face:'等寬字型',state:'wired',use:'拉丁子集 woff2 放在 fonts/。編號、槽位、路由與計數。'},
     {id:'chakra',name:'Chakra Petch',repo:'google/fonts',license:'OFL',pin:'自託管 5.2.6',face:'標題字型',state:'wired',use:'拉丁子集 woff2 放在 fonts/。品牌與大數字的英文。漢字改走系統字。'},
-    {id:'xhs',name:'XHS-Downloader',repo:'JoeanAmier/XHS-Downloader',license:'待核對',pin:'未鎖定',face:'Sandbox 候選',state:'candidate',use:'規格中的採集候選。未批准，不進主棧，也不在這頁執行。'},
-    {id:'douyin-api',name:'Douyin_TikTok_Download_API',repo:'Evil0ctal/Douyin_TikTok_Download_API',license:'待核對',pin:'未鎖定',face:'Sandbox 候選',state:'candidate',use:'規格中的採集候選。版本、授權與摘要都要另建 ConnectorVersion 才可測試。'},
-    {id:'douyin-dl',name:'douyin-dl',repo:'官方倉庫待核對',license:'待核對',pin:'未鎖定',face:'Sandbox 候選',state:'candidate',use:'名稱在候選清單。官方來源未核對前不給連結、不拉取。'},
-    {id:'maigret',name:'Maigret',repo:'soxoj/maigret',license:'待核對',pin:'未鎖定',face:'Sandbox 候選',state:'candidate',use:'帳號發現候選。只許在隔離沙箱評估，不能直連主庫。'},
-    {id:'sherlock',name:'Sherlock',repo:'sherlock-project/sherlock',license:'待核對',pin:'未鎖定',face:'Sandbox 候選',state:'candidate',use:'帳號發現候選。候選不是能力，不能當已接入的 Connector。'},
+    {id:'xhs',name:'XHS-Downloader',repo:'JoeanAmier/XHS-Downloader',license:'GPL-3.0',pin:'2.8',face:'Sandbox 候選',state:'candidate',use:'映像摘要在 docker-compose.oss.yml。未批准，不進主棧，這頁也不啟動。'},
+    {id:'douyin-api',name:'Douyin_TikTok_Download_API',repo:'Evil0ctal/Douyin_TikTok_Download_API',license:'Apache-2.0',pin:'5.1.13',face:'Sandbox 候選',state:'candidate',use:'只收 API 映像。不接本專案資料庫，不含瀏覽器側車。未批准，這頁不啟動。'},
+    {id:'douyin-dl',name:'douyin-dl',repo:'Achaiccccc/douyin-dl',license:'Apache-2.0',pin:'未鎖定',face:'Sandbox 候選',state:'candidate',use:'沒有可釘住的 Docker Hub 映像，未寫入 Compose。這頁不建置、不拉取。'},
+    {id:'maigret',name:'Maigret',repo:'soxoj/maigret',license:'MIT',pin:'327c2bc',face:'Sandbox 候選',state:'candidate',use:'CLI 映像摘要在 docker-compose.oss.yml。不能直連主庫，這頁不執行搜尋。'},
+    {id:'sherlock',name:'Sherlock',repo:'sherlock-project/sherlock',license:'MIT',pin:'0.16.0',face:'Sandbox 候選',state:'candidate',use:'收集頁用固定摘要呼叫。候選不是已批准的 Connector。'},
     {id:'maitian',name:'麦田',repo:'CzzzzzzJ/mdldm-maitian',license:'MIT',pin:'未鎖定',face:'自有帳號發布台 · 未收錄',state:'candidate',load:'block',sample:true,use:'操作者自己的多平台發布與創作者後台數據工作台。沒有官方 Docker。這頁只登記來源，不啟動 Chrome、不登入、不發布、不採數。'}
   ];
   ACQ.forEach(function(a){
@@ -2957,14 +2920,8 @@
 
   /* ================= 任務收集 ================= */
   var DISCOVER=[];
-  var COLLECT=[
-    {id:'C-101',title:'小紅書筆記摘要待歸檔',source:'xhs',pri:'p1',priLabel:'P1',role:'分析席',state:'inbox',note:'官方容器只登記。這頁不拉取內容，確認後才進任務隊列。'},
-    {id:'C-102',title:'抖音作品連結待核對',source:'douyin-api',pri:'p1',priLabel:'P1',role:'分析席',state:'inbox',note:'來源是 DTK 官方 Compose。入列前不呼叫下載。'},
-    {id:'C-103',title:'個人庫作品批次待整理',source:'douyin-dl',pri:'p2',priLabel:'P2',role:'報告席',state:'inbox',note:'輕量 compose 的登記項。入列後由席位拉取，不在這頁建置容器。'},
-    {id:'C-104',title:'公開帳號線索待判讀',source:'maigret',pri:'p2',priLabel:'P2',role:'審核席',state:'inbox',note:'只收線索標題。這頁不對任何帳號執行搜尋。'},
-    {id:'C-105',title:'補充帳號線索交叉核對',source:'sherlock',pri:'p2',priLabel:'P2',role:'審核席',state:'inbox',note:'與 Maigret 分開收。入列前不跑官方鏡像。'},
-    {id:'C-106',title:'現場巡檢補充項',source:'manual',pri:'p0',priLabel:'P0',role:'工業席',state:'inbox',note:'手動收集，不經過外部容器。'}
-  ];
+  var COLLECT=DEMO&&FIXTURES.collect?FIXTURES.collect.map(function(x){ return Object.assign({},x); }):[];
+  var collectLive=!!(DEMO&&COLLECT.length);
   var collectFilter='inbox';
   var collectSeq=107;
   var COLLECT_SRC={};   // 後端補的來源說明：connector id → {name,cat,license}
@@ -2981,6 +2938,14 @@
     var counts={inbox:0,queued:0,skip:0};
     COLLECT.forEach(function(x){ if (counts[x.state]!=null) counts[x.state]++; });
     var bd=$('#navCollectBd');
+    if (!collectLive && !DEMO){
+      if (bd) bd.textContent='—';
+      if (kpis) kpis.innerHTML=[['待收','—'],['已認領','—'],['已退回','—']].map(function(x){
+        return '<div class="ckpi"><span>'+x[0]+'</span><b data-source="">—</b></div>';
+      }).join('');
+      if (list) list.innerHTML='<div class="conn-empty">沒有來源。數字顯示「—」。</div>';
+      return;
+    }
     if (bd && bd.textContent!==String(counts.inbox)) bd.textContent=String(counts.inbox);
     if (kpis){
       kpis.innerHTML=[
@@ -3050,13 +3015,19 @@
   function apiCollectWrite(item, action, who, reason){
     var body={actor:who, note:reason};
     if (action==='return') body.reason=reason;
-    return fetch('/api/collect/'+encodeURIComponent(item.accountId)+'/'+action,{
+    var call=window.KOL&&window.KOL.requestStatus;
+    var pending=call?call('/api/collect/'+encodeURIComponent(item.accountId)+'/'+action,{
+      method:'POST',
+      headers:{'content-type':'application/json'},
+      body:JSON.stringify(body)
+    }):fetch('/api/collect/'+encodeURIComponent(item.accountId)+'/'+action,{
       method:'POST',
       headers:{'content-type':'application/json',accept:'application/json'},
       body:JSON.stringify(body)
     }).then(function(r){
       return r.json().catch(function(){return {};}).then(function(j){ return {ok:r.ok,status:r.status,data:j||{}}; });
-    }).then(function(res){
+    });
+    return pending.then(function(res){
       if (!res.ok){
         toast('後端拒絕：'+(res.data.error||('HTTP '+res.status)),'err');
         return false;
@@ -3436,6 +3407,8 @@
     var lanes=tallyBoard(items);
     var openClassify=items.filter(function(it){ return it.board==='classify'&&it.state==='open'; }).length;
     queueLive.ok=true;
+    queueLive.at=new Date().toISOString();
+    queueLive.source='/api/jobs';
     queueLive.items=items;
     queueLive.lanes=lanes;
     queueLive.supervisor=(llm&&llm.configured&&llm.model)?String(llm.model):'未接線';
@@ -3461,6 +3434,7 @@
   }
   function syncQueueNumbers(){
     function grab(url){
+      if (window.KOL && window.KOL.request) return window.KOL.request(url);
       return fetch(url,{headers:{accept:'application/json'},cache:'no-store'}).then(function(r){
         if (!r.ok) throw new Error('HTTP '+r.status);
         return r.json();
@@ -3493,7 +3467,7 @@
   cacheMetrics();
   renderQueue();
   syncQueueNumbers();
-  every(15000, syncQueueNumbers);
+  every(15000, syncQueueNumbers, {live:true});
   dispatchFromWait();
   renderRoster();
   renderSlots();
@@ -3988,8 +3962,11 @@
   window.KOLINDEX_UI={
     version:'2026-11-21',
     /* 用 kolindex-api 的收集清單換掉 COLLECT 並重繪 */
-    setCollect:function(items){
+    setCollect:function(items, meta){
       if (!Array.isArray(items)) return false;
+      collectLive=true;
+      store.source=(meta&&meta.source)||'/api/collect';
+      store.lastSync=new Date();
       var STATE_MAP={inbox:'inbox',claimed:'queued',returned:'skip'};
       COLLECT=items.map(function(x){
         if (x.srcName) COLLECT_SRC[String(x.source)]={name:String(x.srcName),cat:String(x.srcCat||'—'),license:String(x.srcLicense||'—')};
@@ -4024,7 +4001,25 @@
     confirm:function(opt){ openDialog(opt||{}); },
     toast:function(msg,tone){ toast(msg,tone); },
     topic:function(){ return routeState.topic; },
-    setTopic:function(t){ if (TOPICS.indexOf(t)>=0) setTopic(t); }
+    setTopic:function(t){ if (TOPICS.indexOf(t)>=0) setTopic(t); },
+    invalidate:function(){
+      collectLive=false;
+      COLLECT=[];
+      store.alerts=[];
+      store.tasks=[];
+      store.seats=[];
+      store.locks=[];
+      store.slots=[];
+      store.metrics=blankMetrics();
+      store.source='';
+      store.lastSync=null;
+      queueLive.ok=false;
+      queueLive.items=[];
+      queueLive.at='';
+      renderCollect();
+      renderAlerts();
+      renderNumbers();
+    }
   };
 
   bootRouter();

@@ -144,11 +144,13 @@ function load(force){
   if(C.loading) return Promise.resolve(C);
   if(C.loaded && !force && (Date.now()-C.at)<POLL_MS) return Promise.resolve(C);
   C.loading=true;
-  return fetch(BASE+'/api/health/connectors',{headers:{accept:'application/json'},cache:'no-store'})
-    .then(function(r){
+  var url='/api/health/connectors';
+  var call=window.KOL&&window.KOL.request;
+  var pending=call?call(url):fetch(BASE+url,{headers:{accept:'application/json'},cache:'no-store'}).then(function(r){
       if(!r.ok) throw new Error('HTTP '+r.status);
       return r.json();
-    })
+    });
+  return pending
     .then(function(d){
       var items=(d&&Array.isArray(d.items))?d.items:[];
       C.items=items; C.ok=true; C.loaded=true; C.error=''; C.at=Date.now();

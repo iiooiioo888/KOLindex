@@ -401,13 +401,168 @@ async function componentHealth() {
     { id: 'redis', name: 'Redis', via: 'tcp', state: redis.state },
     { id: 'minio', name: 'MinIO', via: 'http', state: minioHit.state },
     { id: 'meilisearch', name: 'Meilisearch', via: 'http', state: meiliHit.state },
+    nasDisk(),
   ];
+}
+
+function mediaRoot() {
+  if (process.env.KOL_MEDIA_ROOT) return path.resolve(process.env.KOL_MEDIA_ROOT);
+  if (process.env.KOL_NAS_ROOT) return path.resolve(process.env.KOL_NAS_ROOT, 'media');
+  return '';
+}
+
+function nasDisk() {
+  const root = mediaRoot();
+  if (!root) return { id: 'nas', name: '本機媒體', via: 'disk', state: 'unset' };
+  try {
+    const st = fs.statfsSync(root);
+    return {
+      id: 'nas',
+      name: '本機媒體',
+      via: 'disk',
+      state: 'up',
+      freeBytes: Number(st.bavail) * Number(st.bsize),
+      totalBytes: Number(st.blocks) * Number(st.bsize),
+    };
+  } catch {
+    return { id: 'nas', name: '本機媒體', via: 'disk', state: 'down' };
+  }
+}
+
+async function serveMedia(req, res, url) {
+  const root = mediaRoot();
+  if (!root) return send(res, 404, 'text/plain; charset=utf-8', '本機媒體目錄未設定');
+  if (req.method !== 'GET' && req.method !== 'HEAD') return send(res, 405, 'text/plain; charset=utf-8', 'Method Not Allowed');
+  let rel = '';
+  try { rel = decodeURIComponent((url.split('?')[0] || '').slice('/media/'.length)); }
+  catch { return send(res, 400, 'text/plain; charset=utf-8', 'Bad Request'); }
+  rel = rel.replace(/\\/g, '/');
+  if (!rel || rel.includes('\0') || rel.split('/').includes('..')) {
+    return send(res, 400, 'text/plain; charset=utf-8', 'Bad Request');
+  }
+  const base = path.resolve(root);
+  const abs = path.resolve(base, rel);
+  if (abs !== base && !abs.startsWith(base + path.sep)) {
+    return send(res, 403, 'text/plain; charset=utf-8', 'Forbidden');
+  }
+  let st;
+  try { st = await fsp.stat(abs); } catch { return send(res, 404, 'text/plain; charset=utf-8', 'Not Found'); }
+  if (!st.isFile()) return send(res, 404, 'text/plain; charset=utf-8', 'Not Found');
+  const ext = path.extname(abs).toLowerCase();
+  const type = MIME[ext] || 'application/octet-stream';
+  res.writeHead(200, {
+    'Content-Type': type,
+    'Content-Length': st.size,
+    'Cache-Control': 'private, max-age=3600',
+    'X-Content-Type-Options': 'nosniff',
+  });
+  if (req.method === 'HEAD') return res.end();
+  fs.createReadStream(abs).on('error', () => res.destroy()).pipe(res);
 }
 
 function handleComponentHealth(req, res) {
   if (req.method !== 'GET' && req.method !== 'HEAD') return json(res, 405, { error: 'method' });
   if (GATE && !currentSession(req)) return json(res, 401, { error: 'login_required' });
-  return componentHealth().then((items) => json(res, 200, { ok: true, items }));
+  const started = Date.now();
+  return componentHealth().then((items) => json(res, 200, { ok: true, items, duration_ms: Date.now() - started }));
+}
+
+const DOCKER_SERVICES = new Set(['web', 'postgres', 'redis', 'minio', 'meilisearch']);
+const DOCKER_ACTIONS = new Set(['start', 'stop', 'restart']);
+
+function composeArgs(extra) {
+  return [
+    'compose',
+    '-f', path.join(ROOT, 'infra', 'compose', 'docker-compose.yml'),
+    '--project-directory', path.join(ROOT, 'infra', 'compose'),
+  ].concat(extra);
+}
+
+function runDocker(args, timeoutMs) {
+  return new Promise((resolve, reject) => {
+    const child = spawn('docker', args, {
+      shell: false,
+      windowsHide: true,
+      cwd: ROOT,
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+    let out = '';
+    let errText = '';
+    const timer = setTimeout(() => {
+      child.kill();
+      const err = new Error('timeout');
+      err.code = 'timeout';
+      reject(err);
+    }, timeoutMs);
+    child.stdout.on('data', (buf) => { if (out.length < 200000) out += buf.toString('utf8'); });
+    child.stderr.on('data', (buf) => { if (errText.length < 2000) errText += buf.toString('utf8'); });
+    child.on('error', (err) => { clearTimeout(timer); reject(err); });
+    child.on('close', (code) => {
+      clearTimeout(timer);
+      if (code) {
+        const err = new Error('exit');
+        err.code = 'exit';
+        err.detail = errText.replace(/\s+/g, ' ').trim().slice(0, 160);
+        reject(err);
+        return;
+      }
+      resolve(out);
+    });
+  });
+}
+
+function parseComposePs(text) {
+  const items = [];
+  for (const line of String(text || '').split(/\r?\n/)) {
+    const raw = line.trim();
+    if (!raw || raw[0] !== '{') continue;
+    let row;
+    try { row = JSON.parse(raw); } catch { continue; }
+    const service = String(row.Service || row.Name || '');
+    if (!DOCKER_SERVICES.has(service)) continue;
+    items.push({
+      service,
+      state: String(row.State || row.Status || '').slice(0, 40),
+      health: String(row.Health || '').slice(0, 40),
+    });
+  }
+  return items;
+}
+
+async function dockerStatus() {
+  if (process.env.KOL_DOCKER !== '1') return { ok: true, enabled: false, items: [] };
+  const text = await runDocker(composeArgs(['ps', '--all', '--format', 'json']), 15000);
+  const found = parseComposePs(text);
+  const by = {};
+  found.forEach((row) => { by[row.service] = row; });
+  const items = [...DOCKER_SERVICES].map((service) => by[service] || { service, state: 'absent', health: '' });
+  return { ok: true, enabled: true, items };
+}
+
+function handleDocker(req, res) {
+  if (GATE && !currentSession(req)) return json(res, 401, { error: 'login_required' });
+  if (req.method === 'GET' || req.method === 'HEAD') {
+    return dockerStatus().then((body) => json(res, 200, body)).catch((err) => {
+      if (err && err.code === 'ENOENT') return json(res, 200, { ok: true, enabled: true, items: [], message: '這台 NAS 找不到 docker 指令。' });
+      return json(res, 200, { ok: true, enabled: true, items: [], message: (err && err.detail) || '讀不到容器狀態。' });
+    });
+  }
+  if (req.method !== 'POST') return json(res, 405, { error: 'method' });
+  const role = GATE ? currentSession(req).role : '';
+  if (normalizeRole(role) !== 'operator') return json(res, 403, { error: 'forbidden', message: '只有操作者可以開關這組容器。' });
+  if (process.env.KOL_DOCKER !== '1') return json(res, 403, { error: 'disabled', message: '未開啟 KOL_DOCKER。' });
+  return readBody(req, 1024).then(async (raw) => {
+    let body = {};
+    try { body = raw ? JSON.parse(raw) : {}; } catch { body = {}; }
+    const service = String(body.service || '');
+    const action = String(body.action || '');
+    if (!DOCKER_SERVICES.has(service) || !DOCKER_ACTIONS.has(action)) {
+      return json(res, 400, { error: 'bad_request' });
+    }
+    await runDocker(composeArgs([action, service]), 60000);
+    const status = await dockerStatus();
+    return json(res, 200, status);
+  }).catch((err) => json(res, 502, { error: 'failed', message: (err && err.detail) || '容器指令沒有完成。' }));
 }
 
 function handleSherlock(req, res) {
@@ -509,6 +664,10 @@ const server = http.createServer(async (req, res) => {
   if (url.startsWith('/__auth')) return handleAuth(req, res, url);
 
   if (url.startsWith('/__health/components')) return handleComponentHealth(req, res);
+
+  if (url === '/media' || url.startsWith('/media/')) return serveMedia(req, res, url);
+
+  if (url.startsWith('/__docker')) return handleDocker(req, res);
 
   if (url.startsWith('/__sherlock')) return handleSherlock(req, res);
 

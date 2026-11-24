@@ -277,12 +277,15 @@
   function load() {
     if (R.loading) { R.queued = true; return Promise.resolve(R.data); }
     R.loading = true;
-    return fetch(BASE + '/api/rail?range=' + encodeURIComponent(R.range), {
+    var url='/api/rail?range=' + encodeURIComponent(R.range);
+    var call=window.KOL&&window.KOL.request;
+    var pending=call?call(url):fetch(BASE + url, {
       headers: { accept: 'application/json' }, cache: 'no-store'
     }).then(function (r) {
       if (!r.ok) throw new Error('HTTP ' + r.status);
       return r.json();
-    }).then(function (d) {
+    });
+    return pending.then(function (d) {
       paint(d);
       return d;
     }).catch(function (err) {

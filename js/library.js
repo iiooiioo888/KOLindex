@@ -10,7 +10,7 @@
 'use strict';
 
 var BASE=(typeof window!=='undefined'&&window.KOLINDEX_BASE)||'';
-var MEDIA=(typeof window!=='undefined'&&window.KOLINDEX_MEDIA)||'http://127.0.0.1:5400';
+var MEDIA=(typeof window!=='undefined'&&window.KOLINDEX_MEDIA)||'/media';
 
 var SRC_LABEL={likes:'讚',favorites:'藏',folder:'夾',unknown:'?'};
 var KIND_LABEL={gallery:'圖集',video:'影片'};
@@ -72,6 +72,8 @@ function query(){
 }
 
 function req(path){
+  var call=window.KOL&&window.KOL.requestStatus;
+  if(call) return call(path);
   return fetch(BASE+path,{headers:{'accept':'application/json'}}).then(function(r){
     return r.text().then(function(t){
       var j={};
@@ -762,6 +764,8 @@ var M={open:false,loading:false,data:null,job:null,polling:0,busy:false};
 function toast(msg){ if(window.KOLINDEX_UI&&window.KOLINDEX_UI.toast) window.KOLINDEX_UI.toast(msg); }
 
 function post(path,body){
+  var call=window.KOL&&window.KOL.requestStatus;
+  if(call) return call(path,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body||{})});
   return fetch(BASE+path,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body||{})}).then(function(r){
     return r.text().then(function(t){
       var j={};
@@ -1092,6 +1096,11 @@ function bind(){
 
   window.addEventListener('kolindex:api',function(e){
     var d=(e&&e.detail)||{};
+    if(!d.ok&&d.reason){
+      L.items=[]; L.authors=[]; L.counts=null; L.total=0; L.ok=false; L.loaded=false;
+      renderAll();
+      return;
+    }
     if(d.ok&&!L.loaded) reload(true);
     else if(d.ok&&L.active&&Date.now()-L.at>POLL_MS) reload(true);
   });

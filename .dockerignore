@@ -1,8 +1,10 @@
 .git
 .github
+data
 **/.env
 .env
 node_modules
+.next
 screenshots
 *.md
 !README.md

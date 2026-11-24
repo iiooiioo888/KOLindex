@@ -29,6 +29,7 @@
     return num(n) + ' B';
   }
   function getJSON(path) {
+    if (window.KOL && window.KOL.request) return window.KOL.request(path);
     return fetch(BASE + path, { headers: { accept: 'application/json' }, cache: 'no-store', credentials: 'same-origin' })
       .then(function (r) {
         if (!r.ok) throw new Error('HTTP ' + r.status);
@@ -114,7 +115,8 @@
       ['postgres', 'PostgreSQL'],
       ['redis', 'Redis'],
       ['minio', 'MinIO'],
-      ['meilisearch', 'Meilisearch']
+      ['meilisearch', 'Meilisearch'],
+      ['nas', '本機媒體']
     ];
     var by = {};
     ((stack && stack.items) || []).forEach(function (x) { by[x.id] = x; });
@@ -126,10 +128,11 @@
     return order.map(function (pair) {
       var x = by[pair[0]] || { state: 'unset', via: '' };
       var label = x.state === 'up' ? '有回應' : x.state === 'unset' ? '未設定' : '沒回應';
-      var detail = x.state === 'up'
-        ? (x.via === 'http' ? '健康檢查通過' : '連接埠有回應')
-        : '—';
-      return [pair[1], x.via === 'http' ? 'HTTP 健康檢查' : 'TCP', pill(x.state === 'up', label), detail];
+      var detail = '—';
+      if (x.state === 'up' && x.freeBytes != null) detail = gb(x.freeBytes) + ' 可用';
+      else if (x.state === 'up') detail = x.via === 'http' ? '健康檢查通過' : '連接埠有回應';
+      var via = x.via === 'http' ? 'HTTP 健康檢查' : x.via === 'disk' ? '本機磁碟' : 'TCP';
+      return [pair[1], via, pill(x.state === 'up', label), detail];
     });
   }
 
@@ -235,6 +238,40 @@
       paintSeats(seats);
       paintStore(rail);
       paintDisk(rail);
+      paintDocker();
+    });
+  }
+
+  function paintDockerList(data) {
+    var body = $('dockerCtlBody');
+    if (!body) return;
+    var session = window.KOLINDEX_SESSION;
+    var can = !!(session && session.role === 'operator' && data && data.enabled);
+    if (!data) {
+      body.innerHTML = '<tr><td colspan="4" class="conn-empty">讀不到容器狀態。</td></tr>';
+      return;
+    }
+    if (data.enabled === false) {
+      body.innerHTML = '<tr><td colspan="4" class="conn-empty">本機 NAS 未開啟容器監測。在跑這個站的機器上設 KOL_DOCKER=1。</td></tr>';
+      return;
+    }
+    if (data.message && !(data.items || []).length) {
+      body.innerHTML = '<tr><td colspan="4" class="conn-empty">' + esc(data.message) + '</td></tr>';
+      return;
+    }
+    body.innerHTML = (data.items || []).map(function (row) {
+      var acts = can
+        ? '<button type="button" class="mini-btn" data-docker-service="' + esc(row.service) + '" data-docker-action="start">啟動</button> ' +
+          '<button type="button" class="mini-btn" data-docker-service="' + esc(row.service) + '" data-docker-action="restart">重啟</button> ' +
+          '<button type="button" class="mini-btn" data-docker-service="' + esc(row.service) + '" data-docker-action="stop">停止</button>'
+        : '—';
+      return '<tr><td class="strong mono">' + esc(row.service) + '</td><td class="mono">' + esc(row.state || '—') + '</td><td class="mono">' + esc(row.health || '—') + '</td><td>' + acts + '</td></tr>';
+    }).join('');
+  }
+
+  function paintDocker() {
+    getJSON('/__docker').then(paintDockerList).catch(function () {
+      paintDockerList(null);
     });
   }
 
@@ -247,6 +284,23 @@
     window.addEventListener('kolindex:api', function (e) {
       var d = (e && e.detail) || {};
       if (d.ok) load();
+    });
+    var dock = $('dockerCtl');
+    if (dock) dock.addEventListener('click', function (e) {
+      var btn = e.target.closest('[data-docker-action]');
+      if (!btn) return;
+      btn.disabled = true;
+      fetch(BASE + '/__docker', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'content-type': 'application/json', accept: 'application/json' },
+        body: JSON.stringify({
+          service: btn.getAttribute('data-docker-service'),
+          action: btn.getAttribute('data-docker-action')
+        })
+      }).then(function (r) { return r.json(); }).then(function (data) {
+        paintDockerList(data);
+      }).catch(function () { paintDocker(); });
     });
   }
 

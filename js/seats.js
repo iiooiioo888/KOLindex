@@ -157,8 +157,10 @@
     if (S.loading) { S.queued = true; return Promise.resolve(S.data); }
     S.loading = true;
     var tok = Date.now();
-    return fetch(BASE + '/api/seats?tasks=12', { cache: 'no-store' })
-      .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    var call=window.KOL&&window.KOL.request;
+    var pending=call?call('/api/seats?tasks=12'):fetch(BASE + '/api/seats?tasks=12', { cache: 'no-store' })
+      .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); });
+    return pending
       .then(function (d) { paint(d); })
       .catch(function (e) { paintOffline(e); })
       .then(function () {
@@ -169,6 +171,8 @@
   }
 
   function post(path, body) {
+    var call=window.KOL&&window.KOL.requestStatus;
+    if (call) return call(path, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body || {}) });
     return fetch(BASE + path, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },

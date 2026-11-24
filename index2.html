@@ -22,9 +22,16 @@
 <link rel="stylesheet" href="css/seats.css?v=20261123">
 <link rel="stylesheet" href="css/queue.css?v=20261124">
 <link rel="stylesheet" href="css/login.css?v=20261123">
-<link rel="stylesheet" href="css/caps.css?v=20261123">
+<style>
+#demoBanner{display:none}
+html[data-demo="1"] #demoBanner{display:block;position:sticky;top:0;z-index:50;padding:8px 12px;background:#7a3730;color:#fff;font:12px/1.4 sans-serif}
+</style>
 </head>
 <body data-topic="queue">
+<script>
+if (new URLSearchParams(location.search).get('demo') === '1') document.documentElement.setAttribute('data-demo', '1');
+</script>
+<div id="demoBanner" hidden>示範資料。這一頁沒有接後端，數字來自 js/fixtures/demo.js。</div>
 
 <div class="login-gate" id="loginGate">
   <form class="login-card" id="loginForm" autocomplete="on">
@@ -684,6 +691,11 @@
               <thead><tr><th>服務</th><th>來源</th><th>狀態</th><th>讀到</th></tr></thead>
               <tbody id="sysServices"><tr><td colspan="4" class="conn-empty">正在連後端…</td></tr></tbody>
             </table>
+            <table class="table tbl-md" id="dockerCtl">
+              <thead><tr><th>NAS 容器</th><th>狀態</th><th>健康</th><th>控制</th></tr></thead>
+              <tbody id="dockerCtlBody"><tr><td colspan="4" class="conn-empty">正在讀本機 Docker…</td></tr></tbody>
+            </table>
+            <p class="note">這組容器在本機 NAS 上跑。監測與開關走本機 docker compose，只限 web、postgres、redis、minio、meilisearch。網頁容器沒有掛上 Docker socket。</p>
           </div>
         </div>
 
@@ -726,8 +738,10 @@
             <button type="button" class="mini-btn" data-state="all" aria-pressed="true">全部</button>
             <button type="button" class="mini-btn" data-state="queued" aria-pressed="false">待跑</button>
             <button type="button" class="mini-btn" data-state="running" aria-pressed="false">跑中</button>
-            <button type="button" class="mini-btn" data-state="backoff" aria-pressed="false">退避</button>
-            <button type="button" class="mini-btn" data-state="blocked" aria-pressed="false">受阻</button>
+            <button type="button" class="mini-btn" data-state="waiting_review" aria-pressed="false">待審</button>
+            <button type="button" class="mini-btn" data-state="stopped" aria-pressed="false">已停</button>
+            <button type="button" class="mini-btn" data-state="timeout" aria-pressed="false">逾時</button>
+            <button type="button" class="mini-btn" data-state="cancelled" aria-pressed="false">已取消</button>
             <button type="button" class="mini-btn" data-state="failed" aria-pressed="false">失敗</button>
             <button type="button" class="mini-btn" data-state="succeeded" aria-pressed="false">完成</button>
           </div>
@@ -1302,10 +1316,11 @@
 <script defer src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js" integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r" crossorigin="anonymous"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/tippy.js@6.3.7/dist/tippy.umd.min.js" integrity="sha384-pjtv4LzKGI/lGxchW/wd/upB/HsGOP/Q2iPYyDU8qo2bp4JLbN34hQkdAArvidZX" crossorigin="anonymous"></script>
 <script defer src="js/login.js?v=20261123"></script>
-<script defer src="js/index2.js?v=20261123i"></script>
+<script defer src="js/fixtures/demo.js?v=20261124"></script>
+<script defer src="js/api.js?v=20261124"></script>
+<script defer src="js/index2.js?v=20261124b"></script>
 <script defer src="js/wireframe.js?v=20261121"></script>
 <script defer src="js/studio.js?v=20261123c"></script>
-<script defer src="js/api.js?v=20261123"></script>
 <script defer src="js/review.js?v=20261123d"></script>
 <script defer src="js/infra.js?v=20261121"></script>
 <script defer src="js/jobs.js?v=20261123b"></script>
@@ -1313,6 +1328,6 @@
 <script defer src="js/person.js?v=20261123c"></script>
 <script defer src="js/seats.js?v=20261123c"></script>
 <script defer src="js/rail.js?v=20261123b"></script>
-<script defer src="js/system.js?v=20261123c"></script>
+<script defer src="js/system.js?v=20261124"></script>
 </body>
 </html>

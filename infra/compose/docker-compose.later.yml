@@ -1,0 +1,70 @@
+# 第一版不啟動。Redis 等 Celery 進場。MinIO 不進第一版。
+name: kolindex-later
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  redis:
+    image: redis:7.4.7-bookworm@sha256:976ab0f0939b78c06d802bcd3bea44c5142ea9a756a57b861e08819817f768c8
+    pull_policy: if_not_present
+    environment:
+      TZ: ${TZ:-Asia/Taipei}
+      REDISCLI_AUTH: ${REDIS_PASSWORD:?set REDIS_PASSWORD in infra/compose/.env}
+    command:
+      - redis-server
+      - --appendonly
+      - "yes"
+      - --requirepass
+      - ${REDIS_PASSWORD:?set REDIS_PASSWORD in infra/compose/.env}
+      - --maxmemory
+      - ${REDIS_MAXMEMORY:-128mb}
+      - --maxmemory-policy
+      - allkeys-lru
+    ports:
+      - "${REDIS_BIND:-127.0.0.1}:6379:6379"
+    volumes:
+      - ${KOL_NAS_ROOT:-../../data/nas}/redis:/data
+    mem_limit: ${REDIS_MEM_LIMIT:-192m}
+    cpus: ${REDIS_CPUS:-0.50}
+    pids_limit: 128
+    logging: *logging
+    restart: "no"
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - later
+    profiles:
+      - later
+
+  minio:
+    image: quay.io/minio/minio:RELEASE.2025-10-15T17-29-55Z
+    pull_policy: if_not_present
+    environment:
+      TZ: ${TZ:-Asia/Taipei}
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-kolindex}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?set MINIO_ROOT_PASSWORD in infra/compose/.env}
+    command: ["server", "/data", "--console-address", ":9001"]
+    ports:
+      - "${MINIO_BIND:-127.0.0.1}:9000:9000"
+      - "${MINIO_BIND:-127.0.0.1}:9001:9001"
+    volumes:
+      - ${KOL_NAS_ROOT:-../../data/nas}/minio:/data
+    mem_limit: ${MINIO_MEM_LIMIT:-512m}
+    cpus: ${MINIO_CPUS:-0.50}
+    pids_limit: 256
+    logging: *logging
+    restart: "no"
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - later
+    profiles:
+      - later
+
+networks:
+  later:
+    internal: true

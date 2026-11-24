@@ -12,7 +12,7 @@
 | 04 | 產出庫 | 假 | `index2.js:825` 的 `OUTPUTS` 陣列、假編輯器 | 沒有產出物表／檔案儲存，存檔只改記憶體 |
 | 05 | 席位執行 | 半 | 上方 fleet 八席真的跑（`GET/POST /api/seats`，`seat`／`seat_task` 表）；下方 80 席、角色目錄、里程碑仍是示範 | 席位是規則型掃描器（rule-v1），不是 LLM agent；80 席 STANDARD_ROLES 沒有後端 |
 | 06 | 統一管線 | 假 | `FIXTURES.slots`（8 槽位、配額、lock TTL）+ 假事件流 | 沒有實際的管線執行器；`slot` 相關都是前端動畫 |
-| 07 | 基礎設施 | 半 | 連接器 `GET /api/health/connectors`、排程工作 `GET /api/jobs` 是真資料 | **DOCKER／ECS／帳量／成本預算四個子頁全是寫死的**（容器名、CPU、¥6,180 預算） |
+| 07 | 基礎設施 | 半 | 連接器 `GET /api/health/connectors`、排程 `GET /api/jobs`、元件健康 `GET /__health/components`（含 `duration_ms`）、容器清單要 `KOL_DOCKER=1` | 第一版 Compose 只有網頁、PostgreSQL、Meilisearch。Redis 與 MinIO 不啟動 |
 | 08 | 開源組件 | 假 | 靜態清單與授權字串 | 沒有解析器、沒有授權掃描 |
 | 09 | UI 生成 | 真 | `POST /__llm` 本地代理 → OpenAI 相容 API（需 `.env` 的 `LLM_API_KEY`） | 產物是線框圖 JSON，不是可執行頁面；沒金鑰時只顯示示範線框 |
 | 10 | 人物檔案 | 半 | `GET /api/library/authors` 等，抖音作者 18,974 位 | **沒有跨平台歸戶**（`person` 表 0 筆）、沒有 F2 打分、沒有小紅書／微博／YouTube |
@@ -34,7 +34,7 @@
 - `GET /api/events`（SSE；目前全是輪詢）
 - `POST /api/takedown`（下架）
 
-工程面：SQLite（非 Postgres）、**沒有認證**、沒有 RLS、沒有 Docker、後端只在 Windows 本機跑。
+工程面：業務真相改為 PostgreSQL（`jsonb` + pgvector）。SQLite 只留 intake buffer。Meilisearch 是可重建的衍生索引。Redis 與 MinIO 不在第一版 Compose。開源候選在 `infra/compose/docker-compose.oss.yml`，Maigret 改掛 `backup` profile。登入是 dev-server 的 `KOL_GATE` 和三種角色。控制面四個寫入端點在 `apps/control/app.py`。運行位置是本機 NAS。
 
 ## 三、未實作的功能（依優先級）
 
