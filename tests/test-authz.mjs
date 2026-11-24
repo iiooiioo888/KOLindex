@@ -68,10 +68,14 @@ async function login(port, name, password) {
   return { status: r.status, body, cookie };
 }
 
-async function hit(port, cookie, method, url) {
+async function hit(port, cookie, method, url, body) {
+  const headers = {};
+  if (cookie) headers.cookie = cookie;
+  if (body) headers['content-type'] = 'application/json';
   const r = await fetch('http://127.0.0.1:' + port + url, {
     method,
-    headers: cookie ? { cookie } : {},
+    headers,
+    body: body || undefined,
   });
   return { status: r.status, body: await r.text() };
 }
@@ -116,6 +120,10 @@ async function runRole(role, port) {
     const sherlock = await hit(port, good.cookie, 'POST', '/__sherlock');
     if (role === 'operator') ok('operator 可進 sherlock（不是 403）', sherlock.status !== 403, String(sherlock.status));
     else ok(role + ' 不可用 sherlock → 403', sherlock.status === 403, String(sherlock.status));
+
+    const pull = await hit(port, good.cookie, 'POST', '/__oss/pull', '{"id":"xhs"}');
+    if (role === 'operator') ok('operator 不能用這個入口拉採集映像', pull.status === 400 || pull.status === 403, String(pull.status));
+    else ok(role + ' 不能拉映像 → 403', pull.status === 403, String(pull.status));
 
     await fetch('http://127.0.0.1:' + port + '/__auth/logout', { method: 'POST', headers: { cookie: good.cookie } });
     const after = await hit(port, good.cookie, 'GET', '/api/rail');

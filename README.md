@@ -41,9 +41,9 @@
 node tests/dev-server.mjs . 5200
 ```
 
-開 <http://127.0.0.1:5200/>。零依賴靜態伺服器，改檔案會自動重新整理；後端沒開時頁面照常運作，只是右上角顯示 `DEMO DATA`、資料退回示範值。
+開 <http://127.0.0.1:5200/>。零依賴靜態伺服器，改檔案會自動重新整理。後端沒開時，收集與告警會清掉示範卡片；其餘分頁是否仍顯示示範資料，見「安全需求」。
 
-任務收集的「呼叫 Sherlock」用本機 `docker run` 啟動官方映像 `sherlock/sherlock` 0.16.0 的固定摘要，查完就退出。它只查你送出的那個公開用戶名。網頁容器沒有掛載 Docker socket。正式環境要另外設 `KOL_SHERLOCK=1` 才開放這個入口。
+任務收集的「呼叫 Sherlock」只給操作者。開源組件頁的「拉起映像」會在設了 `KOL_DOCKER=1` 的宿主行程拉取官方映像 `sherlock/sherlock` 0.16.0 的固定摘要，並打開這個入口；查詢仍是 `docker run`，查完就退出。沒有按過拉起、也沒設 `KOL_SHERLOCK=1` 時，入口回 `{"error":"disabled"}`。Maigret 用同一個按鈕只拉取備援映像，不接到收集頁。兩者都是命令列映像，沒有網頁埠。網頁容器把 `KOL_DOCKER` 和 `KOL_SHERLOCK` 固定為 `0`，也不掛 Docker socket，所以容器裡的按鈕會被拒絕。GitHub Pages 沒有這個入口。
 
 ### 配後端
 
@@ -73,6 +73,37 @@ node tests/test-caps.mjs       # 前端依 caps 收起按鈕：靜態與動態�
 
 前四支只打 `127.0.0.1:5200`；`test-authz` 自己起 5390–5392 三個實例，`test-caps` 只讀檔，都不需要後端。`check` job 在每次 `push`／`PR` 跑這六支。更完整的二十支（含寫入端點、離線、瀏覽器截圖）在私有開發資料夾 `KOLindex-dev`，不在這個 repo。
 
+## 安全需求
+
+這裡寫的是必須遵守的需求。右邊的「現況」只描述這個倉庫現在做得到的範圍。沒有寫成現況的項目，不能當成已經完成。
+
+| 需求 | 現況 |
+|---|---|
+| 監聽位址不是 loopback 時，必須設定通行碼，否則拒絕啟動 | 網頁行程已做。`HOST` 不是 `127.0.0.1`、`::1`、`localhost` 且沒有 `KOL_GATE` 時，`tests/dev-server.mjs` 直接退出 |
+| 角色只有 `viewer`、`reviewer`、`operator`。角色由伺服器決定，不接受瀏覽器自選 | 已做。角色來自 `KOL_ROLE`。登入表單送上來的角色不採用。一台行程同時只有一種角色 |
+| `viewer` 只讀。`reviewer` 只能做審核裁決和 AI 事件 ack。`operator` 才能做其餘寫入、容器開關、Sherlock、LLM 代理 | `KOL_GATE` 開啟時，網頁行程對 `/api` 寫入回 `401` 或 `403`。按鈕由 `js/login.js` 的 `caps` 隱藏，隱藏不是授權 |
+| 工作階段放在 HttpOnly cookie，不放到前端可讀的儲存 | Cookie 名稱 `kol_session`，`HttpOnly`、`SameSite=Lax`。`KOL_COOKIE_SECURE=1` 或反向代理送來 `https` 時才加 `Secure`。工作階段只在行程記憶體，重啟即失效 |
+| 登入失敗要限速 | 同一來源連續失敗 5 次後，60 秒回 `429` |
+| 沒有 `KOL_GATE` 的本機模式不得拿去對網際網路 | 現況是失敗開放：不核對通行碼，角色固定為 `viewer`，前端按鈕全開。這只限 `127.0.0.1` |
+| 業務 API 自己也要驗身份。只在網頁代理擋一次不夠 | **未完成**。直連 `kolindex-api` 的認證，這個倉庫沒有核對。把 `5210` 暴露出去就繞過網頁角色 |
+| 控制面寫入使用 Bearer token，三種角色分開 | `apps/control/app.py`：`viewer` 不能寫，`reviewer` 只能 `POST /decisions`，`operator` 可打 `POST /intake`、`/artifacts`、`/events`、`/decisions`。正式環境 `KOL_PROD=1` 時必須連 PostgreSQL，不能退回 SQLite |
+| 通行碼、token、Cookie、金鑰不進 Git、日誌、前端、Connector 設定 | `.env` 與 `infra/compose/.env` 被 gitignore。`secrets/api-tokens.example.yaml` 只有佔位，不能用來登入。age 公鑰還沒寫進 `.sops.yaml`，加密秘密檔還沒有 |
+| 網頁容器不持有 Docker 控制權 | 容器內 `KOL_DOCKER`、`KOL_SHERLOCK`、`KOL_LLM` 固定為 `0`。不掛載 Docker socket，不用 privileged、host network、host PID，映像不用 `latest` |
+| 容器開關只允許名單內的服務，而且只有 `operator` | 名單是 `web`、`postgres`、`meilisearch`、`sherlock`、`maigret`、`xhs-downloader`、`douyin-tiktok-api`。Redis 與 MinIO 仍在 `docker-compose.later.yml`，不在這份名單 |
+| 開源容器隨主 Compose 啟動，但不進資料網路 | 第二個 Compose 檔沒有 profile。Sherlock 與 Maigret 只停在 `sleep`，不查用戶名。XHS 與 Douyin API 聽 `127.0.0.1`，失敗兩次就不再自動重啟。它們不加入 `data`，不讀資料庫密碼。開機不送出抓取。douyin-dl 與麦田沒有可啟動的映像 |
+| 採集程式不直連 PostgreSQL、SQLite、Redis、MinIO、Meilisearch | **未完成**。新控制面的四個寫入端點不寫 SQLite。舊的 `kolindex-api` 仍可寫它自己的 SQLite |
+| 寫入只追加。重複的原始內容用雜湊去重 | 控制面的 intake、artifact、change_event、decision 有拒絕更新和刪除的觸發器。相同 `content_hash` 不重複建檔 |
+| 寫入失敗時原檔留在收件匣，重試兩次就停 | 控制面把失敗檔留在 `KOL_NAS_ROOT/inbox/`。同一路徑失敗兩次後停止並記一筆 `stopped` 事件 |
+| 模型只產候選，不觸發採集、刪除或發布 | 線框生成不寫業務庫。標註要人確認後才算 confirmed。候選不建立新的抓取 |
+| 只處理已公開內容。檔案裡的位置欄預設不入庫 | `media_original` 拒絕 `file_place`。貼文時間可當事實，檔案拍攝時間只能是候選 |
+| 不建人臉向量，不推斷親屬、伴侶、健康、宗教 | 標籤只允許文字、物件、標誌、場景、內容安全。`body` 不得帶 `face`、`kinship`、`partner`、`health`、`religion`。同框與關係分析還沒做，這條尚未在畫面上落地 |
+| 關係只記提及、合集、引用、同台，而且要人確認 | schema 有這四個值。確認必須是 `human`。功能本身未做 |
+| 401 或連不上時，不得把示範資料留在畫面上當成真資料 | 收集與告警會清掉卡片。其餘分頁是否在 401 後仍留示範資料，尚未逐支核對 |
+| 全鏈刪除要清掉資料庫、搜尋索引、NAS 檔案、衍生檔和收件匣 | **未完成**。現在沒有這條流程 |
+| 日誌不記通行碼、Cookie、token、私鑰或未去敏的全文 | 這是需求。這個 README 沒有逐條掃過現有日誌 |
+
+登入操作：設了 `KOL_GATE` 才會核對通行碼。沒設時，在本機填名字就能進，角色是 `viewer`。登出打 `POST /__auth/logout`。檢查指令是 `node tests/test-authz.mjs` 和 `node tests/test-caps.mjs`。
+
 ## 部署
 
 `main` 通過檢查後，workflow 會把 `index2.html`、`css/`、`js/`、`fonts/` 發佈到 GitHub Pages。第一次需要在 **Settings → Pages → Source** 選 **GitHub Actions**（workflow 用 `GITHUB_TOKEN` 開 Pages 會因權限不足失敗，該步驟已設 `continue-on-error`）。
@@ -85,10 +116,10 @@ Pages 是純靜態，沒有 `/api`：接後端的分頁會顯示示範資料，U
 
 ```
 copy infra\compose\.env.example infra\compose\.env
-docker compose -f infra/compose/docker-compose.yml up -d --build
+docker compose -f infra/compose/docker-compose.yml -f infra/compose/docker-compose.oss.yml up -d --build
 ```
 
-`.env` 只留在 NAS 上。Compose 的網頁服務用 `infra/compose/Dockerfile` 提供現用的 `index2.html`，映像標籤是 `kolindex-site:2026.11.24`。`apps/web` 的 Next.js 映像不在這組服務裡。第一版拉起網頁、PostgreSQL 16.16（pgvector 0.8.7）和 Meilisearch v1.57.0。PostgreSQL 是真相，Meilisearch 是衍生索引，重建用 `node scripts/rebuild-meilisearch.mjs`。Redis 與 MinIO 不在這個檔裡，定義留在 `docker-compose.later.yml`，預設不啟動。媒體放 `KOL_NAS_ROOT`。初始化 SQL 是 `infra/compose/postgres/init/001-schema.sql`，只在空資料目錄第一次啟動時執行。MongoDB 不在這組服務裡。
+`.env` 只留在 NAS 上。Compose 的網頁服務用 `infra/compose/Dockerfile` 提供現用的 `index2.html`，映像標籤是 `kolindex-site:2026.11.24`。`apps/web` 的 Next.js 映像不在這組服務裡。第一版這條指令會拉起網頁、PostgreSQL 16.16（pgvector 0.8.7）、Meilisearch v1.57.0，以及四個有固定摘要的開源容器。PostgreSQL 是真相，Meilisearch 是衍生索引，重建用 `node scripts/rebuild-meilisearch.mjs`。Redis 與 MinIO 不在這個指令裡，定義留在 `docker-compose.later.yml`。媒體放 `KOL_NAS_ROOT`。初始化 SQL 是 `infra/compose/postgres/init/001-schema.sql`，只在空資料目錄第一次啟動時執行。MongoDB 不在這組服務裡。
 
 可在 `.env` 調整的項目：時區 `TZ`、業務 API 位址 `KOL_API`（留空則容器經 `host.docker.internal:5210` 找宿主機上的 API）、各服務的監聽位址（`WEB_BIND` 等，預設 `127.0.0.1`）、記憶體與 CPU 上限。上限是容器配額，不是這台機器的測量結果。日誌每個容器最多 3 個 10MB 檔。網頁容器把 `KOL_DOCKER`、`KOL_SHERLOCK`、`KOL_LLM` 固定為 `0`，也不掛 Docker socket。PostgreSQL 的資料目錄要讓容器內的 postgres 使用者可寫。慢查詢日誌由 `PG_LOG_MIN_DURATION_MS` 打開，預設 `0` 是為了開始記錄，不是已測量的門檻。兩週數據出來之前，不依這個日誌加索引。
 
@@ -121,38 +152,26 @@ set KOL_DOCKER=1
 node tests/dev-server.mjs . 5200
 ```
 
-基礎設施頁會列出 web、postgres、redis、minio、meilisearch。只有伺服器角色是操作者時，才能啟動、重啟或停止這五個服務。
+容器開關的允許名單是 web、postgres、meilisearch、sherlock、maigret、xhs-downloader、douyin-tiktok-api，而且只有操作者能動。Redis 和 MinIO 不在第一版，也不在這份名單。
 
-預設頁面聽 `127.0.0.1:5200`。網頁容器裡面聽 `0.0.0.0`，所以必須在 `.env` 設 `KOL_GATE`，否則行程拒絕啟動。角色用 `KOL_ROLE`（預設 `viewer`），名字用 `KOL_OPERATOR`；表單不能自選角色。前面再加你自己的反向代理。容器內 `KOL_PROD=1`：沒有自動重整、不列出目錄、預設不轉發 `/__llm`。沒有設定 `KOL_API` 時，收集與告警顯示未連線並清掉示範卡片，不把假資料留在畫面上。收集輪詢 60 秒，右欄 `rail.js` 是 15 秒。Sherlock 不在主 Compose 裡。收集頁要呼叫它，仍是在裝了 Docker 的機器上跑 `node tests/dev-server.mjs`，並設 `KOL_SHERLOCK=1`。
+預設頁面聽 `127.0.0.1:5200`。網頁容器裡面聽 `0.0.0.0`，所以必須在 `.env` 設 `KOL_GATE`，否則行程拒絕啟動。角色用 `KOL_ROLE`（預設 `viewer`），名字用 `KOL_OPERATOR`；表單不能自選角色。前面再加你自己的反向代理。容器內 `KOL_PROD=1`：沒有自動重整、不列出目錄、預設不轉發 `/__llm`。沒有設定 `KOL_API` 時，收集與告警顯示未連線並清掉示範卡片，不把假資料留在畫面上。收集輪詢 60 秒，右欄 `rail.js` 是 15 秒。收集頁的 Sherlock 查詢仍要這個宿主行程，並在開源組件頁拉起映像或設 `KOL_SHERLOCK=1`。閒置中的 Sherlock 容器不會自己查用戶名。
 
-開源候選另外放在 `infra/compose/docker-compose.oss.yml`，專案名 `kolindex-oss`，profile 是 `oss`。`docker compose -f infra/compose/docker-compose.yml up -d` 不會啟動它們，基礎設施頁的開關也不包含它們。它們使用自己的 `oss` 網路，不加入主檔的 `data` 網路，也不掛 Docker socket。埠只綁 `127.0.0.1`。工作目錄在 `KOL_NAS_ROOT/oss/`，不掛媒體庫，也不讀 `.env` 裡的資料庫密碼。
+有固定映像的開源組件跟主 Compose 一起啟動，專案名仍是 `kolindex`。它們使用 `oss` 網路，不加入 `data`，也不掛 Docker socket。埠只綁 `127.0.0.1`。工作目錄在 `KOL_NAS_ROOT/oss/`，不掛媒體庫，也不讀 `.env` 裡的資料庫密碼。Sherlock 和 Maigret 的行程是 `sleep infinity`，等系統以後下指令。XHS-Downloader 與 Douyin API 用官方預設行程聽著，開機不送出抓取；行程自己失敗兩次後不再自動重啟。
 
-| 服務 | 映像 | 這份檔實際包含的 |
+| 服務 | 映像 | 起來之後做什麼 |
 |---|---|---|
-| `sherlock` | `sherlock/sherlock` 0.16.0 的固定摘要 | 一次性查詢。收集頁仍走原本的 `docker run` |
-| `maigret` | `soxoj/maigret` 標籤 `327c2bc` 的固定摘要 | CLI。不開它的 Web UI |
-| `xhs-downloader` | `joeanamier/xhs-downloader` 2.8 的固定摘要 | 官方映像的預設命令。工作目錄是 `oss/xhs` |
-| `douyin-tiktok-api` | `evil0ctal/douyin_tiktok_download_api` 5.1.13 的固定摘要 | 只有 API。不接本專案的 PostgreSQL、Redis、MinIO。不含上游的 browser、downloader、transcriber |
+| `sherlock` | `sherlock/sherlock` 0.16.0 的固定摘要 | 閒置。收集頁查詢仍另開一次性容器 |
+| `maigret` | `soxoj/maigret` 標籤 `327c2bc` 的固定摘要 | 閒置備援。不開 Web UI，收集頁不呼叫它 |
+| `xhs-downloader` | `joeanamier/xhs-downloader` 2.8 的固定摘要 | 官方預設行程，只聽 `127.0.0.1:5556`。不在開機時抓取 |
+| `douyin-tiktok-api` | `evil0ctal/douyin_tiktok_download_api` 5.1.13 的固定摘要 | 只有 API，只聽 `127.0.0.1:8000`。不含 browser、downloader、transcriber，不接 PostgreSQL |
 
 douyin-dl 沒有可釘住的 Docker Hub 映像，麦田沒有官方映像，兩份 Compose 都沒有它們。摘要是 2026-11-24 向 Docker Hub 讀到的 manifest list。這台開發機沒有 Docker，所以這些服務還沒有在這裡啟動過。
 
 ```
-docker compose --env-file infra/compose/.env -f infra/compose/docker-compose.oss.yml --profile oss run --rm sherlock --help
+docker compose --env-file infra/compose/.env -f infra/compose/docker-compose.yml -f infra/compose/docker-compose.oss.yml up -d
 ```
 
-打開站會先看到登入頁。沒有 `KOL_GATE` 時，填操作者就能進入，通行碼不核對。要擋住未登入的人和 `/api`，啟動時加上 `KOL_GATE`（只放在伺服器環境變數，不要寫進倉庫）。登入後右上角名字可點，用來登出。
-
-角色只有三種，規則寫在 `tests/authz.mjs`；`KOL_GATE` 開啟時 dev-server 會擋不屬於該角色的寫入（`401` 未登入、`403` 角色不足）：
-
-| 角色 | 讀取 | 審核裁決 `POST /api/review/:id/verdict`、`POST /api/ai/events/:id/ack` | 其他 `/api` 寫入 |
-| --- | --- | --- | --- |
-| `viewer` 只讀 | 可 | 不可 | 不可 |
-| `reviewer` 審核 | 可 | 可 | 不可 |
-| `operator` 操作者 | 可 | 可 | 可 |
-
-同名主機一次只能掛一個 `KOL_ROLE`；要同時給三種人用，就開三個實例（各自 `KOL_ROLE`、共用同一個 API）再用反向代理分流。`tests/test-authz.mjs` 會起三個實例驗 401／403，CI 也會跑。
-
-前端也照同一份 `caps` 收起沒有權限的按鈕，避免使用者點了才吃 `403`：`viewer` 看不到任何寫入控制，`reviewer` 只看得到審核台的四顆裁決鍵（確認／駁回／延後／標記已處理），`operator` 全開。實作是 `js/login.js` 的 `applyCaps()` 把 `caps` 寫成 `body[data-can-write|review|operate]`，`css/caps.css` 再用三條 `[data-cap]` 選擇器隱藏；沒有 `KOL_GATE` 的本機模式一律全開。`tests/test-caps.mjs` 會靜態檢查靜態與動態模板的標註有沒有漏，CI 也會跑。
+角色規則、cookie 和尚未完成的項目見上面的「安全需求」。一台行程同時只有一種 `KOL_ROLE`。要同時給三種人用，就開三個實例，再用反向代理分流。
 
 ## 目錄
 

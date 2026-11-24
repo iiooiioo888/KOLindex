@@ -2542,11 +2542,11 @@
 
   /* ================= 官方容器採集目錄 ================= */
   var ACQ=[
-    {id:'xhs',cat:'小紅書採集',name:'XHS-Downloader',repo:'JoeanAmier/XHS-Downloader',image:'joeanamier/xhs-downloader@sha256:5878c0972cc1236cd8ac4e069f9202152434d8402df52bf427210229b8a53fb9',imageSrc:'Docker Hub · 2.8',compose:'infra/compose/docker-compose.oss.yml',license:'GPL-3.0',deploy:'profile oss · 127.0.0.1:5556',pin:'2.8',file:'倉庫根目錄 Dockerfile',use:'官方映像 2.8 的摘要已寫進獨立 Compose。預設不啟動，不接主棧資料庫。這頁不拉取、不啟動。',cmd:'docker compose -f infra/compose/docker-compose.oss.yml --profile oss up xhs-downloader'},
-    {id:'douyin-api',cat:'抖音／TikTok／B站',name:'Douyin_TikTok_Download_API',repo:'Evil0ctal/Douyin_TikTok_Download_API',image:'evil0ctal/douyin_tiktok_download_api@sha256:c0907e1bf08f4b7eda0a79c8157b29523a0b28f63bb26670bf666f4c88f50c00',imageSrc:'Docker Hub · 5.1.13',compose:'infra/compose/docker-compose.oss.yml',license:'Apache-2.0',deploy:'profile oss · 127.0.0.1:8000',pin:'5.1.13',file:'docker/Dockerfile',use:'只收官方 API 映像 5.1.13。不接本專案資料庫，不含上游的 browser、downloader、transcriber。這頁不拉取、不啟動。',cmd:'docker compose -f infra/compose/docker-compose.oss.yml --profile oss up douyin-tiktok-api'},
+    {id:'xhs',cat:'小紅書採集',name:'XHS-Downloader',repo:'JoeanAmier/XHS-Downloader',image:'joeanamier/xhs-downloader@sha256:5878c0972cc1236cd8ac4e069f9202152434d8402df52bf427210229b8a53fb9',imageSrc:'Docker Hub · 2.8',compose:'infra/compose/docker-compose.oss.yml',license:'GPL-3.0',deploy:'隨主 Compose 啟動 · 127.0.0.1:5556',pin:'2.8',file:'倉庫根目錄 Dockerfile',use:'跟主 Compose 一起啟動，只聽本機埠。不接資料庫。開機不送出抓取。開關在基礎設施頁。',cmd:'docker compose -f infra/compose/docker-compose.yml -f infra/compose/docker-compose.oss.yml up -d xhs-downloader'},
+    {id:'douyin-api',cat:'抖音／TikTok／B站',name:'Douyin_TikTok_Download_API',repo:'Evil0ctal/Douyin_TikTok_Download_API',image:'evil0ctal/douyin_tiktok_download_api@sha256:c0907e1bf08f4b7eda0a79c8157b29523a0b28f63bb26670bf666f4c88f50c00',imageSrc:'Docker Hub · 5.1.13',compose:'infra/compose/docker-compose.oss.yml',license:'Apache-2.0',deploy:'隨主 Compose 啟動 · 127.0.0.1:8000',pin:'5.1.13',file:'docker/Dockerfile',use:'只收官方 API 映像。不接本專案資料庫，不含瀏覽器側車。開機不送出抓取。開關在基礎設施頁。',cmd:'docker compose -f infra/compose/docker-compose.yml -f infra/compose/docker-compose.oss.yml up -d douyin-tiktok-api'},
     {id:'douyin-dl',cat:'抖音（個人輕量）',name:'douyin-dl',repo:'Achaiccccc/douyin-dl',image:'—',imageSrc:'沒有可釘住的 Docker Hub 映像',compose:'未納入',license:'Apache-2.0',deploy:'不建置',pin:'未鎖定',file:'上游 Dockerfile',use:'沒有可釘住的官方 Hub 映像，所以沒有寫進本倉庫的 Compose。這頁不建置、不啟動。',cmd:'—'},
-    {id:'maigret',cat:'帳號發現／OSINT',name:'Maigret',repo:'soxoj/maigret',image:'soxoj/maigret@sha256:0dba1e81178a4ce62bc73167ae68687217320ebb62b59ced094ba3cb879615e7',imageSrc:'Docker Hub · 327c2bc',compose:'infra/compose/docker-compose.oss.yml',license:'MIT',deploy:'profile oss · CLI',pin:'327c2bc',file:'倉庫根目錄 Dockerfile',use:'CLI 映像的固定摘要已寫進獨立 Compose。不使用 latest，也不開 Web UI。這頁不對任何帳號執行搜尋。',cmd:'docker compose -f infra/compose/docker-compose.oss.yml --profile oss run --rm maigret --help'},
-    {id:'sherlock',cat:'帳號發現／OSINT',name:'Sherlock',repo:'sherlock-project/sherlock',image:'sherlock/sherlock@sha256:9d6602b98179fb15ceab88433626fb0ae603ae9880e13cab886970317fe1475f',imageSrc:'Docker Hub · 0.16.0',compose:'infra/compose/docker-compose.oss.yml',license:'MIT',deploy:'docker run --rm',pin:'0.16.0',file:'倉庫根目錄 Dockerfile',use:'收集頁的用戶名會交給本機 Docker，用這枚固定摘要啟動一次性容器。同一摘要也在獨立 Compose。容器沒有掛載 Docker socket，查完即退出。',cmd:'docker run --rm --cap-drop ALL --security-opt no-new-privileges --read-only sherlock/sherlock@sha256:9d6602b98179fb15ceab88433626fb0ae603ae9880e13cab886970317fe1475f USERNAME --print-found'}
+    {id:'maigret',cat:'帳號發現／OSINT',name:'Maigret',repo:'soxoj/maigret',image:'soxoj/maigret@sha256:0dba1e81178a4ce62bc73167ae68687217320ebb62b59ced094ba3cb879615e7',imageSrc:'Docker Hub · 327c2bc',compose:'infra/compose/docker-compose.oss.yml',license:'MIT',deploy:'隨主 Compose 閒置',pin:'327c2bc',file:'倉庫根目錄 Dockerfile',use:'備援映像。容器只停在 sleep，不開 Web UI，收集頁不呼叫它。',cmd:'docker compose -f infra/compose/docker-compose.yml -f infra/compose/docker-compose.oss.yml up -d maigret'},
+    {id:'sherlock',cat:'帳號發現／OSINT',name:'Sherlock',repo:'sherlock-project/sherlock',image:'sherlock/sherlock@sha256:9d6602b98179fb15ceab88433626fb0ae603ae9880e13cab886970317fe1475f',imageSrc:'Docker Hub · 0.16.0',compose:'infra/compose/docker-compose.oss.yml',license:'MIT',deploy:'隨主 Compose 閒置',pin:'0.16.0',file:'倉庫根目錄 Dockerfile',use:'容器只停在 sleep，不查用戶名。收集頁的查詢仍另開一次性容器，查完即退出。',cmd:'docker compose -f infra/compose/docker-compose.yml -f infra/compose/docker-compose.oss.yml up -d sherlock'}
   ];
   var ACQ_OUT=[
     {name:'MediaCrawler',why:'沒有官方 Dockerfile，也沒有官方命名鏡像。網上流傳的容器方案是第三方自己寫的，不要照搬那些鏡像位址。'},
@@ -2596,6 +2596,8 @@
   });
   var ossFilter='all';
   var ossPick='skill-evaluator';
+  var ossDocker={enabled:false,armed:false,message:'',busy:''};
+  var ossDockerAsked=false;
   var OSS_BLOCK={scrapling:1,xhs:1,'douyin-api':1,'douyin-dl':1,maigret:1,sherlock:1,maitian:1};
   function ossLoadOf(x){
     if (x.load) return x.load;
@@ -2603,8 +2605,50 @@
     if (OSS_BLOCK[x.id]) return 'block';
     return 'off';
   }
+  function ossCanPull(id){ return id==='sherlock'||id==='maigret'; }
+  function askOssDocker(){
+    if (ossDockerAsked) return;
+    ossDockerAsked=true;
+    fetch('/__oss/pull',{credentials:'same-origin',cache:'no-store',headers:{accept:'application/json'}})
+      .then(function(r){ return r.json().then(function(j){ return {status:r.status,data:j||{}}; }); })
+      .then(function(res){
+        var d=res.data||{};
+        ossDocker.enabled=!!d.enabled;
+        ossDocker.armed=!!d.armed;
+        if (d.message) ossDocker.message=d.message;
+        renderOss();
+      }).catch(function(){});
+  }
+  function pullOss(id){
+    if (!ossCanPull(id)||ossDocker.busy) return;
+    ossDocker.busy=id;
+    ossDocker.message='正在拉取固定摘要…';
+    renderOss();
+    fetch('/__oss/pull',{
+      method:'POST',
+      credentials:'same-origin',
+      headers:{'content-type':'application/json',accept:'application/json'},
+      body:JSON.stringify({id:id})
+    }).then(function(r){
+      return r.json().then(function(j){ return {status:r.status,data:j||{}}; });
+    }).then(function(res){
+      var d=res.data||{};
+      ossDocker.busy='';
+      ossDocker.enabled=d.enabled!==false;
+      ossDocker.armed=!!d.armed;
+      ossDocker.message=d.message||(d.ok?'映像已在本機':'沒有拉完');
+      renderOss();
+      toast(ossDocker.message,d.ok?'ok':'err');
+    }).catch(function(){
+      ossDocker.busy='';
+      ossDocker.message='連不到這個站的 /__oss/pull。GitHub Pages 沒有這個入口。';
+      renderOss();
+      toast(ossDocker.message,'err');
+    });
+  }
   function ossById(id){ return OSS_LIST.filter(function(x){ return x.id===id; })[0]||OSS_LIST[0]; }
   function renderOss(){
+    askOssDocker();
     var kpis=$('#ossKpis'), list=$('#ossList'), detail=$('#ossDetail');
     if (!list||!detail) return;
     var ossBd=$('#navOssBd');
@@ -2627,11 +2671,16 @@
       var st=x.state==='wired'?'已接入':(load==='on'?'已加載':(load==='block'?'禁止':'未加載'));
       var btn=x.state==='wired'?'已鎖':(load==='block'?'禁止':(load==='on'?'卸下':'加載'));
       var disabled=x.state==='wired'||load==='block';
+      var pull=ossCanPull(x.id)
+        ? '<button type="button" class="mini-btn" data-cap="operate" data-oss-pull="'+esc(x.id)+'"'+(ossDocker.busy?' disabled':'')+'>'+(ossDocker.busy===x.id?'拉取中…':'拉起映像')+'</button>'
+        : '';
+      var live=x.id==='sherlock'&&ossDocker.armed?'入口已開':st;
       return '<article class="oss-card'+(x.id===ossPick?' selected':'')+(load==='on'?' on':'')+'" data-oss-id="'+esc(x.id)+'" data-search>'+
-        '<div class="oc-top"><span class="oc-name">'+esc(x.name)+'</span>'+(x.sample?'<span class="oc-sample">範例</span>':'')+'<span class="oss-st '+(load==='on'?'wired':x.state)+'">'+st+'</span></div>'+
+        '<div class="oc-top"><span class="oc-name">'+esc(x.name)+'</span>'+(x.sample?'<span class="oc-sample">範例</span>':'')+'<span class="oss-st '+(load==='on'?'wired':x.state)+'">'+esc(live)+'</span></div>'+
         '<div class="oc-repo">'+esc(x.repo)+'</div>'+
         '<div class="oc-use">'+esc(x.use)+'</div>'+
         '<div class="oc-actions"><button type="button" class="mini-btn" data-oss-open="'+esc(x.id)+'">檢視</button>'+
+        pull+
         '<button type="button" class="load-btn'+(load==='on'?' on':'')+'" data-oss-load="'+esc(x.id)+'"'+(disabled?' disabled':'')+'>'+btn+'</button></div></article>';
     }).join('')||'<div class="flow-empty">這個狀態下沒有組件</div>';
     var cur=ossById(ossPick);
@@ -2657,11 +2706,19 @@
       '<div class="kv"><span>授權</span><b>'+esc(cur.license)+'</b></div>'+
       '<div class="kv"><span>變更</span><b>'+(cur.state==='wired'?'改版本就要改這頁的鎖定':'新版本從 candidate 重走')+'</b></div>'+
       (cur.cmd?'<pre class="acq-cmd">'+esc(cur.cmd)+'</pre>':'')+
-      '<div class="note">'+(cur.state==='wired'
+      (ossCanPull(cur.id)?'<div class="oc-actions"><button type="button" class="mini-btn" data-cap="operate" data-oss-pull="'+esc(cur.id)+'"'+(ossDocker.busy?' disabled':'')+'>'+(ossDocker.busy===cur.id?'拉取中…':'拉起映像')+'</button></div>':'')+
+      (ossCanPull(cur.id)&&ossDocker.message?'<p class="note">'+esc(ossDocker.message)+'</p>':'')+
+      '<div class="note">'+(cur.id==='sherlock'
+        ?'容器隨主 Compose 閒置，自己不查用戶名。拉起映像仍只打開收集頁入口。網頁容器拒絕這個按鈕。'
+        :(cur.id==='maigret'
+          ?'容器隨主 Compose 閒置。不開 Web UI，收集頁不改走 Maigret。'
+          :(cur.id==='xhs'||cur.id==='douyin-api'
+            ?'隨主 Compose 啟動，只聽 127.0.0.1，不接資料庫。開機不送出抓取。開關在基礎設施頁。失敗兩次後不再自動重啟。'
+          :(cur.state==='wired'
         ?'這顆已經接在運行時頁面。不使用 latest，也不會因為上游更新自動換版本。'
         :(cur.checked
           ?'官方鏡像或倉庫 Dockerfile 已核對。這頁只登記來源、許可和部署方式，不拉取、不建置、不啟動，也不進主棧。'
-          :'候選只代表可以評估。未核對官方來源、授權與摘要前，不得放進主棧，也不得在這頁啟動。'))+'</div>';
+          :'候選只代表可以評估。未核對官方來源、授權與摘要前，不得放進主棧，也不得在這頁啟動。')))))+'</div>';
   }
   function renderPar(){
     var host=$('#parLanes'); if (!host) return;
@@ -2888,6 +2945,8 @@
     if (load){ togglePack(load.getAttribute('data-load-kind'),load.getAttribute('data-load-id')); return; }
     var ossLoad=e.target.closest('[data-oss-load]');
     if (ossLoad){ toggleOss(ossLoad.getAttribute('data-oss-load')); return; }
+    var ossPull=e.target.closest('[data-oss-pull]');
+    if (ossPull){ pullOss(ossPull.getAttribute('data-oss-pull')); return; }
     var open=e.target.closest('[data-oss-open]');
     if (open){ go({topic:'oss',pane:null,focus:open.getAttribute('data-oss-open')},'replace'); return; }
     var card=e.target.closest('.oss-card[data-oss-id]');

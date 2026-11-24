@@ -1,5 +1,3 @@
-name: kolindex-oss
-
 x-logging: &logging
   driver: json-file
   options:
@@ -18,8 +16,6 @@ x-harden: &harden
   logging: *logging
   networks:
     - oss
-  profiles:
-    - oss
 
 services:
   sherlock:
@@ -33,9 +29,12 @@ services:
     pids_limit: 128
     tmpfs:
       - /tmp:rw,noexec,nosuid,size=32m
+    entrypoint: ["sleep", "infinity"]
+    restart: unless-stopped
     labels:
       org.kolindex.tag: "0.16.0"
       org.kolindex.measured: "2026-11-24"
+      org.kolindex.wait: control
 
   maigret:
     <<: *harden
@@ -51,12 +50,13 @@ services:
     pids_limit: 128
     tmpfs:
       - /tmp:rw,noexec,nosuid,size=32m
+    entrypoint: ["sleep", "infinity"]
+    restart: unless-stopped
     labels:
       org.kolindex.tag: "327c2bc"
       org.kolindex.measured: "2026-11-24"
       org.kolindex.role: backup
-    profiles:
-      - backup
+      org.kolindex.wait: control
 
   xhs-downloader:
     <<: *harden
@@ -74,9 +74,11 @@ services:
     pids_limit: 128
     tmpfs:
       - /tmp:rw,nosuid,size=32m
+    restart: "on-failure:2"
     labels:
       org.kolindex.tag: "2.8"
       org.kolindex.measured: "2026-11-24"
+      org.kolindex.wait: control
 
   douyin-tiktok-api:
     <<: *harden
@@ -98,9 +100,11 @@ services:
     tmpfs:
       - /tmp:rw,nosuid,size=64m
     stop_grace_period: 20s
+    restart: "on-failure:2"
     labels:
       org.kolindex.tag: "5.1.13"
       org.kolindex.measured: "2026-11-24"
+      org.kolindex.wait: control
 
 networks:
   oss: {}

@@ -284,6 +284,12 @@ const SHERLOCK_IMAGE = process.env.SHERLOCK_DOCKER
   || 'sherlock/sherlock@sha256:9d6602b98179fb15ceab88433626fb0ae603ae9880e13cab886970317fe1475f';
 const SHERLOCK_IMAGE_OK = /^[a-z0-9][a-z0-9._/-]*@sha256:[a-f0-9]{64}$/;
 let sherlockBusy = false;
+let sherlockArmed = process.env.KOL_SHERLOCK === '1';
+
+const OSS_PULL = {
+  sherlock: { service: 'sherlock', profile: 'oss' },
+  maigret: { service: 'maigret', profile: 'backup' },
+};
 
 function parseSherlockHits(text) {
   const hits = [];
@@ -467,13 +473,17 @@ function handleComponentHealth(req, res) {
   return componentHealth().then((items) => json(res, 200, { ok: true, items, duration_ms: Date.now() - started }));
 }
 
-const DOCKER_SERVICES = new Set(['web', 'postgres', 'redis', 'minio', 'meilisearch']);
+const DOCKER_SERVICES = new Set([
+  'web', 'postgres', 'meilisearch',
+  'sherlock', 'maigret', 'xhs-downloader', 'douyin-tiktok-api',
+]);
 const DOCKER_ACTIONS = new Set(['start', 'stop', 'restart']);
 
 function composeArgs(extra) {
   return [
     'compose',
     '-f', path.join(ROOT, 'infra', 'compose', 'docker-compose.yml'),
+    '-f', path.join(ROOT, 'infra', 'compose', 'docker-compose.oss.yml'),
     '--project-directory', path.join(ROOT, 'infra', 'compose'),
   ].concat(extra);
 }
@@ -539,6 +549,65 @@ async function dockerStatus() {
   return { ok: true, enabled: true, items };
 }
 
+function ossComposeArgs(profile, extra) {
+  return [
+    'compose',
+    '-f', path.join(ROOT, 'infra', 'compose', 'docker-compose.oss.yml'),
+    '--project-directory', path.join(ROOT, 'infra', 'compose'),
+    '--profile', profile,
+  ].concat(extra);
+}
+
+function handleOssPull(req, res) {
+  if (GATE && !currentSession(req)) return json(res, 401, { error: 'login_required' });
+  if (process.env.KOL_DOCKER !== '1') {
+    return json(res, 403, {
+      error: 'disabled',
+      enabled: false,
+      armed: sherlockArmed,
+      message: '網頁容器沒有 Docker。要在宿主機用 KOL_DOCKER=1 啟動 node tests/dev-server.mjs。',
+    });
+  }
+  if (req.method === 'GET' || req.method === 'HEAD') {
+    return json(res, 200, {
+      ok: true,
+      enabled: true,
+      armed: sherlockArmed,
+      services: Object.keys(OSS_PULL),
+    });
+  }
+  if (req.method !== 'POST') return json(res, 405, { error: 'method' });
+  const role = GATE ? currentSession(req).role : 'operator';
+  if (normalizeRole(role) !== 'operator') {
+    return json(res, 403, { error: 'forbidden', message: '只有操作者可以拉起這兩個映像。' });
+  }
+  return readBody(req, 1024).then(async (raw) => {
+    let body = {};
+    try { body = raw ? JSON.parse(raw) : {}; } catch { body = {}; }
+    const id = String(body.id || '');
+    const spec = OSS_PULL[id];
+    if (!spec) return json(res, 400, { error: 'bad_request' });
+    await runDocker(ossComposeArgs(spec.profile, ['pull', spec.service]), 180000);
+    if (id === 'sherlock') sherlockArmed = true;
+    return json(res, 200, {
+      ok: true,
+      id,
+      armed: sherlockArmed,
+      message: id === 'sherlock'
+        ? 'Sherlock 映像已在本機。收集頁入口已打開，查詢仍由操作者送出，查完即退出。'
+        : 'Maigret 映像已在本機。它是備援，收集頁仍只呼叫 Sherlock。',
+    });
+  }).catch((err) => {
+    if (err && err.code === 'ENOENT') {
+      return json(res, 503, { error: 'missing', message: '這台找不到 docker 指令。' });
+    }
+    if (err && err.code === 'timeout') {
+      return json(res, 504, { error: 'timeout', message: '拉取超過 180 秒，已停止。' });
+    }
+    return json(res, 502, { error: 'failed', message: (err && err.detail) || '映像沒有拉完。' });
+  });
+}
+
 function handleDocker(req, res) {
   if (GATE && !currentSession(req)) return json(res, 401, { error: 'login_required' });
   if (req.method === 'GET' || req.method === 'HEAD') {
@@ -566,15 +635,15 @@ function handleDocker(req, res) {
 }
 
 function handleSherlock(req, res) {
-  if (PROD && process.env.KOL_SHERLOCK !== '1') {
-    return json(res, 404, { error: 'disabled' });
-  }
   const sess = GATE ? currentSession(req) : null;
-  if (GATE && !sess) {
-    return json(res, 401, { error: 'login_required' });
+  if (!sess) {
+    return json(res, 401, { error: 'login_required', message: 'Sherlock 只開放給已登入的操作者。' });
   }
-  if (GATE && sess && !caps(sess.role).operate) {
+  if (!caps(sess.role).operate) {
     return json(res, 403, { error: 'forbidden', message: '只有操作者可以送出用戶名查詢', role: sess.role });
+  }
+  if (process.env.KOL_SHERLOCK !== '1' && !sherlockArmed) {
+    return json(res, 404, { error: 'disabled', message: '收集頁入口還沒打開。操作者要在開源組件頁拉起 Sherlock 映像，或在這個宿主行程設 KOL_SHERLOCK=1。' });
   }
   if (req.method !== 'POST') return json(res, 405, { error: 'method' });
   if (sherlockBusy) return json(res, 409, { error: 'busy' });
@@ -666,6 +735,8 @@ const server = http.createServer(async (req, res) => {
   if (url.startsWith('/__health/components')) return handleComponentHealth(req, res);
 
   if (url === '/media' || url.startsWith('/media/')) return serveMedia(req, res, url);
+
+  if (url.startsWith('/__oss/pull')) return handleOssPull(req, res);
 
   if (url.startsWith('/__docker')) return handleDocker(req, res);
 
@@ -809,7 +880,7 @@ function listen(port, attempt = 0) {
     console.log('  live reload: ' + (PROD ? 'off' : 'on (edit index2.html / js / css, page refreshes itself)'));
     console.log('  llm        : ' + (LLM.key ? LLM.model + ' @ ' + LLM.base + ' → POST /__llm' : 'disabled (no LLM_API_KEY in .env)'));
     console.log('  api        : ' + API_BASE + ' → GET/POST /api/*  (沒跑就回 503，頁面自動退回示範資料)');
-    console.log('  sherlock   : ' + (PROD && process.env.KOL_SHERLOCK !== '1' ? 'off（正式環境要設 KOL_SHERLOCK=1）' : 'docker run ' + SHERLOCK_IMAGE + ' → POST /__sherlock'));
+    console.log('  sherlock   : ' + (process.env.KOL_SHERLOCK === '1' || sherlockArmed ? 'operator + docker run ' + SHERLOCK_IMAGE + ' → POST /__sherlock' : 'off（開源組件頁拉起映像，或設 KOL_SHERLOCK=1）'));
     console.log('  stop : Ctrl+C');
     console.log('');
     if (!PROD) watch();

@@ -229,7 +229,7 @@ if (new URLSearchParams(location.search).get('demo') === '1') document.documentE
                 <input type="text" id="discoverName" name="discover" maxlength="32" placeholder="英數、點、底線或連字號" autocomplete="off" spellcheck="false" required>
               </label>
               <button type="submit" class="mini-btn" id="discoverAdd">呼叫 Sherlock</button>
-              <p class="note" id="discoverOut">送出後用本機 Docker 啟動官方映像 sherlock/sherlock 0.16.0 的固定摘要，查完即退出。只查這個公開用戶名。</p>
+              <p class="note" id="discoverOut">只有操作者能送出。這個行程要設 KOL_SHERLOCK=1，並由本機 Docker 用官方映像 0.16.0 的固定摘要查完即退出。網頁容器與 GitHub Pages 沒有這個入口。Maigret 不從這裡呼叫。</p>
             </form>
             <div class="collect-list" id="collectList" aria-label="收集項"></div>
           </div>
@@ -1318,7 +1318,7 @@ if (new URLSearchParams(location.search).get('demo') === '1') document.documentE
 <script defer src="js/login.js?v=20261123"></script>
 <script defer src="js/fixtures/demo.js?v=20261124"></script>
 <script defer src="js/api.js?v=20261124"></script>
-<script defer src="js/index2.js?v=20261124b"></script>
+<script defer src="js/index2.js?v=20261124d"></script>
 <script defer src="js/wireframe.js?v=20261121"></script>
 <script defer src="js/studio.js?v=20261123c"></script>
 <script defer src="js/review.js?v=20261123d"></script>

@@ -29,11 +29,11 @@
 
 | 狀態 | 項目 | 倉庫 | 補的能力 |
 |---|---|---|---|
-| 會呼叫 | Sherlock 0.16.0 | `sherlock-project/sherlock` | 公開用戶名在其站點清單上的頁面。要 `KOL_SHERLOCK=1`，由本機 Docker 跑完即退出。同一摘要也在 `docker-compose.oss.yml` |
-| 已寫入 Compose，預設不啟動 | XHS-Downloader 2.8 | `JoeanAmier/XHS-Downloader` | 小紅書採集候選。只聽 `127.0.0.1`，不接資料網路 |
-| 已寫入 Compose，預設不啟動 | Douyin_TikTok_Download_API 5.1.13 | `Evil0ctal/Douyin_TikTok_Download_API` | 只有 API 映像。不接本專案資料庫，不含上游的 browser、downloader、transcriber |
+| 會呼叫 | Sherlock 0.16.0 | `sherlock-project/sherlock` | 容器預設閒置。收集頁查詢才另開一次性容器，查完即退出 |
+| 已接入，預設啟動，等待控制 | XHS-Downloader 2.8 | `JoeanAmier/XHS-Downloader` | 只聽 `127.0.0.1`。不接資料網路。開機不抓取 |
+| 已接入，預設啟動，等待控制 | Douyin_TikTok_Download_API 5.1.13 | `Evil0ctal/Douyin_TikTok_Download_API` | 只有 API 映像。不接本專案資料庫，不含上游的 browser、downloader、transcriber。開機不抓取 |
 | 未寫入 Compose | douyin-dl | `Achaiccccc/douyin-dl` | 沒有可釘住的 Docker Hub 映像。不在這裡建置 |
-| 已寫入 Compose，預設不啟動 | Maigret `327c2bc` | `soxoj/maigret` | 備援。不跟 Sherlock 同時維護。profile 是 `backup` |
+| 已接入，預設閒置 | Maigret `327c2bc` | `soxoj/maigret` | 備援。容器只停在 `sleep`，收集頁不呼叫它 |
 | 只登記來源 | 麦田 | `CzzzzzzJ/mdldm-maitian` | 自有帳號的發布工作台。沒有官方映像，不在這裡啟動 |
 | 已接畫面，不載入上游套件 | Tippy.js、Popper、IBM Plex、Chakra Petch | 見開源組件頁 | 提示、定位、字型。圖表和圖示改由頁內實作 |
 | 骨架，未取代現用畫面 | Next.js、React、TypeScript | `apps/web` 的鎖檔 | 之後的網頁工程 |
@@ -138,7 +138,7 @@ GitHub Pages 只發靜態畫面。正式運行在家裡的 NAS。分頁細節見
 | 文件 | 負責 |
 |---|---|
 | `PROJECT.md` | 時間表、技術表、技術目標、格式要求、阻斷項 |
-| `README.md` | 安裝、執行、部署、目錄 |
+| `README.md` | 安裝、執行、部署、目錄、安全需求 |
 | `ROADMAP.md` | 十二個分頁的真假和缺口 |
 | `infra/compose/docker-compose.yml` | NAS 上實際會拉起的服務 |
 
