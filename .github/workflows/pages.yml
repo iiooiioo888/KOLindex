@@ -91,3 +91,6 @@ jobs:
         if: steps.pages.outputs.enabled == 'true'
         id: deploy
         uses: actions/deploy-pages@v4
+        # 沒開 Pages 時 deploy-pages 會失敗（API 404）；不要讓整個 CI 變紅。
+        # 開了 Pages 之後這一步就會真的發佈，warning 消失。
+        continue-on-error: true
