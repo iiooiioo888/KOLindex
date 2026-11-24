@@ -131,8 +131,8 @@ import assert from 'node:assert';
   console.log('jobs.js id refs:', new Set(jRefs).size, 'dangling:', jDangling.length ? jDangling : 'none');
   assert(!jDangling.length);
   assert(jobsJs.includes("'/api/jobs?state='") && jobsJs.includes("'kolindex:api'"), 'jobs wiring');
-  const jobStates = (html.match(/id="jobsFilters"[\s\S]*?<\/div>/) || [''])[0].match(/data-state="[a-z]+"/g) || [];
-  assert(jobStates.length === 7, 'jobs filters 7');
+  const jobStates = (html.match(/id="jobsFilters"[\s\S]*?<\/div>/) || [''])[0].match(/data-state="[a-z_]+"/g) || [];
+  assert(jobStates.length === 9, 'jobs filters 9');
   console.log('jobs wiring: ok');
 
   // 素材庫（抖音點讚／收藏，唯讀真資料）
