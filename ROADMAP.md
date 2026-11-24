@@ -15,9 +15,9 @@
 | 07 | 基礎設施 | 半 | 連接器 `GET /api/health/connectors`、排程 `GET /api/jobs`、元件健康 `GET /__health/components`（含 `duration_ms`）、容器清單要 `KOL_DOCKER=1` | 第一版 Compose 只有網頁、PostgreSQL、Meilisearch。Redis 與 MinIO 不啟動 |
 | 08 | 開源組件 | 假 | 靜態清單與授權字串 | 沒有解析器、沒有授權掃描 |
 | 09 | UI 生成 | 真 | `POST /__llm` 本地代理 → OpenAI 相容 API（需 `.env` 的 `LLM_API_KEY`） | 產物是線框圖 JSON，不是可執行頁面；沒金鑰時只顯示示範線框 |
-| 10 | 人物檔案 | 半 | `GET /api/library/authors` 等，抖音作者 18,974 位 | **沒有跨平台歸戶**（`person` 表 0 筆）、沒有 F2 打分、沒有小紅書／微博／YouTube |
+| 10 | 人物檔案 | 半 | `GET /api/library/authors` 等，抖音作者 19,058 位 | **沒有跨平台歸戶**（`person` 表 0 筆）、沒有 F2 打分、沒有小紅書／微博／YouTube |
 | 11 | 審核台 | 真 | `review_task`、`POST /api/review/:id/verdict`、`GET /api/audit` | 佇列只有 6 筆人工造的候選；沒有真正的 F2 產生的 review_task |
-| 12 | 素材庫 | 真 | `GET /api/library`、`/api/library/authors`、`/api/library/:id`、MyLike 同步、無損清理、衍生層 | 1,081 件只有索引沒有本機檔；14 個收藏夾未索引；影片未處理。**衍生層不改原檔**（新增 `<原檔>.q50.webp` + `media_derivative` 血緣），所以不省空間 |
+| 12 | 素材庫 | 真 | `GET /api/library`、`/api/library/authors`、`/api/library/:id`、MyLike 同步、無損清理、衍生層 | 1,361 件只有索引沒有本機檔；14 個收藏夾未索引；影片未處理。**衍生層不改原檔**（新增 `<原檔>.q50.webp` + `media_derivative` 血緣），所以不省空間 |
 
 右欄監控（`/api/rail`）是真的：佇列深度、槽位、dispatcher、`audit_log`、儲存。但 **告警面板 0 筆**——`alert` 表在清掉示範資料後沒有產生器。
 
@@ -37,6 +37,8 @@
 工程面：業務真相改為 PostgreSQL（`jsonb` + pgvector）。SQLite 只留 intake buffer。Meilisearch 是可重建的衍生索引。Redis 與 MinIO 不在第一版 Compose。開源候選在 `infra/compose/docker-compose.oss.yml`，Maigret 改掛 `backup` profile。登入是 dev-server 的 `KOL_GATE` 和三種角色。控制面四個寫入端點在 `apps/control/app.py`。運行位置是本機 NAS。
 
 ## 三、未實作的功能（依優先級）
+
+最近一輪（2026-11-25）：**整體版面再平衡** — 三欄在 1440 是 `248 + 810 + 372`，素材庫 1440 排四欄、收集頁表單與清單歸位、分頁籤在 1280 可橫向捲動、1024 頂欄回到單列、感測頁三卡一列、窄高視窗左軌不再被截斷。
 
 **P0 治理（規格 v4.0，原型全缺）**
 
@@ -58,7 +60,7 @@
 **P2 抓取與媒體**
 
 7. 14 個抖音收藏夾（約 1.2 萬筆）尚未抓索引
-8. 1,081 件缺檔未下載（F: 剩 15.8 GB，下載鈕已 disabled）
+8. 1,361 件缺檔未下載（F: 剩約 10.5 GB，下載鈕已 disabled）
 9. 影片完全沒處理（衍生層只做圖集 `kind='gallery'`）
 10. 沒有縮圖管線（480px WebP）：目前直接吃原圖，列表載入慢
 11. MyLike 同步只補索引、不下載；沒有排程自動同步

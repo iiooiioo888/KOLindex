@@ -110,10 +110,10 @@
 
 /* ── 5. 斷點 ───────────────────────────────────────────────── */
 @media(max-width:1680px){
-  .shell{grid-template-columns:252px minmax(0,1fr) 420px}
+  .shell{grid-template-columns:248px minmax(0,1fr) 372px}
 }
 @media(max-width:1439px){
-  .shell{grid-template-columns:244px minmax(0,1fr) 388px}
+  .shell{grid-template-columns:240px minmax(0,1fr) 356px}
 }
 @media(max-width:1279px){
   .shell{grid-template-columns:248px minmax(0,1fr)}
@@ -163,3 +163,67 @@
 #topic-queue .lj-sup{margin-top:4px;font-family:var(--mono);font-size:10px;letter-spacing:.04em;color:var(--cyan)}
 #topic-queue .lj-err{color:var(--red);font-family:var(--mono);font-size:10px;margin-top:2px}
 
+/* ── 9. 版面再平衡：收集頁兩張表單疊左欄，清單吃滿右欄 ───────── */
+/* .collect-layout 有三個直接子元素，舊版只宣告兩欄，清單會掉到左下角。 */
+#topic-collect .collect-layout{
+  grid-template-columns:var(--side-w) minmax(0,1fr);
+  grid-template-rows:auto 1fr;
+  align-items:start;
+}
+#topic-collect .collect-layout>.collect-form:nth-of-type(1){grid-column:1;grid-row:1}
+#topic-collect .collect-layout>.collect-form:nth-of-type(2){grid-column:1;grid-row:2}
+#topic-collect .collect-layout>.collect-list{grid-column:2;grid-row:1 / span 2}
+
+@media(max-width:900px){
+  #topic-collect .collect-layout{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    grid-template-rows:auto auto;
+  }
+  #topic-collect .collect-layout>.collect-form:nth-of-type(1){grid-column:1;grid-row:1}
+  #topic-collect .collect-layout>.collect-form:nth-of-type(2){grid-column:2;grid-row:1}
+  #topic-collect .collect-layout>.collect-list{grid-column:1 / -1;grid-row:2}
+}
+@media(max-width:640px){
+  #topic-collect .collect-layout{grid-template-columns:minmax(0,1fr);grid-template-rows:auto}
+  #topic-collect .collect-layout>.collect-form:nth-of-type(1),
+  #topic-collect .collect-layout>.collect-form:nth-of-type(2),
+  #topic-collect .collect-layout>.collect-list{grid-column:auto;grid-row:auto}
+}
+
+/* 左軌 LLM 槽位沒有執行中的工作時，別只留一條標題 */
+.rail #slotRail:empty::after{
+  content:"目前沒有執行中的槽位";
+  display:block;
+  padding:4px 0 2px;
+  font-family:var(--mono);
+  font-size:9.5px;
+  letter-spacing:.04em;
+  color:var(--faint);
+}
+
+/* ── 10. 短螢幕（900–960px 高）把左軌收緊，讓 12 個分頁與摘要卡少捲一點 ── */
+@media(max-height:960px) and (min-width:1280px){
+  .rail{padding:12px 12px 16px;gap:8px}
+  .rail .rail-label{padding-bottom:4px;margin-bottom:2px}
+  .rail .nav-item{padding:5px 8px}
+  .rail .micro-card{padding:7px 9px}
+  .rail .micro-card h4{margin-bottom:4px}
+  .rail .kv{padding:1px 0;line-height:1.4}
+}
+
+/* ── 11. 1024 級筆電：topbar 不要折成兩列 ───────────────────── */
+@media(max-width:1100px) and (min-width:768px){
+  .topbar{gap:8px;padding:8px 12px}
+  .brand-sub{display:none}
+  #stackChip{display:none}
+  .chip-row{gap:4px}
+  .chip{padding:3px 6px}
+  .searchbox{flex:0 1 200px;min-width:150px}
+  .top-right{gap:6px}
+}
+/* 感測上下文：三張感知卡在寬舞台排一列；窄舞台讓第三張跨滿，不留半格空白 */
+#topic-sense .sense-grid>.scard:nth-child(3){grid-column:1/-1}
+@container stage (min-width:800px){
+  #topic-sense .sense-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+  #topic-sense .sense-grid>.scard:nth-child(3){grid-column:auto}
+}

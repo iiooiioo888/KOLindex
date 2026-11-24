@@ -152,7 +152,8 @@
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
 }
 .topic-tabs{
-  display:flex;align-items:stretch;gap:0;
+  display:flex;align-items:stretch;justify-content:safe center;gap:0;
+  align-self:stretch;width:100%;max-width:100%;
   padding:0 var(--s-7);
   overflow-x:auto;overflow-y:hidden;scrollbar-width:none;
 }
