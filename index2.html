@@ -17,7 +17,7 @@
 <link rel="stylesheet" href="css/review.css?v=20261121">
 <link rel="stylesheet" href="css/connectors.css?v=20261121">
 <link rel="stylesheet" href="css/jobs.css?v=20261121">
-<link rel="stylesheet" href="css/library.css?v=20261123e">
+<link rel="stylesheet" href="css/library.css?v=20261125a">
 <link rel="stylesheet" href="css/person.css?v=20261122">
 <link rel="stylesheet" href="css/seats.css?v=20261123">
 <link rel="stylesheet" href="css/queue.css?v=20261124">
@@ -1122,23 +1122,24 @@ if (new URLSearchParams(location.search).get('demo') === '1') document.documentE
         </div>
       </div>
 
-      <div class="lib-viewer" id="libViewer" role="dialog" aria-modal="true" aria-label="素材檢視" hidden>
-        <div class="lv-stage">
-          <div class="lv-media" id="libMedia"></div>
-          <button type="button" class="lv-nav prev" id="libPrev" aria-label="上一個檔案">‹</button>
-          <button type="button" class="lv-nav next" id="libNext" aria-label="下一個檔案">›</button>
-          <button type="button" class="lv-close" id="libClose" aria-label="關閉">✕</button>
-        </div>
-        <div class="lv-side">
-          <div class="lv-head" id="libViewHead"></div>
-          <div class="lv-body" id="libViewBody"></div>
-          <div class="lv-counter" id="libCounter"></div>
-          <div class="lv-thumbs" id="libThumbs" hidden></div>
-        </div>
-      </div>
     </section>
-    <!-- ═══ 作者 ═══ -->
   </main>
+
+  <!-- 檢視器放在 body 層：素材庫與人物檔案都能開，不會被分頁的 display:none 關住 -->
+  <div class="lib-viewer" id="libViewer" role="dialog" aria-modal="true" aria-label="素材檢視" hidden>
+    <div class="lv-stage">
+      <div class="lv-media" id="libMedia"></div>
+      <button type="button" class="lv-nav prev" id="libPrev" aria-label="上一個檔案">‹</button>
+      <button type="button" class="lv-nav next" id="libNext" aria-label="下一個檔案">›</button>
+      <button type="button" class="lv-close" id="libClose" aria-label="關閉">✕</button>
+    </div>
+    <div class="lv-side">
+      <div class="lv-head" id="libViewHead"></div>
+      <div class="lv-body" id="libViewBody"></div>
+      <div class="lv-counter" id="libCounter"></div>
+      <div class="lv-thumbs" id="libThumbs" hidden></div>
+    </div>
+  </div>
 
   <aside class="rail-right" aria-label="監控面板">
     <div class="rr">
