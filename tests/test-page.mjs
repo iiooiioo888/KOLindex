@@ -160,6 +160,8 @@ import assert from 'node:assert';
   assert(modes.length === 2 && asorts.length === 3, 'library mode 2 / author sort 3');
   assert(libJs.includes("'kolindex:api'") && libJs.includes('KOLINDEX_LIBRARY'), 'library wiring');
   assert(libJs.includes("'/download'") && libJs.includes('downloadMissing') && libJs.includes("'/api/library/download'"), 'library download wiring');
+  assert(libJs.includes("rel.indexOf('media/')===0"), 'library media path strips duplicate media');
+  assert(idx.includes("typeof bar!=='number'"), 'queue bars skip null values');
   const kinds = (html.match(/id="libKind"[\s\S]*?<\/div>/) || [''])[0].match(/data-kind="[a-z]+"/g) || [];
   const srcs = (html.match(/id="libSource"[\s\S]*?<\/div>/) || [''])[0].match(/data-source="[a-z]+"/g) || [];
   assert(kinds.length === 3 && srcs.length === 3, 'library filters 3/3');

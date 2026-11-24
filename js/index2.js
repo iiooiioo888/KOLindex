@@ -234,8 +234,9 @@
     });
     metricNodes.pcts.forEach(function(el){
       var k=el.getAttribute('data-pct');
-      if (d.bars[k]===undefined) return;
-      var pct=d.bars[k].toFixed(1)+'%';
+      var bar=d.bars[k];
+      if (bar===undefined || bar===null || typeof bar!=='number' || !isFinite(bar)) return;
+      var pct=bar.toFixed(1)+'%';
       if (el.style.getPropertyValue('--pct')!==pct) el.style.setProperty('--pct',pct);
     });
     metricNodes.counts.forEach(function(el){

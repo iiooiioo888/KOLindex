@@ -53,9 +53,12 @@ function day(v){
 }
 function mediaUrl(p){
   if(!p) return '';
-  if(/^https?:/i.test(p)) return p;
-  var base=(typeof window!=='undefined'&&window.KOLINDEX_MEDIA)||'/media';
-  return String(base).replace(/\/$/,'')+'/'+String(p).replace(/^\/+/,'');
+  var raw=String(p);
+  if(/^https?:/i.test(raw)) return raw;
+  var base=((typeof window!=='undefined'&&window.KOLINDEX_MEDIA)||'/media').replace(/\/$/,'');
+  var rel=raw.replace(/^\/+/,'');
+  if(/\/media$/.test(base) && rel.indexOf('media/')===0) rel=rel.slice(6);
+  return base+'/'+rel;
 }
 function displayAuthor(a){ if(!a) return '未命名'; return a==='unnamed'?'未命名':a; }
 function on(el,ev,fn){ if(el&&el.addEventListener) el.addEventListener(ev,fn); }

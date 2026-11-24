@@ -51,10 +51,10 @@ node tests/dev-server.mjs . 5200
 
 ```
 node server.mjs                       # API 127.0.0.1:5210
-node ../KOLindex-dev/douyin/…         # 素材庫的圖片／影片靜態站 127.0.0.1:5400
+KOL_MEDIA_ROOT=../KOLindex-dev/douyin/media node tests/dev-server.mjs . 5200
 ```
 
-前端會自己找同源的 `/api`（經 5200 代理）；素材庫的媒體則直接指向 `http://127.0.0.1:5400/media/...`，可以用 `window.KOLINDEX_MEDIA` 或 `KOLINDEX_BASE` 覆寫。
+前端會自己找同源的 `/api`（經 5200 代理）；素材庫的媒體也走同源 `/media/...`，由 `KOL_MEDIA_ROOT` 指向 `douyin/media`。想改由 5400 的相簿靜態站供檔，在頁面載入前設 `window.KOLINDEX_MEDIA='http://127.0.0.1:5400'`。
 
 ### UI 生成（可選）
 
@@ -71,7 +71,7 @@ node tests/test-authz.mjs      # 角色能力：viewer 只讀、reviewer 裁決�
 node tests/test-caps.mjs       # 前端依 caps 收起按鈕：靜態與動態模板的 data-cap 標註
 ```
 
-前四支只打 `127.0.0.1:5200`；`test-authz` 自己起 5390–5392 三個實例，`test-caps` 只讀檔，都不需要後端。`check` job 在每次 `push`／`PR` 跑這六支。更完整的二十支（含寫入端點、離線、瀏覽器截圖）在私有開發資料夾 `KOLindex-dev`，不在這個 repo。
+前四支只打 `127.0.0.1:5200`；`test-authz` 自己起 5390–5393 四個實例（最後一個是沒設通行碼的本機模式），`test-caps` 只讀檔，都不需要後端。`check` job 在每次 `push`／`PR` 跑這六支。更完整的二十支（含寫入端點、離線、瀏覽器截圖）在私有開發資料夾 `KOLindex-dev`，不在這個 repo。
 
 ## 安全需求
 
@@ -102,7 +102,7 @@ node tests/test-caps.mjs       # 前端依 caps 收起按鈕：靜態與動態�
 | 全鏈刪除要清掉資料庫、搜尋索引、NAS 檔案、衍生檔和收件匣 | **未完成**。現在沒有這條流程 |
 | 日誌不記通行碼、Cookie、token、私鑰或未去敏的全文 | 這是需求。這個 README 沒有逐條掃過現有日誌 |
 
-登入操作：設了 `KOL_GATE` 才會核對通行碼。沒設時，在本機填名字就能進，角色是 `viewer`。登出打 `POST /__auth/logout`。檢查指令是 `node tests/test-authz.mjs` 和 `node tests/test-caps.mjs`。
+登入操作：設了 `KOL_GATE` 才會核對通行碼。沒設時，在本機填名字就能進，角色是 `operator`（單人開發，全部能力）。登出打 `POST /__auth/logout`。檢查指令是 `node tests/test-authz.mjs` 和 `node tests/test-caps.mjs`。
 
 ## 部署
 

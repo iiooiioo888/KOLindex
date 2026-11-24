@@ -137,12 +137,19 @@
       if (up) {
         failures = 0;
         var counts = bridge.counts ? bridge.counts() : hits;
-        paint('API · LIVE', 'green', '/api/collect · /api/alerts · ' + new Date().toISOString());
+        paint('API · LIVE', 'green', '已連線 · /api/collect · /api/alerts · ' + new Date().toISOString());
         emit(true, { hits: counts });
       } else {
         failures += 1;
         if (bridge.invalidate) bridge.invalidate('offline');
-        paint('未連線', 'or', '收集與告警沒有連上。已清掉畫面上的資料。');
+        var why = '';
+        for (var i = 0; i < res.length; i++) {
+          if (res[i].status === 'rejected' && res[i].reason) {
+            why = String(res[i].reason.message || res[i].reason.status || res[i].reason);
+            break;
+          }
+        }
+        paint('未連線', 'or', '收集與告警沒有連上。' + (why ? '原因：' + why + '。' : '') + '已清掉畫面上的資料。');
         emit(false, { hits: hits, reason: 'offline' });
       }
       firstPaint = false;

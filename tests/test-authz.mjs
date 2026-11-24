@@ -34,11 +34,11 @@ ok('caps operator', caps('operator').operate === true);
 ok('describe 有中文', describe('viewer').includes('只讀'));
 
 // ── 整合：起真的 dev-server ──────────────────────────────
-async function startServer(port, role) {
+async function startServer(port, role, local) {
   const child = spawn(process.execPath, [path.join(HERE, 'dev-server.mjs'), ROOT, String(port)], {
     cwd: HERE,
     env: Object.assign({}, process.env, {
-      KOL_GATE: 'test-secret',
+      KOL_GATE: local ? '' : 'test-secret',
       KOL_ROLE: role,
       KOL_API: 'http://127.0.0.1:59999',
     }),
@@ -133,11 +133,31 @@ async function runRole(role, port) {
   }
 }
 
+async function runLocal(port) {
+  // 沒設 KOL_GATE 是單人開發：不管 KOL_ROLE 是什麼，本機登入都給操作者與全部能力。
+  const child = await startServer(port, 'viewer', true);
+  try {
+    const anon = await hit(port, '', 'GET', '/api/rail');
+    ok('local 未登入可讀（不擋）', anon.status !== 401, String(anon.status));
+    const good = await login(port, '本機開發者', '');
+    ok('local 登入 → 200', good.status === 200, String(good.status));
+    ok('local 角色是 operator（不受 KOL_ROLE 影響）', good.body.role === 'operator', JSON.stringify(good.body));
+    ok('local caps 全開', good.body.caps && good.body.caps.write === true && good.body.caps.review === true && good.body.caps.operate === true, JSON.stringify(good.body.caps));
+    const sess = await fetch('http://127.0.0.1:' + port + '/__auth/session').then((r) => r.json());
+    ok('local session gate=false', sess.gate === false, JSON.stringify(sess));
+    const write = await hit(port, '', 'POST', '/api/collect/1/claim');
+    ok('local 可寫入（不是 403）', write.status !== 403, String(write.status));
+  } finally {
+    child.kill();
+  }
+}
+
 const ports = { viewer: 5390, reviewer: 5391, operator: 5392 };
 try {
   for (const role of ['viewer', 'reviewer', 'operator']) {
     await runRole(role, ports[role]);
   }
+  await runLocal(5393);
 } catch (err) {
   fail += 1;
   console.log('FAIL 整合測試例外 — ' + err.message);

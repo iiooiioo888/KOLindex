@@ -46,8 +46,14 @@ function day(v){
 }
 function mediaUrl(p){
   if(!p) return '';
-  if(/^https?:/i.test(p)) return p;
-  return MEDIA.replace(/\/$/,'')+'/'+p;
+  var raw=String(p);
+  if(/^https?:/i.test(raw)) return raw;
+  var base=MEDIA.replace(/\/$/,'');
+  var rel=raw.replace(/^\/+/,'');
+  // 舊版後端回的 cover/files 是 media/gallery/…，而 MEDIA 預設已經是 /media；
+  // 不剝掉就會變成 /media/media/…（404）。
+  if(/\/media$/.test(base) && rel.indexOf('media/')===0) rel=rel.slice(6);
+  return base+'/'+rel;
 }
 function on(el,ev,fn){ if(el&&el.addEventListener) el.addEventListener(ev,fn); }
 

@@ -135,7 +135,7 @@ function handleAuth(req, res, url) {
     if (!name || /[\u0000-\u001f]/.test(name)) return json(res, 400, { error: 'name' });
     const ip = clientIp(req);
     if (loginBlocked(ip)) return json(res, 429, { error: 'slow', message: '登入失敗次數太多，請稍後再試。' });
-    if (!GATE) return json(res, 200, { ok: true, gate: false, mode: 'local', name, role: 'viewer', caps: caps('viewer') });
+    if (!GATE) return json(res, 200, { ok: true, gate: false, mode: 'local', name, role: 'operator', caps: caps('operator') });
     if (SERVER_OPERATOR && name !== SERVER_OPERATOR) {
       noteLoginFail(ip);
       return json(res, 401, { error: 'bad_pass' });
