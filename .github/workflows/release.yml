@@ -1,0 +1,50 @@
+name: release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: GitHub Release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: 讀取版本與說明
+        id: meta
+        run: |
+          tag="${GITHUB_REF_NAME}"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          if [ -f CHANGELOG.md ]; then
+            # 取該版本段落；沒有就用預設原型說明
+            notes=$(awk -v t="$tag" '
+              $0 ~ "^## \\[" t "\\]" {grab=1; next}
+              grab && $0 ~ /^## \[/ {exit}
+              grab {print}
+            ' CHANGELOG.md | sed '/./,$!d')
+          fi
+          if [ -z "$notes" ]; then
+            notes="Prototype. Not production-ready.
+當前可用的頁面與已知缺口見 ROADMAP.md 與 PROJECT.md。"
+          fi
+          {
+            echo "notes<<EOF"
+            echo "$notes"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+      - name: 建立 GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.meta.outputs.tag }}
+          name: ${{ steps.meta.outputs.tag }}
+          body: ${{ steps.meta.outputs.notes }}
+          draft: false
+          prerelease: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

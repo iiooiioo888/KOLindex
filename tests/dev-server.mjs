@@ -886,8 +886,9 @@ const server = http.createServer(async (req, res) => {
 
 function listen(port, attempt = 0) {
   const loopback = HOST === '127.0.0.1' || HOST === '::1' || HOST === 'localhost';
-  if (!loopback && !GATE) {
-    console.error('拒絕啟動：監聽 ' + HOST + ' 時必須設定 KOL_GATE');
+  // 正式模式一律要通行碼：反向代理後面 HOST 仍可能是 127.0.0.1，不能只靠 loopback 判斷。
+  if ((PROD || !loopback) && !GATE) {
+    console.error('拒絕啟動：' + (PROD ? 'KOL_PROD=1' : '監聽 ' + HOST) + ' 時必須設定 KOL_GATE');
     process.exit(1);
   }
   server.once('error', (err) => {

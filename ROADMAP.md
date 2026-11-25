@@ -42,7 +42,7 @@
 
 **P0 治理（開發約束 v4.1；這一清單裡的表還沒建）**
 
-1. 寫入端點沒有自己的認證：dev-server 在 `KOL_GATE` 下已用 `tests/authz.mjs` 擋角色（viewer 唯讀、reviewer 只能裁決與 ack、operator 其餘），但 kolindex-api 本身仍是無認證的 localhost 服務；把 5210 曝露出去就等於繞過角色。生產還需要 API 自己的本機 token + `agent_action_log`
+1. 寫入端點自己的認證：**半**。網頁層 `KOL_PROD=1` 強制 `KOL_GATE`。`packages/api-auth` + `apps/api-gate` 已可擋直連 `5210`，但要掛到實際跑 `kolindex-api` 的機器上；那個 repo 目前不在本倉庫。還缺 `agent_action_log`
 2. 缺 6 張治理表：`asset_registry`、`connector_registry`、`approval_token`、`cost_ledger`、`egress_policy`、`agent_action_log`
 3. 多實例無選主：8 席 auto 模式若起兩個後端會重複派工（鐵律①）；需要 DB／檔案鎖 + fencing token
 4. 保留政策未掛鉤：`retention_days` 沒有排程清理，`deletion_tombstone` 沒流程

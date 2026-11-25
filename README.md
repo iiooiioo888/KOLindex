@@ -78,9 +78,12 @@ node tests/test-ds.mjs         # 設計系統四層、權杖、單一 accent、�
 node tests/test-balance.mjs    # HTML 標籤開閉配對（少一個 </section> 會整頁空白）
 node tests/test-authz.mjs      # 角色能力：viewer 只讀、reviewer 裁決、operator 全寫（自己起三個實例）
 node tests/test-caps.mjs       # 前端依 caps 收起按鈕：靜態與動態模板的 data-cap 標註
+node tests/test-api-auth.mjs   # API 認證閘：無 Cookie 401、登入後可過
 ```
 
-前四支只打 `127.0.0.1:5200`；`test-authz` 自己起 5390–5393 四個實例（最後一個是沒設通行碼的本機模式），`test-caps` 只讀檔，都不需要後端。`check` job 在每次 `push`／`PR` 跑這六支。更完整的二十支（含寫入端點、離線、瀏覽器截圖）在私有開發資料夾 `KOLindex-dev`，不在這個 repo。
+前四支只打 `127.0.0.1:5200`；`test-authz` 自己起 5390–5393 四個實例（最後一個是沒設通行碼的本機模式），`test-caps` 只讀檔，`test-api-auth` 自起上游與閘，都不需要後端。`check` job 在每次 `push`／`PR` 跑這七支。更完整的二十支（含寫入端點、離線、瀏覽器截圖）在私有開發資料夾 `KOLindex-dev`，不在這個 repo。
+
+版本標記：推送 `v*` tag 會觸發 `.github/workflows/release.yml`，自動建 prerelease。說明見 `CHANGELOG.md`。
 
 ## 安全需求
 
@@ -88,13 +91,13 @@ node tests/test-caps.mjs       # 前端依 caps 收起按鈕：靜態與動態�
 
 | 需求 | 現況 |
 |---|---|
-| 監聽位址不是 loopback 時，必須設定通行碼，否則拒絕啟動 | 網頁行程已做。`HOST` 不是 `127.0.0.1`、`::1`、`localhost` 且沒有 `KOL_GATE` 時，`tests/dev-server.mjs` 直接退出 |
+| 正式模式或監聽位址不是 loopback 時，必須設定通行碼，否則拒絕啟動 | 已做。`KOL_PROD=1` 或 `HOST` 不是 loopback 時，沒有 `KOL_GATE` 就直接退出。反向代理後面也不能靠「容器內仍是 127.0.0.1」省略通行碼 |
 | 角色只有 `viewer`、`reviewer`、`operator`。角色由伺服器決定，不接受瀏覽器自選 | 已做。角色來自 `KOL_ROLE`。登入表單送上來的角色不採用。一台行程同時只有一種角色 |
 | `viewer` 只讀。`reviewer` 只能做審核裁決和 AI 事件 ack。`operator` 才能做其餘寫入、容器開關、Sherlock、LLM 代理 | `KOL_GATE` 開啟時，網頁行程對 `/api` 寫入回 `401` 或 `403`。按鈕由 `js/login.js` 的 `caps` 隱藏，隱藏不是授權 |
 | 工作階段放在 HttpOnly cookie，不放到前端可讀的儲存 | Cookie 名稱 `kol_session`，`HttpOnly`、`SameSite=Lax`。`KOL_COOKIE_SECURE=1` 或反向代理送來 `https` 時才加 `Secure`。工作階段只在行程記憶體，重啟即失效 |
 | 登入失敗要限速 | 同一來源連續失敗 5 次後，60 秒回 `429` |
 | 沒有 `KOL_GATE` 的本機模式不得拿去對網際網路 | 不核對通行碼。角色與按鈕都是 `viewer`，寫入回 `403`。要在本機寫入，另外設 `KOL_DEV_OPERATOR=1`。這只限 loopback；監聽位址不是 loopback 時沒有通行碼會拒絕啟動 |
-| 業務 API 自己也要驗身份。只在網頁代理擋一次不夠 | **未完成**。直連 `kolindex-api` 的認證，這個倉庫沒有核對。把 `5210` 暴露出去就繞過網頁角色 |
+| 業務 API 自己也要驗身份。只在網頁代理擋一次不夠 | **半**。本倉庫提供 `packages/api-auth/authGuard.js` 與 `apps/api-gate`。`kolindex-api` 原始碼不在這裡，要在那台機器掛上。`KOL_PROD=1` 時網頁行程強制要 `KOL_GATE` |
 | 控制面寫入使用 Bearer token，三種角色分開 | `apps/control/app.py`：`viewer` 不能寫，`reviewer` 只能 `POST /decisions`，`operator` 可打 `POST /intake`、`/artifacts`、`/events`、`/decisions`。正式環境 `KOL_PROD=1` 時必須連 PostgreSQL，不能退回 SQLite |
 | 通行碼、token、Cookie、金鑰不進 Git、日誌、前端、Connector 設定 | `.env` 與 `infra/compose/.env` 被 gitignore。`secrets/api-tokens.example.yaml` 只有佔位，不能用來登入。age 公鑰還沒寫進 `.sops.yaml`，加密秘密檔還沒有 |
 | 網頁容器不持有 Docker 控制權 | 容器內 `KOL_DOCKER`、`KOL_SHERLOCK`、`KOL_LLM` 固定為 `0`。不掛載 Docker socket，不用 privileged、host network、host PID，映像不用 `latest` |
