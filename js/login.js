@@ -1,4 +1,4 @@
-/* 登入閘。通行碼只在伺服器設了 KOL_GATE 時才核對；沒設就只記下操作者。 */
+/* 登入閘。通行碼只在伺服器設了 KOL_GATE 時才核對。沒設時角色跟伺服器回傳的 caps，預設是 viewer。 */
 (function () {
   'use strict';
 
@@ -26,15 +26,11 @@
     el.textContent = msg || '';
   }
 
-  // 本地模式（沒有 KOL_GATE）是單人開發，一律給全部能力；伺服器模式才看 caps。
   function capsOf(session) {
-    if (!session || session.mode !== 'server') {
-      return { read: true, write: true, review: true, operate: true };
-    }
+    if (!session) return { read: true, write: false, review: false, operate: false };
     var c = session.caps;
     if (!c || typeof c !== 'object') {
-      // 舊版伺服器沒有回 caps：用角色推一個保守值。
-      return { read: true, write: session.role === 'operator', review: session.role !== 'viewer', operate: session.role === 'operator' };
+      return { read: true, write: session.role === 'operator', review: session.role === 'reviewer' || session.role === 'operator', operate: session.role === 'operator' };
     }
     return { read: c.read !== false, write: !!c.write, review: !!c.review, operate: !!c.operate };
   }
@@ -62,7 +58,7 @@
     }
     var who = $('dlgWho');
     if (who) who.value = session.name;
-    document.body.setAttribute('data-role', session.role || 'operator');
+    document.body.setAttribute('data-role', session.role || 'viewer');
     window.KOLINDEX_SESSION = session;
   }
 

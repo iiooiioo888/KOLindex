@@ -42,6 +42,10 @@ const LLM = {
 const API_BASE = (process.env.KOL_API || 'http://127.0.0.1:5210').replace(/\/+$/, '');
 const GATE = process.env.KOL_GATE || '';
 const SERVER_ROLE = normalizeRole(process.env.KOL_ROLE);
+
+function localRole() {
+  return process.env.KOL_DEV_OPERATOR === '1' ? 'operator' : 'viewer';
+}
 const SERVER_OPERATOR = String(process.env.KOL_OPERATOR || '').trim();
 const SESSION_MS = 12 * 60 * 60 * 1000;
 const sessions = new Map();
@@ -135,7 +139,10 @@ function handleAuth(req, res, url) {
     if (!name || /[\u0000-\u001f]/.test(name)) return json(res, 400, { error: 'name' });
     const ip = clientIp(req);
     if (loginBlocked(ip)) return json(res, 429, { error: 'slow', message: '登入失敗次數太多，請稍後再試。' });
-    if (!GATE) return json(res, 200, { ok: true, gate: false, mode: 'local', name, role: 'operator', caps: caps('operator') });
+    if (!GATE) {
+      const role = localRole();
+      return json(res, 200, { ok: true, gate: false, mode: 'local', name, role, caps: caps(role) });
+    }
     if (SERVER_OPERATOR && name !== SERVER_OPERATOR) {
       noteLoginFail(ip);
       return json(res, 401, { error: 'bad_pass' });
@@ -158,15 +165,15 @@ async function proxyApi(req, res) {
   if (GATE && !sess) {
     return json(res, 401, { error: 'login_required' });
   }
-  // 角色只管寫入：viewer 唯讀；reviewer 只多裁決與 ack；operator 全部。
-  if (GATE && !apiAllowed(sess.role, req.method, req.url)) {
+  const role = GATE ? sess.role : localRole();
+  if (!apiAllowed(role, req.method, req.url)) {
     return json(res, 403, {
       error: 'forbidden',
-      message: '角色「' + (ROLE_LABEL[sess.role] || sess.role) + '」不能 ' + req.method + ' ' + pathOf(req.url),
-      role: sess.role,
+      message: '角色「' + (ROLE_LABEL[role] || role) + '」不能 ' + req.method + ' ' + pathOf(req.url),
+      role,
       method: req.method,
       path: pathOf(req.url),
-      caps: caps(sess.role),
+      caps: caps(role),
     });
   }
   const ctrl = new AbortController();
@@ -577,7 +584,7 @@ function handleOssPull(req, res) {
     });
   }
   if (req.method !== 'POST') return json(res, 405, { error: 'method' });
-  const role = GATE ? currentSession(req).role : 'operator';
+  const role = GATE ? currentSession(req).role : localRole();
   if (normalizeRole(role) !== 'operator') {
     return json(res, 403, { error: 'forbidden', message: '只有操作者可以拉起這兩個映像。' });
   }
@@ -617,7 +624,7 @@ function handleDocker(req, res) {
     });
   }
   if (req.method !== 'POST') return json(res, 405, { error: 'method' });
-  const role = GATE ? currentSession(req).role : '';
+  const role = GATE ? currentSession(req).role : localRole();
   if (normalizeRole(role) !== 'operator') return json(res, 403, { error: 'forbidden', message: '只有操作者可以開關這組容器。' });
   if (process.env.KOL_DOCKER !== '1') return json(res, 403, { error: 'disabled', message: '未開啟 KOL_DOCKER。' });
   return readBody(req, 1024).then(async (raw) => {
@@ -632,6 +639,24 @@ function handleDocker(req, res) {
     const status = await dockerStatus();
     return json(res, 200, status);
   }).catch((err) => json(res, 502, { error: 'failed', message: (err && err.detail) || '容器指令沒有完成。' }));
+}
+
+function auditSherlock(sess, name, status, count) {
+  try {
+    const dir = path.join(process.env.KOL_NAS_ROOT || path.join(ROOT, 'data', 'nas'), 'audit');
+    fs.mkdirSync(dir, { recursive: true });
+    const line = JSON.stringify({
+      at: new Date().toISOString(),
+      actor: sess && sess.name ? String(sess.name).slice(0, 40) : '',
+      role: sess && sess.role ? sess.role : '',
+      name,
+      status,
+      count: count == null ? null : count,
+    }) + '\n';
+    fs.appendFileSync(path.join(dir, 'sherlock.jsonl'), line);
+  } catch (err) {
+    console.warn('[sherlock] audit ' + err.message);
+  }
 }
 
 function handleSherlock(req, res) {
@@ -655,9 +680,11 @@ function handleSherlock(req, res) {
     sherlockBusy = true;
     try {
       const hits = await runSherlock(name);
+      auditSherlock(sess, name, 'ok', hits.length);
       console.log('[sherlock] docker hits ' + hits.length);
       return json(res, 200, { ok: true, engine: 'docker', name, count: hits.length, hits });
     } catch (err) {
+      auditSherlock(sess, name, err && err.code ? err.code : 'failed', null);
       if (err && err.code === 'ENOENT') {
         return json(res, 503, { error: 'missing', message: '這台找不到 docker 指令。裝好 Docker 後再送出，會用官方映像的固定摘要啟動一次性容器。' });
       }

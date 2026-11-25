@@ -6,7 +6,16 @@
 
 > 畫面語意對齊 v2.2。開發約束以 KOL-SPEC-001 v4.1 為準。治理層還沒做，落差列在 ROADMAP。時間表和技術表在 PROJECT.md。
 
-12 個分頁各自是一塊真實介面，其中七塊（任務收集、席位執行的 worker pool、人物檔案、審核台、基礎設施的連接器與排程工作、素材庫）加上右欄監控面板，接本機的 `kolindex-api`（SQLite）真實資料；其餘分頁仍是示範資料。
+12 個分頁裡，接上 `kolindex-api` 的那些畫面現在讀的是那個 repo 的 SQLite。PostgreSQL 是要收斂過去的真相，目前只承接控制面的四個寫入端點。過渡期以這張表判定一筆資料該看哪一邊：
+
+| 資料類 | 現在寫哪 | 畫面現在讀哪 | 收斂目標 |
+|---|---|---|---|
+| intake、artifact、event、decision | PostgreSQL；沒設資料庫且不是正式環境時，才落到 `KOL_NAS_ROOT/buffer/` 的 SQLite | 畫面還沒讀這四個端點 | PostgreSQL |
+| 抖音作品、作者、素材庫 | `kolindex-api` 的 SQLite | SQLite | PostgreSQL，遷移日待確認 |
+| 審核裁決、收集認領 | SQLite | SQLite | PostgreSQL，遷移日待確認 |
+| 席位工單 | SQLite | SQLite | 要留在 SQLite 還是遷到 PostgreSQL，待確認 |
+
+在遷移完成前，畫面上的人數和作品數以 SQLite 為準。控制面新寫入的那四類以 PostgreSQL 為準。兩邊現在不會自動對帳。
 
 哪些頁面接真資料、哪些還是示範、規格書（v2.2）還缺哪些表與端點，都列在 **[ROADMAP.md](ROADMAP.md)**（2026-11-24）。
 
@@ -84,13 +93,16 @@ node tests/test-caps.mjs       # 前端依 caps 收起按鈕：靜態與動態�
 | `viewer` 只讀。`reviewer` 只能做審核裁決和 AI 事件 ack。`operator` 才能做其餘寫入、容器開關、Sherlock、LLM 代理 | `KOL_GATE` 開啟時，網頁行程對 `/api` 寫入回 `401` 或 `403`。按鈕由 `js/login.js` 的 `caps` 隱藏，隱藏不是授權 |
 | 工作階段放在 HttpOnly cookie，不放到前端可讀的儲存 | Cookie 名稱 `kol_session`，`HttpOnly`、`SameSite=Lax`。`KOL_COOKIE_SECURE=1` 或反向代理送來 `https` 時才加 `Secure`。工作階段只在行程記憶體，重啟即失效 |
 | 登入失敗要限速 | 同一來源連續失敗 5 次後，60 秒回 `429` |
-| 沒有 `KOL_GATE` 的本機模式不得拿去對網際網路 | 現況是失敗開放：不核對通行碼，角色固定為 `viewer`，前端按鈕全開。這只限 `127.0.0.1` |
+| 沒有 `KOL_GATE` 的本機模式不得拿去對網際網路 | 不核對通行碼。角色與按鈕都是 `viewer`，寫入回 `403`。要在本機寫入，另外設 `KOL_DEV_OPERATOR=1`。這只限 loopback；監聽位址不是 loopback 時沒有通行碼會拒絕啟動 |
 | 業務 API 自己也要驗身份。只在網頁代理擋一次不夠 | **未完成**。直連 `kolindex-api` 的認證，這個倉庫沒有核對。把 `5210` 暴露出去就繞過網頁角色 |
 | 控制面寫入使用 Bearer token，三種角色分開 | `apps/control/app.py`：`viewer` 不能寫，`reviewer` 只能 `POST /decisions`，`operator` 可打 `POST /intake`、`/artifacts`、`/events`、`/decisions`。正式環境 `KOL_PROD=1` 時必須連 PostgreSQL，不能退回 SQLite |
 | 通行碼、token、Cookie、金鑰不進 Git、日誌、前端、Connector 設定 | `.env` 與 `infra/compose/.env` 被 gitignore。`secrets/api-tokens.example.yaml` 只有佔位，不能用來登入。age 公鑰還沒寫進 `.sops.yaml`，加密秘密檔還沒有 |
 | 網頁容器不持有 Docker 控制權 | 容器內 `KOL_DOCKER`、`KOL_SHERLOCK`、`KOL_LLM` 固定為 `0`。不掛載 Docker socket，不用 privileged、host network、host PID，映像不用 `latest` |
 | 容器開關只允許名單內的服務，而且只有 `operator` | 名單是 `web`、`postgres`、`meilisearch`、`sherlock`、`maigret`、`xhs-downloader`、`douyin-tiktok-api`。Redis 與 MinIO 仍在 `docker-compose.later.yml`，不在這份名單 |
-| 開源容器隨主 Compose 啟動，但不進資料網路 | 第二個 Compose 檔沒有 profile。Sherlock 與 Maigret 只停在 `sleep`，不查用戶名。XHS 與 Douyin API 聽 `127.0.0.1`，失敗兩次就不再自動重啟。它們不加入 `data`，不讀資料庫密碼。開機不送出抓取。douyin-dl 與麦田沒有可啟動的映像 |
+| 開源容器不進資料網路，開機不自己抓取 | 它們使用 `oss` 網路，不加入 `data`，不讀資料庫密碼。Sherlock 與 Maigret 的行程是 `sleep`，不查用戶名。XHS 與 Douyin API 失敗兩次就不再自動重啟。douyin-dl 與麦田沒有可啟動的映像 |
+| 開源容器的埠綁在宿主的 loopback，並有資源上限 | `5556` 和 `8000` 發佈到宿主的 `127.0.0.1`，不是只留在容器內部。同一台機器上的行程，包含尚未自帶認證的 `kolindex-api`，都能連到這兩個埠。`oss` 網路不是 internal，容器可以對外連線；對外 DNS 與 HTTP 審計還沒做。記憶體、CPU、pids 上限寫在 `docker-compose.oss.yml` |
+| Sherlock 查詢要限制用戶名，並留下查詢紀錄 | 用戶名只接受 `^[A-Za-z0-9._-]{2,32}$`。容器 512MB、90 秒逾時、`--cap-drop ALL`。每次查詢追加到 `KOL_NAS_ROOT/audit/sherlock.jsonl`，沒設時用倉庫下的 `data/nas/audit/`。這個檔被 gitignore，不進倉庫 |
+| 改基礎設施、秘密、schema 或登入的人或代理，要有批准紀錄 | **未完成**。聊天裡的同意不是批准令牌。這個倉庫還沒有 `approval_token` 和 `agent_action_log` |
 | 採集程式不直連 PostgreSQL、SQLite、Redis、MinIO、Meilisearch | **未完成**。新控制面的四個寫入端點不寫 SQLite。舊的 `kolindex-api` 仍可寫它自己的 SQLite |
 | 寫入只追加。重複的原始內容用雜湊去重 | 控制面的 intake、artifact、change_event、decision 有拒絕更新和刪除的觸發器。相同 `content_hash` 不重複建檔 |
 | 寫入失敗時原檔留在收件匣，重試兩次就停 | 控制面把失敗檔留在 `KOL_NAS_ROOT/inbox/`。同一路徑失敗兩次後停止並記一筆 `stopped` 事件 |
@@ -102,7 +114,7 @@ node tests/test-caps.mjs       # 前端依 caps 收起按鈕：靜態與動態�
 | 全鏈刪除要清掉資料庫、搜尋索引、NAS 檔案、衍生檔和收件匣 | **未完成**。現在沒有這條流程 |
 | 日誌不記通行碼、Cookie、token、私鑰或未去敏的全文 | 這是需求。這個 README 沒有逐條掃過現有日誌 |
 
-登入操作：設了 `KOL_GATE` 才會核對通行碼。沒設時，在本機填名字就能進，角色是 `operator`（單人開發，全部能力）。登出打 `POST /__auth/logout`。檢查指令是 `node tests/test-authz.mjs` 和 `node tests/test-caps.mjs`。
+登入操作：設了 `KOL_GATE` 才會核對通行碼，角色用 `KOL_ROLE`。沒設時，在本機填名字就能進，角色是 `viewer`，寫入按鈕收起，寫入請求回 `403`。本機要寫入時設 `KOL_DEV_OPERATOR=1`。登出打 `POST /__auth/logout`。檢查指令是 `node tests/test-authz.mjs` 和 `node tests/test-caps.mjs`。
 
 ## 部署
 
@@ -119,21 +131,17 @@ copy infra\compose\.env.example infra\compose\.env
 docker compose -f infra/compose/docker-compose.yml -f infra/compose/docker-compose.oss.yml up -d --build
 ```
 
-`.env` 只留在 NAS 上。Compose 的網頁服務用 `infra/compose/Dockerfile` 提供現用的 `index2.html`，映像標籤是 `kolindex-site:2026.11.24`。`apps/web` 的 Next.js 映像不在這組服務裡。第一版這條指令會拉起網頁、PostgreSQL 16.16（pgvector 0.8.7）、Meilisearch v1.57.0，以及四個有固定摘要的開源容器。PostgreSQL 是真相，Meilisearch 是衍生索引，重建用 `node scripts/rebuild-meilisearch.mjs`。Redis 與 MinIO 不在這個指令裡，定義留在 `docker-compose.later.yml`。媒體放 `KOL_NAS_ROOT`。初始化 SQL 是 `infra/compose/postgres/init/001-schema.sql`，只在空資料目錄第一次啟動時執行。MongoDB 不在這組服務裡。
+`.env` 只留在 NAS 上。Compose 的網頁服務用 `infra/compose/Dockerfile` 提供現用的 `index2.html`，映像標籤是 `kolindex-site:2026.11.24`。`apps/web` 的 Next.js 映像不在這組服務裡。第一版這條指令會拉起網頁、PostgreSQL 16.16（pgvector 0.8.7）、Meilisearch v1.57.0，以及四個有固定摘要的開源容器。畫面數字目前仍以 `kolindex-api` 的 SQLite 為準；PostgreSQL 承接控制面的四個寫入端點。Meilisearch 是衍生索引，重建用 `node scripts/rebuild-meilisearch.mjs`。Redis 與 MinIO 不在這個指令裡，定義留在 `docker-compose.later.yml`。媒體放 `KOL_NAS_ROOT`。初始化 SQL 是 `infra/compose/postgres/init/001-schema.sql`，只在空資料目錄第一次啟動時執行。MongoDB 不在這組服務裡。
 
 可在 `.env` 調整的項目：時區 `TZ`、業務 API 位址 `KOL_API`（留空則容器經 `host.docker.internal:5210` 找宿主機上的 API）、各服務的監聽位址（`WEB_BIND` 等，預設 `127.0.0.1`）、記憶體與 CPU 上限。上限是容器配額，不是這台機器的測量結果。日誌每個容器最多 3 個 10MB 檔。網頁容器把 `KOL_DOCKER`、`KOL_SHERLOCK`、`KOL_LLM` 固定為 `0`，也不掛 Docker socket。PostgreSQL 的資料目錄要讓容器內的 postgres 使用者可寫。慢查詢日誌由 `PG_LOG_MIN_DURATION_MS` 打開，預設 `0` 是為了開始記錄，不是已測量的門檻。兩週數據出來之前，不依這個日誌加索引。
 
-控制面另開一個行程，不放進網頁容器：
+控制面另開一個行程，不放進網頁容器。`KOL_TOKEN_VIEWER`、`KOL_TOKEN_REVIEWER`、`KOL_TOKEN_OPERATOR` 和 `KOL_DATABASE_URL` 寫進已被 gitignore 的環境檔，不要用 `set` 留在命令歷史裡。age 公鑰還沒換掉 `.sops.yaml` 裡的佔位，所以還沒有加密後的秘密檔。
 
 ```
-set KOL_TOKEN_VIEWER=...
-set KOL_TOKEN_REVIEWER=...
-set KOL_TOKEN_OPERATOR=...
-set KOL_DATABASE_URL=postgresql://kolindex:...@127.0.0.1:5432/kolindex
 python apps/control/app.py
 ```
 
-沒有 `KOL_DATABASE_URL` 時，它把 SQLite 放在 `KOL_NAS_ROOT/buffer/`，只當 intake buffer。`KOL_PROD=1` 時拒絕這樣啟動。寫入要帶 `Authorization: Bearer`。viewer 不能寫，reviewer 只能 `POST /decisions`，operator 可以打四個寫入端點。秘密檔用 `.sops.yaml` 的規則加密，明文範例在 `secrets/api-tokens.example.yaml`，不能拿來登入。age 公鑰還沒寫進 `.sops.yaml`，所以現在還沒有加密後的秘密檔。
+沒有 `KOL_DATABASE_URL` 時，它把 SQLite 放在 `KOL_NAS_ROOT/buffer/`，只當 intake buffer。`KOL_PROD=1` 時拒絕這樣啟動。寫入要帶 `Authorization: Bearer`。viewer 不能寫，reviewer 只能 `POST /decisions`，operator 可以打四個寫入端點。明文範例在 `secrets/api-tokens.example.yaml`，不能拿來登入。
 
 上線前先核對下面五項。判定和現況寫在 [PROJECT.md](PROJECT.md) 第 7 節。
 

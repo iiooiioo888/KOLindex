@@ -34,13 +34,13 @@
 - `GET /api/events`（SSE；目前全是輪詢）
 - `POST /api/takedown`（下架）
 
-工程面：業務真相改為 PostgreSQL（`jsonb` + pgvector）。SQLite 只留 intake buffer。Meilisearch 是可重建的衍生索引。Redis 與 MinIO 不在第一版 Compose。開源候選在 `infra/compose/docker-compose.oss.yml`，Maigret 改掛 `backup` profile。登入是 dev-server 的 `KOL_GATE` 和三種角色。控制面四個寫入端點在 `apps/control/app.py`。運行位置是本機 NAS。
+工程面：畫面現在仍讀另一個 repo 的 SQLite。PostgreSQL 是收斂目標，目前承接控制面四個寫入端點。Meilisearch 是可重建的衍生索引。Redis 與 MinIO 不在第一版 Compose。開源容器在 `infra/compose/docker-compose.oss.yml`，不進 `data` 網路。登入是 dev-server 的 `KOL_GATE` 和三種角色；沒設通行碼時是 `viewer`。運行位置是本機 NAS。開發約束以 v4.1 為準。下面的表數對照仍是畫面語意 v2.2 的 25 表。
 
 ## 三、未實作的功能（依優先級）
 
 最近一輪（2026-11-25）：**整體版面再平衡** — 三欄在 1440 是 `248 + 810 + 372`，素材庫 1440 排四欄、收集頁表單與清單歸位、分頁籤在 1280 可橫向捲動、1024 頂欄回到單列、感測頁三卡一列、窄高視窗左軌不再被截斷。
 
-**P0 治理（規格 v4.0，原型全缺）**
+**P0 治理（開發約束 v4.1；這一清單裡的表還沒建）**
 
 1. 寫入端點沒有自己的認證：dev-server 在 `KOL_GATE` 下已用 `tests/authz.mjs` 擋角色（viewer 唯讀、reviewer 只能裁決與 ack、operator 其餘），但 kolindex-api 本身仍是無認證的 localhost 服務；把 5210 曝露出去就等於繞過角色。生產還需要 API 自己的本機 token + `agent_action_log`
 2. 缺 6 張治理表：`asset_registry`、`connector_registry`、`approval_token`、`cost_ledger`、`egress_policy`、`agent_action_log`
@@ -64,7 +64,7 @@
 9. 影片完全沒處理（衍生層只做圖集 `kind='gallery'`）
 10. 沒有縮圖管線（480px WebP）：目前直接吃原圖，列表載入慢
 11. MyLike 同步只補索引、不下載；沒有排程自動同步
-12. `index.json` 67 MB + 每 60 秒重建的 loop，不是長久做法
+12. `index.json` 的 60 秒重建不在這個 repo。素材索引若仍靠那份 JSON，不能把它當成 PostgreSQL 的副本
 
 **P3 規格書功能（F1–F12）**
 

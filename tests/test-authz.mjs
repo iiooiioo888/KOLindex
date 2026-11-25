@@ -40,6 +40,7 @@ async function startServer(port, role, local) {
     env: Object.assign({}, process.env, {
       KOL_GATE: local ? '' : 'test-secret',
       KOL_ROLE: role,
+      KOL_DEV_OPERATOR: local === 'operate' ? '1' : '',
       KOL_API: 'http://127.0.0.1:59999',
     }),
     stdio: 'ignore',
@@ -134,21 +135,27 @@ async function runRole(role, port) {
 }
 
 async function runLocal(port) {
-  // 沒設 KOL_GATE 是單人開發：不管 KOL_ROLE 是什麼，本機登入都給操作者與全部能力。
   const child = await startServer(port, 'viewer', true);
   try {
     const anon = await hit(port, '', 'GET', '/api/rail');
     ok('local 未登入可讀（不擋）', anon.status !== 401, String(anon.status));
     const good = await login(port, '本機開發者', '');
     ok('local 登入 → 200', good.status === 200, String(good.status));
-    ok('local 角色是 operator（不受 KOL_ROLE 影響）', good.body.role === 'operator', JSON.stringify(good.body));
-    ok('local caps 全開', good.body.caps && good.body.caps.write === true && good.body.caps.review === true && good.body.caps.operate === true, JSON.stringify(good.body.caps));
-    const sess = await fetch('http://127.0.0.1:' + port + '/__auth/session').then((r) => r.json());
-    ok('local session gate=false', sess.gate === false, JSON.stringify(sess));
+    ok('local 預設角色是 viewer', good.body.role === 'viewer', JSON.stringify(good.body));
+    ok('local 預設不能寫', good.body.caps && good.body.caps.write === false && good.body.caps.operate === false, JSON.stringify(good.body.caps));
     const write = await hit(port, '', 'POST', '/api/collect/1/claim');
-    ok('local 可寫入（不是 403）', write.status !== 403, String(write.status));
+    ok('local 預設寫入 → 403', write.status === 403, String(write.status));
   } finally {
     child.kill();
+  }
+  const op = await startServer(port, 'viewer', 'operate');
+  try {
+    const good = await login(port, '本機開發者', '');
+    ok('KOL_DEV_OPERATOR 給 operator', good.body.role === 'operator' && good.body.caps.operate === true, JSON.stringify(good.body));
+    const write = await hit(port, '', 'POST', '/api/collect/1/claim');
+    ok('KOL_DEV_OPERATOR 可寫入（不是 403）', write.status !== 403, String(write.status));
+  } finally {
+    op.kill();
   }
 }
 

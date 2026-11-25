@@ -45,7 +45,7 @@ check(login.includes("setAttribute('data-can-review'"), 'login.js 設 data-can-r
 check(login.includes("setAttribute('data-can-operate'"), 'login.js 設 data-can-operate');
 check(login.includes('window.KOLINDEX_CAN'), 'login.js 匯出 KOLINDEX_CAN');
 check(login.includes('caps: res.data.caps') && login.includes('caps: d.caps'), '登入與 session 都帶 caps');
-check(login.includes("session.mode !== 'server'") && login.includes('write: true'), '本地模式全開');
+check(!login.includes("session.mode !== 'server'") && !login.includes('write: true'), '本機模式依伺服器 caps，不一律全開');
 
 const statics = [
   ['libMyLike', 'write'], ['libOptimize', 'write'], ['libDeriv', 'write'],

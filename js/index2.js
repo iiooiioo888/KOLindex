@@ -1262,7 +1262,7 @@
         '<div class="a-main"><div class="a-t" style="color:var(--'+c+')">'+esc(a.title)+'</div>'+
         '<div class="a-d">'+esc(a.desc)+'</div></div>'+
         '<div class="a-side"><div class="a-time">'+esc(a.time)+'</div><button class="a-x" aria-label="消除告警">✕</button></div></div>';
-    }).join('')||'<div class="lane-empty">無活動告警</div>';
+    }).join('')||'<div class="lane-empty">尚未啟用告警產生器</div>';
     $('#alertCount').textContent=store.alerts.length;
   }
   function renderAudit(){
