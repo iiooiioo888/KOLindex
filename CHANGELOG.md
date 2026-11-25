@@ -1,5 +1,26 @@
 # Changelog
 
+## [v0.1.1] — 2026-11-25
+
+Prototype. Not production-ready.
+
+### 修正
+
+- 修復 `v*` tag 觸發的 GitHub Release 流水線（改以 `body_path` 寫說明，避免多行輸出弄壞 workflow）
+
+### 這版有什麼
+
+- 與 `v0.1.0` 相同的原型範圍
+- 靜態監控台、角色 caps、Compose、控制面追加寫入、`packages/api-auth` / `apps/api-gate`
+
+### 已知缺口
+
+- `kolindex-api` 不在這個倉庫；直連 `5210` 要掛 api-gate 或把 `authGuard.js` 掛進那個 repo
+- 人物檔案仍是抖音作者清單
+- 感測上下文、產出庫、統一管線等仍是示範資料
+
+細節見 `ROADMAP.md`、`PROJECT.md`。
+
 ## [v0.1.0] — 2026-11-25
 
 Prototype. Not production-ready.

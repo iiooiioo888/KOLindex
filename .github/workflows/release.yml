@@ -12,39 +12,44 @@ jobs:
   release:
     name: GitHub Release
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: 讀取版本與說明
+
+      - name: 抽出此版本說明
         id: meta
+        shell: bash
         run: |
+          set -euo pipefail
           tag="${GITHUB_REF_NAME}"
-          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "tag=${tag}" >> "$GITHUB_OUTPUT"
+          mkdir -p .release
           if [ -f CHANGELOG.md ]; then
-            # 取該版本段落；沒有就用預設原型說明
-            notes=$(awk -v t="$tag" '
+            awk -v t="$tag" '
               $0 ~ "^## \\[" t "\\]" {grab=1; next}
               grab && $0 ~ /^## \[/ {exit}
               grab {print}
-            ' CHANGELOG.md | sed '/./,$!d')
+            ' CHANGELOG.md | sed '/./,$!d' > .release/notes.md
           fi
-          if [ -z "$notes" ]; then
-            notes="Prototype. Not production-ready.
-當前可用的頁面與已知缺口見 ROADMAP.md 與 PROJECT.md。"
+          if [ ! -s .release/notes.md ]; then
+            cat > .release/notes.md <<'EOF'
+          Prototype. Not production-ready.
+
+          當前可用的頁面與已知缺口見 ROADMAP.md 與 PROJECT.md。
+          EOF
           fi
-          {
-            echo "notes<<EOF"
-            echo "$notes"
-            echo "EOF"
-          } >> "$GITHUB_OUTPUT"
+
       - name: 建立 GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@a90b06d147552b4e6003c343cac8b49a9ddae202 # v2.5.0
         with:
           tag_name: ${{ steps.meta.outputs.tag }}
           name: ${{ steps.meta.outputs.tag }}
-          body: ${{ steps.meta.outputs.notes }}
+          body_path: .release/notes.md
           draft: false
           prerelease: true
+          fail_on_unmatched_files: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -7,10 +7,12 @@
 
 承認當前是原型。修補順序固定為：
 
-1. 堵住認證缺口（網頁 `KOL_PROD` 強制 `KOL_GATE`；`kolindex-api` 用 `packages/api-auth` 或 `apps/api-gate`）
-2. 打可引用的 `v0.1.0` Release
-3. 人物主檔脫離「只有抖音作者清單」（P0 產品假設）
-4. 前端遷移仍遵守 ADR-005：沒有 SSR 需求前不整站搬進 Next.js
+1. 堵住認證缺口（網頁 `KOL_PROD` 強制 `KOL_GATE`；`kolindex-api` 用 `packages/api-auth` 或 `apps/api-gate`）→ **本倉庫已交付閘與中間件；API 本體仍待掛上**
+2. 打可引用的 Release → **`v0.1.0` 標籤已推；`v0.1.1` 用來重跑修好的 Release 流水線**
+3. 人物主檔脫離「只有抖音作者清單」（P0 產品假設）→ **未開始**
+4. 前端遷移仍遵守 ADR-005：沒有 SSR 需求前不整站搬進 Next.js → **明確不做「先整包進 SPA」**
+
+貼進來的外部建議若要求「先整體遷入 Next.js `output: 'export'`」，與第 4 點衝突，以本 ADR 為準。
 
 ## 為什麼
 
