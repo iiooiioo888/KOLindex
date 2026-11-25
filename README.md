@@ -83,7 +83,7 @@ node tests/test-api-auth.mjs   # API 認證閘：無 Cookie 401、登入後可�
 
 前四支只打 `127.0.0.1:5200`；`test-authz` 自己起 5390–5393 四個實例（最後一個是沒設通行碼的本機模式），`test-caps` 只讀檔，`test-api-auth` 自起上游與閘，都不需要後端。`check` job 在每次 `push`／`PR` 跑這七支。更完整的二十支（含寫入端點、離線、瀏覽器截圖）在私有開發資料夾 `KOLindex-dev`，不在這個 repo。
 
-版本標記：推送 `v*` tag 會觸發 `.github/workflows/release.yml`，自動建 prerelease。說明見 `CHANGELOG.md`。
+版本標記：目前可引用的標籤是 `v0.1.1`（`v0.1.0` 也在遠端）。推送 `v*` tag 會觸發 `.github/workflows/release.yml` 建 prerelease；若 Actions 在「Set up job」就失敗，要到倉庫 Settings → Actions 核對是否啟用，或在 GitHub 上手動 New release 貼上 `CHANGELOG.md` 對應段落。說明見 `CHANGELOG.md`。
 
 ## 安全需求
 
