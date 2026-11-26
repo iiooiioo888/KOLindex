@@ -41,7 +41,7 @@
   padding:10px 12px 14px;
 }
 #topic-library .ide-welcome[hidden],
-#topic-library .lib-ide-sheet[hidden]{ display:none !important; }
+#topic-library .lib-ide-sheet[hidden]{ display:none; }
 #topic-library .lib-kpis{
   display:grid;
   grid-template-columns:repeat(6,minmax(0,1fr));
@@ -115,7 +115,7 @@
   padding:6px 12px; border-bottom:1px solid #262d35;
   background:#161b21; font:400 11px/1 var(--mono); color:#a9b6c1;
 }
-#topic-library .lib-chipbar[hidden]{ display:none !important; }
+#topic-library .lib-chipbar[hidden]{ display:none; }
 #topic-library .lib-chipbar b{ color:#f3efe6; }
 #topic-library .lib-input{
   flex:1 1 220px;

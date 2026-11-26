@@ -10,7 +10,8 @@
   function $$(sel,root){ return Array.prototype.slice.call((root||document).querySelectorAll(sel)); }
   function fmtTime(d){ var p=function(n){return String(n).padStart(2,'0');}; return p(d.getHours())+':'+p(d.getMinutes())+':'+p(d.getSeconds()); }
   var tickerJobs=[];
-  var DEMO=document.documentElement.getAttribute('data-demo')==='1';
+  /* 示範資料已移除；保留常數讓既有分支一律走真資料。 */
+  var DEMO=false;
   function every(ms, fn, opt){
     tickerJobs.push({ms:ms, acc:0, fn:fn, clock:!!(opt&&opt.clock), demo:!(opt&&(opt.clock||opt.live))});
   }
@@ -794,24 +795,7 @@
     }).join('');
     renderOutputs();
   }
-  var OUTPUTS=(function(){
-    var fromFix=window.KOL_demoFallback&&window.KOL_demoFallback('outputs');
-    if(fromFix&&fromFix.length){
-      var extra=[
-        {id:'ART-006',title:'報告版型 v3',by:'Q-116',cite:'Q-124',from:'ART-003',folder:'報告',lang:'html',name:'報告版型 v3.html',note:'示範',body:'<article data-art="ART-006"><h1>巡檢報告</h1><p>示範產物</p></article>\n'},
-        {id:'ART-003',title:'報告版型 v2',by:'Q-116',cite:'',from:'',folder:'報告',lang:'md',name:'報告版型 v2.md',note:'示範舊版',body:'# 報告版型 v2\n\n示範舊版。\n'}
-      ];
-      var seen={};
-      return fromFix.concat(extra).filter(function(f){ if(seen[f.id]) return false; seen[f.id]=1; return true; });
-    }
-    return [
-      {id:'ART-014',title:'巡檢摘要 v2',by:'Q-118',cite:'Q-120',from:'',folder:'巡檢',lang:'md',name:'巡檢摘要 v2.md',note:'示範',body:'# 巡檢摘要 v2\n\n示範資料。\n'},
-      {id:'ART-009',title:'門檻複核稿 v1',by:'Q-120',cite:'',from:'',folder:'門檻',lang:'md',name:'門檻複核稿 v1.md',note:'示範',body:'# 門檻複核稿 v1\n\n示範資料。\n'},
-      {id:'ART-021',title:'閥位調整候選',by:'Q-121',cite:'',from:'',folder:'閥位',lang:'json',name:'閥位調整候選.json',note:'示範',body:'{"id":"ART-021","status":"candidate","demo":true}\n'},
-      {id:'ART-006',title:'報告版型 v3',by:'Q-116',cite:'Q-124',from:'ART-003',folder:'報告',lang:'html',name:'報告版型 v3.html',note:'示範',body:'<article data-art="ART-006"><h1>巡檢報告</h1></article>\n'},
-      {id:'ART-003',title:'報告版型 v2',by:'Q-116',cite:'',from:'',folder:'報告',lang:'md',name:'報告版型 v2.md',note:'示範',body:'# 報告版型 v2\n'}
-    ];
-  })();
+  var OUTPUTS=[];
   var ide={open:[],active:'',side:'files',booted:false,folders:{},findAt:-1};
   function fileBy(id){ return OUTPUTS.filter(function(f){ return f.id===id; })[0]; }
   function textOf(f){ return f&&f.draft!=null?f.draft:f?f.body:''; }
@@ -837,6 +821,11 @@
       if (!q) return true;
       return (f.name+' '+f.id+' '+textOf(f)).toLowerCase().indexOf(q)>=0;
     });
+    if (!files.length){
+      host.innerHTML='<div class="ide-empty">目前沒有產出物。控制面提供 GET /artifacts 後才會列出；這裡不再顯示示範檔案。</div>';
+      ide.treeSig=treeSig();
+      return;
+    }
     if (ide.side==='search'){
       host.innerHTML=files.map(fileBtn).join('')||'<div class="ide-empty">沒有相符的產物</div>';
       ide.treeSig=treeSig();
@@ -1544,7 +1533,7 @@
   var TOPIC_META={
     collect:{label:'任務收集',group:'工作',hint:'確認後才進隊列'},
     queue:{label:'任務隊列',group:'工作',hint:'席位自動拉取；有空檔才執行'},
-    seat:{label:'席位 Agent',group:'工作',hint:'大任務 → 經理拆分 → 獨立席位'},
+    seat:{label:'席位 Agent',group:'工作',hint:'大任務 → 經理拆分 → 8 席 worker pool'},
     review:{label:'審核',group:'工作',hint:'候選由人裁決'},
     person:{label:'人物',group:'內容',hint:'IDE 殼 · 主檔／抖音索引 · 可跳素材'},
     library:{label:'素材',group:'內容',hint:'IDE 殼 · 與人物共用檢視器'},
@@ -1553,7 +1542,7 @@
     infra:{label:'基建',group:'監控',hint:'服務與儲存'},
     oss:{label:'開源',group:'監控',hint:'鎖定版本；工具台可查用戶名'},
     pipe:{label:'管線',group:'監控',hint:'執行路徑示意'},
-    sense:{label:'感測',group:'監控',hint:'平台熱度 · 關鍵詞 · 情緒（示範）'},
+    sense:{label:'感測',group:'監控',hint:'抖音近 30 日聚合 · 關鍵詞與情緒粗分'},
     studio:{label:'線框',group:'工具',hint:'需求轉線框草稿'}
   };
   var INFRA_PANES=['docker','ecs','bill','cost','conn','jobs'];
@@ -2199,7 +2188,7 @@
   /* ================= [P0-7] 席位圖 roving tabindex + 方向鍵 ================= */
   renderSeats();
   var seatWrap=$('#seats');
-  seatWrap.addEventListener('click',function(e){
+  if (seatWrap) seatWrap.addEventListener('click',function(e){
     var cell=e.target.closest('.seat'); if (!cell) return;
     selectSeat(cell,{scroll:true});
   });
@@ -2233,7 +2222,8 @@
     toast('席位 '+id,'ok');
   });
 
-  $('#seatLegend').addEventListener('click',function(e){
+  var seatLegend=$('#seatLegend');
+  if (seatLegend) seatLegend.addEventListener('click',function(e){
     var b=e.target.closest('.legend-btn'); if (!b) return;
     var f=b.getAttribute('data-filter');
     var on=b.getAttribute('aria-pressed')!=='true';
@@ -2577,8 +2567,8 @@
       clearTimeout(btn._tm); btn.classList.remove('confirm');
       btn.textContent=btn.getAttribute('data-act');
       audit('Docker '+btn.getAttribute('data-act')+' 已排程');
-      pushEvent('#63b880','<b>docker</b> '+btn.getAttribute('data-act')+' 已排程（DEMO 不執行）');
-      toast('已排程 '+btn.getAttribute('data-act')+'（DEMO）','ok');
+      pushEvent('#63b880','<b>docker</b> '+btn.getAttribute('data-act')+' 未接控制面，沒有執行');
+      toast('控制面未接線，沒有執行 '+btn.getAttribute('data-act'),'or');
       return;
     }
     var orig=btn.getAttribute('data-act');
@@ -4283,7 +4273,7 @@
       return;
     }
   });
-  /* ---------- 對外接口：讓 js/api.js 用真資料覆蓋這頁的示範資料 ---------- */
+  /* ---------- 對外接口：讓 js/api.js 用真資料覆蓋這頁的初始空值 ---------- */
   window.KOLINDEX_UI={
     version:'2026-11-26',
     /* 席位 Agent 大任務／子任務即時反映到任務佇列看板 */

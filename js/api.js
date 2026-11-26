@@ -1,5 +1,5 @@
 /* KOLindex · 唯一的資料請求層。各分頁不准再自己 fetch 業務資料。
- * 401 與 500 會清掉畫面上的資料。示範模式（預設開；?demo=0 關）不打後端。
+ * 401 與 500 會清掉畫面上的資料。沒有後端就顯示未連線，不回退示範資料。
  */
 (function () {
   'use strict';
@@ -10,8 +10,7 @@
   var failures = 0;
   var epoch = 0;
 
-  function demoOn() { return document.documentElement.getAttribute('data-demo') === '1'; }
-  function ui() { return window.KOLINDEX_UI || null; }
+   function ui() { return window.KOLINDEX_UI || null; }
   function chipEl() { return document.getElementById('dataChip'); }
 
   function paint(text, tone, title) {
@@ -47,12 +46,7 @@
   }
 
   function request(path, opt) {
-    if (demoOn()) {
-      var blocked = new Error('demo');
-      blocked.status = 0;
-      return Promise.reject(blocked);
-    }
-    var seen = epoch;
+     var seen = epoch;
     var ctrl = typeof AbortController === 'function' ? new AbortController() : null;
     var timer = ctrl ? setTimeout(function () { ctrl.abort(); }, TIMEOUT_MS) : null;
     var option = opt || {};
@@ -105,11 +99,7 @@
   }
 
   function sync() {
-    if (demoOn()) {
-      paint('示範', 'or', 'demo');
-      return Promise.resolve({ ok: false, reason: 'demo' });
-    }
-    var bridge = ui();
+     var bridge = ui();
     if (!bridge) { emit(false, { reason: 'no-bridge' }); return Promise.resolve({ ok: false, reason: 'no-bridge' }); }
     var hits = { collect: 0, alerts: 0 };
     var collect = request('/api/collect').then(function (res) {
@@ -158,8 +148,7 @@
   }
 
   function boot() {
-    if (demoOn()) { paint('示範', 'or', 'demo'); return; }
-    if (!ui()) { setTimeout(boot, 400); return; }
+     if (!ui()) { setTimeout(boot, 400); return; }
     paint('連線中', 'or', '正在連後端');
     sync().then(function () { setInterval(sync, POLL_MS); });
   }

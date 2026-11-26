@@ -21,7 +21,7 @@
   var views = $('#studioViews');
   var presets = $('#studioPresets');
 
-  var state = { doc: null, view: 'preview', count: 0, busy: false, ms: 0, autoDemo: false };
+  var state = { doc: null, view: 'preview', count: 0, busy: false, ms: 0 };
   var STATUS = 'unknown';   // unknown | ready | off | nokey
 
   var SYSTEM = [
@@ -65,8 +65,7 @@
     hintEl.style.color = tone === 'ok' ? 'var(--green)' : tone === 'warn' ? 'var(--amber)' : tone === 'bad' ? 'var(--red)' : '';
   }
   function hintFor(txt, tone) {
-    if (state.autoDemo) setHint('示範線框（不呼叫模型） · ' + txt, tone === 'warn' ? 'warn' : tone);
-    else if (!state.doc) setHint(txt, tone);
+    if (!state.doc) setHint(txt, tone);
   }
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
 
@@ -226,11 +225,6 @@
     applyView();
   });
 
-  $('#studioDemo').addEventListener('click', function () {
-    clearError();
-    renderDoc(WF.demo(), '示範線框（不呼叫模型）');
-  });
-
   $('#studioCopy').addEventListener('click', function () {
     if (!state.doc) { setHint('還沒有可複製的結構', 'warn'); return; }
     var txt = jsonEl.textContent;
@@ -255,9 +249,5 @@
       renderDoc(saved.d, '已載入上次結果 · 按「生成線框」可重跑');
     }
   } catch (e) {}
-  if (!state.doc) {
-    renderDoc(WF.demo(), '示範線框 · 改名換需求就能生成');
-    state.autoDemo = true;
-  }
   checkStatus();
 })();

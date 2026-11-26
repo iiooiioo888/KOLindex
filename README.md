@@ -17,7 +17,7 @@
 
 過渡期對帳：`python scripts/reconcile_sqlite_postgres.py --sqlite <path>`（比對筆數與 `content_hash`／`checksum`）。結果在 PG 的 `data_reconcile_*` 與 `GET /__control/truth/status`。
 
-哪些頁面接真資料、哪些還是示範、規格書（v2.2）還缺哪些表與端點，都列在 **[ROADMAP.md](ROADMAP.md)**（2026-11-24）。
+哪些頁面接真資料、哪些還是示範、規格書（v2.2）還缺哪些表與端點，都列在 **[ROADMAP.md](ROADMAP.md)**（2026-11-26）。
 
 ![素材庫與右欄監控面板](screenshots/screenshot-library.jpg)
 
@@ -27,12 +27,12 @@
 |---|---|---|---|
 | 01 | 任務收集 | 待歸戶帳號的收件匣，可「認領／退回」寫回後端 | 真（`GET /api/collect`、`POST /api/collect/:id/claim\|return`） |
 | 02 | 任務隊列 | 五條車道的真實工作看板：排程、歸戶複核、MyLike 同步、席位工單、補檔；KPI 與派工／席位面板即時更新 | 真（`/api/jobs`、`/api/seats`、`/api/rail`、`/api/review/queue`） |
-| 03 | 感測上下文 | 平台熱度、關鍵詞、情緒分佈 | 示範 |
-| 04 | 產出庫 | 已交付的內容與檢視器 | 示範 |
+| 03 | 感測上下文 | 抖音近 30 日作品量、作者、互動、關鍵詞、情緒粗分 | 真（`GET /api/sense`） |
+| 04 | 產出庫 | 已交付的內容與檢視器 | 空（控制面沒有 `GET /artifacts`） |
 | 05 | 席位執行 | 8 個席位的 worker pool：搶工單、掃資料庫／磁碟、寫回結果與耗時 | 真（`GET /api/seats`、`POST /api/seats/run\|auto`） |
-| 06 | 統一管線 | 採集 → 清洗 → 入庫的流程圖 | 示範 |
-| 07 | 基礎設施 | Docker 總覽（示範）＋連接器憑證、排程工作兩個子頁籤 | 後兩個真 |
-| 08 | 開源組件 | 第三方依賴清單 | 示範 |
+| 06 | 統一管線 | 採集 → 清洗 → 入庫的流程圖 | 示意（沒有耗時測量） |
+| 07 | 基礎設施 | 服務、磁碟、連接器、排程工作；Docker／ECS 控制面沒接就顯示未設定 | 前四個真 |
+| 08 | 開源組件 | 第三方依賴清單 | 靜態（repo 依賴） |
 | 09 | UI 生成 | 一句話畫線框圖，走 OpenAI 相容 API | 需要代理（見下） |
 | 10 | 人物檔案 | 抖音作者索引，清單與檔案兩個檢視、作品時間軸、平台互動數 | 真（`/api/library/authors` 等） |
 | 11 | 審核台 | F2 歸戶佇列，人工裁決寫回 `review_task` 並留 `audit_log` | 真（含兩支寫入） |
@@ -50,7 +50,7 @@
 node tests/dev-server.mjs . 5200
 ```
 
-開 <http://127.0.0.1:5200/>。零依賴靜態伺服器，改檔案會自動重新整理。後端沒開時，收集與告警會清掉示範卡片；其餘分頁是否仍顯示示範資料，見「安全需求」。
+開 <http://127.0.0.1:5200/>。零依賴靜態伺服器，改檔案會自動重新整理。後端沒開時，各分頁顯示空狀態或未連線，不再回退示範資料。
 
 ### Next.js 宿主（ADR-008）
 
@@ -86,7 +86,7 @@ KOL_MEDIA_ROOT=../KOLindex-dev/douyin/media node tests/dev-server.mjs . 5200
 
 ### UI 生成（可選）
 
-`UI 生成` 分頁把一句話送給 OpenAI 相容端點，由本機代理轉發（金鑰只存在代理端的 `.env`，不進瀏覽器）。沒有金鑰時分頁仍可用，會畫一張示範線框。
+`UI 生成` 分頁把一句話送給 OpenAI 相容端點，由本機代理轉發（金鑰只存在代理端的 `.env`，不進瀏覽器）。沒有金鑰時分頁仍可開，但只提示未設定，不生成線框。
 
 ## 檢查
 
@@ -132,7 +132,7 @@ node tests/test-api-auth.mjs   # API 認證閘：無 Cookie 401、登入後可�
 | 只處理已公開內容。檔案裡的位置欄預設不入庫 | `media_original` 拒絕 `file_place`。貼文時間可當事實，檔案拍攝時間只能是候選 |
 | 不建人臉向量，不推斷親屬、伴侶、健康、宗教 | 標籤只允許文字、物件、標誌、場景、內容安全。`body` 不得帶 `face`、`kinship`、`partner`、`health`、`religion`。同框與關係分析還沒做，這條尚未在畫面上落地 |
 | 關係只記提及、合集、引用、同台，而且要人確認 | schema 有這四個值。確認必須是 `human`。功能本身未做 |
-| 401 或連不上時，不得把示範資料留在畫面上當成真資料 | 收集與告警會清掉卡片。其餘分頁是否在 401 後仍留示範資料，尚未逐支核對 |
+| 401 或連不上時，不得把示範資料留在畫面上當成真資料 | 已移除 `js/fixtures/demo.js` 與所有 fallback；離線顯示空狀態 |
 | 全鏈刪除要清掉資料庫、搜尋索引、NAS 檔案、衍生檔和收件匣 | **未完成**。現在沒有這條流程 |
 | 日誌不記通行碼、Cookie、token、私鑰或未去敏的全文 | 這是需求。這個 README 沒有逐條掃過現有日誌 |
 
@@ -142,7 +142,7 @@ node tests/test-api-auth.mjs   # API 認證閘：無 Cookie 401、登入後可�
 
 `main` 通過檢查後，workflow 會把 `index2.html`、`css/`、`js/`、`fonts/` 發佈到 GitHub Pages。第一次需要在 **Settings → Pages → Source** 選 **GitHub Actions**（workflow 用 `GITHUB_TOKEN` 開 Pages 會因權限不足失敗，該步驟已設 `continue-on-error`）。
 
-Pages 是純靜態，沒有 `/api`：接後端的分頁會顯示示範資料，UI 生成也沒有代理可用。要看真實資料請在本機跑。
+Pages 是純靜態，沒有 `/api`：接後端的分頁顯示未連線或空狀態，UI 生成也沒有代理可用。要看真實資料請在本機跑。
 
 ### 本機 NAS
 
@@ -226,7 +226,7 @@ index2.html            12 個分頁的版面（單檔）
 css/index2.css         原版樣式
 css/ds/                設計系統四層：tokens → base → components → pages
 css/*.css              各分頁樣式（studio／person／review／connectors／jobs／library／seats／queue）
-js/index2.js           分頁切換、示範資料、任務隊列的資料橋、圖表、對話框
+js/index2.js           分頁切換、任務隊列的資料橋、圖表、對話框
 js/api.js              後端橋接（收集、告警）
 js/rail.js             右欄監控面板 → /api/rail
 js/seats.js            席位編隊 → /api/seats（派工、自動派工、工人狀態）
@@ -238,7 +238,7 @@ screenshots/           README 用的截圖
 
 ## 已知限制
 
-- 仍是原型：感測上下文、產出庫、統一管線、開源組件是示範資料，動畫用 `requestAnimationFrame` 產生。任務隊列、席位執行的 8 席 worker pool 是真的，但席位頁下方的 80 席角色表仍是示範。
+- 產出庫沒有後端列表（控制面缺 `GET /artifacts`），開起來是空狀態；統一管線只畫流程、不冒充耗時；開源組件是靜態依賴清單。任務隊列與席位執行的 8 席 worker pool 都接真資料。
 - 素材庫依賴本機已經抓下來的抖音媒體（數萬件作品、數十 GB），repo 裡沒有任何媒體檔；索引與媒體都只在本機。
 - 只有八組寫入路徑（審核裁決、AI 事件 ack、收集認領／退回、席位派工與工單結果、MyLike 索引同步、素材庫補檔、圖片無損清理、圖片衍生層），其餘分頁唯讀。「產生衍生層」只新增 `<原檔>.q50.webp` 並記血緣，**原檔與 sha256 不動**，所以不會釋放空間；要省空間得另外決定原檔的保留政策。
 - 外部依賴只有 jsdelivr 的 tippy.js／popper.js 與 highlight.js，三者都帶 sha384 SRI；離線時失效但頁面仍可載入。

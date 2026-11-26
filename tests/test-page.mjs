@@ -16,7 +16,7 @@ import assert from 'node:assert';
 
   const need = ['topic-studio', 'tab-studio', 'llmStatus', 'studioCount', 'studioForm', 'studioPrompt',
     'studioDevice', 'studioDensity', 'studioPresets', 'studioGo', 'studioHint', 'studioViews',
-    'studioDemo', 'studioCopy', 'studioStage', 'studioJson'];
+    'studioCopy', 'studioStage', 'studioJson'];
   const missing = need.filter(id => !ids.has(id));
   console.log('missing ids:', missing.length ? missing : 'none');
   assert(!missing.length);
@@ -39,7 +39,7 @@ import assert from 'node:assert';
 
   // 分頁註冊
   const idx = await (await fetch(base + '/js/index2.js')).text();
-  assert(idx.includes("'oss','studio'"), 'TOPICS');
+  assert(idx.includes("'pipe','sense','studio'"), 'TOPICS');
   assert(idx.includes('studio:{label:'), 'TOPIC_META');
   assert(html.includes('data-topic="studio"'), 'nav/tab');
   assert((html.match(/id="topic-studio"/g) || []).length === 1, 'single section');
@@ -53,7 +53,7 @@ import assert from 'node:assert';
   const perMissing = perNeed.filter(id => !ids.has(id));
   console.log('person ids missing:', perMissing.length ? perMissing : 'none');
   assert(!perMissing.length);
-  assert(idx.includes("'studio','person'"), 'TOPICS person');
+  assert(idx.includes("'person','library'"), 'TOPICS person');
   assert(idx.includes('person:{label:'), 'TOPIC_META person');
   assert(!idx.includes("'authors'") && !idx.includes('authors:{label:'), 'authors 分頁已移除');
   assert(html.includes('css/person.css') && html.includes('js/person.js'), 'person assets');
@@ -79,7 +79,7 @@ import assert from 'node:assert';
   const revMissing = revNeed.filter(id => !ids.has(id));
   console.log('review ids missing:', revMissing.length ? revMissing : 'none');
   assert(!revMissing.length);
-  assert(idx.includes("'person','review'"), 'TOPICS review');
+  assert(idx.includes("'review','person'"), 'TOPICS review');
   assert(idx.includes('review:{label:'), 'TOPIC_META review');
   assert(html.includes('css/review.css') && html.includes('js/review.js'), 'review assets');
   assert((html.match(/data-topic="review"/g) || []).length >= 3, 'nav + tab + mobile tab');
