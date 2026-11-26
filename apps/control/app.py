@@ -6,7 +6,6 @@ import hashlib
 import hmac
 import json
 import os
-import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -14,6 +13,14 @@ from fastapi import FastAPI, Header, HTTPException
 from pydantic import BaseModel, Field
 
 import sys
+
+from db import (  # noqa: E402
+    connect,
+    is_postgres,
+    nas_root,
+    production_blocks_sqlite,
+    truth_label,
+)
 
 POLICY_DIR = Path(__file__).resolve().parents[2] / "packages" / "policy"
 sys.path.insert(0, str(POLICY_DIR))
@@ -27,36 +34,9 @@ def now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
-def nas_root() -> Path:
-    raw = os.environ.get("KOL_NAS_ROOT") or str(Path(__file__).resolve().parents[2] / "data" / "nas")
-    root = Path(raw).resolve()
-    (root / "inbox").mkdir(parents=True, exist_ok=True)
-    return root
-
-
-def database_path() -> Path:
-    url = os.environ.get("KOL_DATABASE_URL", "")
-    if url.startswith("sqlite:///"):
-        return Path(url[len("sqlite:///") :]).resolve()
-    return nas_root() / "buffer" / "control.sqlite"
-
-
-def production_blocks_sqlite() -> None:
-    url = os.environ.get("KOL_DATABASE_URL", "")
-    if os.environ.get("KOL_PROD") == "1" and not url.startswith("postgres"):
-        raise SystemExit("正式環境的真相必須是 PostgreSQL")
-
-
-def connect() -> sqlite3.Connection:
-    path = database_path()
-    path.parent.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(path)
-    conn.row_factory = sqlite3.Row
-    conn.execute("PRAGMA foreign_keys=ON")
-    return conn
-
-
-def init_db(conn: sqlite3.Connection) -> None:
+def init_db(conn) -> None:
+    if getattr(conn, "backend", "sqlite") == "postgres":
+        return
     conn.executescript(
         """
         CREATE TABLE IF NOT EXISTS intake (
@@ -167,6 +147,7 @@ def init_db(conn: sqlite3.Connection) -> None:
         );
         CREATE TABLE IF NOT EXISTS media_similarity_links (
           id TEXT PRIMARY KEY,
+          source_id TEXT NOT NULL DEFAULT 'control',
           left_media_id TEXT NOT NULL,
           right_media_id TEXT NOT NULL,
           score REAL NOT NULL,
@@ -384,8 +365,10 @@ def create_app() -> FastAPI:
     @app.on_event("startup")
     def startup() -> None:
         production_blocks_sqlite()
-        url = os.environ.get("KOL_DATABASE_URL", "")
-        if url.startswith("postgres"):
+        if is_postgres():
+            # 結構由 infra/compose/postgres/init 負責；這裡只確認可連。
+            with connect() as conn:
+                conn.execute("SELECT 1")
             return
         with connect() as conn:
             init_db(conn)
@@ -396,8 +379,7 @@ def create_app() -> FastAPI:
 
         role_of(authorization)
         t0 = time.perf_counter()
-        url = os.environ.get("KOL_DATABASE_URL", "")
-        truth = "postgres" if url.startswith("postgres") else "sqlite-buffer"
+        truth = truth_label()
         duration = int((time.perf_counter() - t0) * 1000)
         return {
             "ok": True,
@@ -407,6 +389,8 @@ def create_app() -> FastAPI:
                 {"id": "policy", "name": "政策", "state": "up", "role": POLICY["version"]},
             ],
             "started_at": started.isoformat(),
+            "truth": truth,
+            "read_path": "postgres" if is_postgres() else "sqlite-buffer",
         }
 
     @app.post("/intake")
@@ -424,11 +408,12 @@ def create_app() -> FastAPI:
             if found:
                 return {"seq": found["seq"], "deduped": True, "recorded_at": found["recorded_at"]}
             cur = conn.execute(
-                "INSERT INTO intake (recorded_at, source_id, captured_at, content_hash, storage_path) VALUES (?,?,?,?,?)",
+                "INSERT INTO intake (recorded_at, source_id, captured_at, content_hash, storage_path) VALUES (?,?,?,?,?) RETURNING seq",
                 (now(), body.source_id, body.captured_at, body.content_hash, str(target)),
             )
             conn.commit()
-            return {"seq": cur.lastrowid, "deduped": False, "recorded_at": now()}
+            seq = cur.lastrowid if cur.lastrowid is not None else (cur.fetchone() or {}).get("seq")
+            return {"seq": seq, "deduped": False, "recorded_at": now()}
 
     @app.post("/artifacts")
     def artifacts(body: ArtifactIn, authorization: str | None = Header(default=None)):
@@ -437,12 +422,14 @@ def create_app() -> FastAPI:
             raise HTTPException(status_code=400, detail="kind")
         with connect() as conn:
             init_db(conn)
+            params_val = body.params if is_postgres() else json.dumps(body.params, ensure_ascii=False)
             cur = conn.execute(
-                "INSERT INTO artifact (recorded_at, source_id, original_id, kind, tool_name, tool_version, params) VALUES (?,?,?,?,?,?,?)",
-                (now(), body.source_id, body.original_id, body.kind, body.tool_name, body.tool_version, json.dumps(body.params, ensure_ascii=False)),
+                "INSERT INTO artifact (recorded_at, source_id, original_id, kind, tool_name, tool_version, params) VALUES (?,?,?,?,?,?,?) RETURNING seq",
+                (now(), body.source_id, body.original_id, body.kind, body.tool_name, body.tool_version, params_val),
             )
             conn.commit()
-            return {"seq": cur.lastrowid}
+            seq = cur.lastrowid if cur.lastrowid is not None else (cur.fetchone() or {}).get("seq")
+            return {"seq": seq}
 
     @app.post("/events")
     def events(body: EventIn, authorization: str | None = Header(default=None)):
@@ -453,12 +440,14 @@ def create_app() -> FastAPI:
             raise HTTPException(status_code=400, detail="state")
         with connect() as conn:
             init_db(conn)
+            diff_val = body.diff_fields if is_postgres() else json.dumps(body.diff_fields)
             cur = conn.execute(
-                "INSERT INTO change_event (recorded_at, source_id, before_ref, after_ref, diff_fields, state, policy_version) VALUES (?,?,?,?,?,?,?)",
-                (now(), body.source_id, body.before_ref, body.after_ref, json.dumps(body.diff_fields), state, POLICY["version"]),
+                "INSERT INTO change_event (recorded_at, source_id, before_ref, after_ref, diff_fields, state, policy_version) VALUES (?,?,?,?,?,?,?) RETURNING seq",
+                (now(), body.source_id, body.before_ref, body.after_ref, diff_val, state, POLICY["version"]),
             )
             conn.commit()
-            return {"seq": cur.lastrowid, "state": state, "policy_version": POLICY["version"], "action": decision["action"]}
+            seq = cur.lastrowid if cur.lastrowid is not None else (cur.fetchone() or {}).get("seq")
+            return {"seq": seq, "state": state, "policy_version": POLICY["version"], "action": decision["action"]}
 
     @app.post("/decisions")
     def decisions(body: DecisionIn, authorization: str | None = Header(default=None)):
@@ -468,11 +457,12 @@ def create_app() -> FastAPI:
         with connect() as conn:
             init_db(conn)
             cur = conn.execute(
-                "INSERT INTO decision (recorded_at, source_id, target_id, action, reason, reviewer, decided_at) VALUES (?,?,?,?,?,?,?)",
+                "INSERT INTO decision (recorded_at, source_id, target_id, action, reason, reviewer, decided_at) VALUES (?,?,?,?,?,?,?) RETURNING seq",
                 (now(), body.source_id, body.target_id, body.action, body.reason, body.reviewer, body.decided_at),
             )
             conn.commit()
-            return {"seq": cur.lastrowid}
+            seq = cur.lastrowid if cur.lastrowid is not None else (cur.fetchone() or {}).get("seq")
+            return {"seq": seq}
 
     @app.get("/subjects")
     def list_subjects(authorization: str | None = Header(default=None), q: str = ""):
@@ -835,12 +825,13 @@ def create_app() -> FastAPI:
             conn.execute(
                 """
                 INSERT INTO media_similarity_links (
-                  id, left_media_id, right_media_id, score, kind, status,
+                  id, source_id, left_media_id, right_media_id, score, kind, status,
                   tool_name, tool_version, policy_version, reason, recorded_at
-                ) VALUES (?,?,?,?,?,?,?,?,?,?,?)
+                ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
                 """,
                 (
                     link_id,
+                    "control",
                     left_id,
                     right_id,
                     float(body.score),
@@ -1002,6 +993,71 @@ def create_app() -> FastAPI:
                 "note": "候選匣只排序與提示。確認、合併、採集都要人工或已批准流程。",
                 "source": "control.intelligence",
             }
+
+    @app.get("/truth/status")
+    def truth_status(authorization: str | None = Header(default=None)):
+        """單一真相狀態。前端與對帳腳本都讀這裡，不再猜 SQLite／PG。"""
+        role_of(authorization)
+        truth = truth_label()
+        counts: dict[str, int | None] = {}
+        with connect() as conn:
+            init_db(conn)
+            for table in (
+                "intake",
+                "artifact",
+                "change_event",
+                "decision",
+                "subjects",
+                "platform_accounts",
+                "indexed_posts",
+                "media_index",
+                "media_similarity_links",
+            ):
+                try:
+                    row = conn.execute(f"SELECT COUNT(*) AS n FROM {table}").fetchone()
+                    counts[table] = int(row["n"]) if row else 0
+                except Exception:
+                    counts[table] = None
+            legacy = None
+            reconcile_ok = None
+            if is_postgres():
+                try:
+                    legacy = int(conn.execute("SELECT COUNT(*) AS n FROM legacy_sqlite_rows").fetchone()["n"])
+                except Exception:
+                    legacy = None
+                try:
+                    last = conn.execute(
+                        """
+                        SELECT id, ok, finished_at FROM data_reconcile_runs
+                        WHERE mode='reconcile'
+                        ORDER BY id DESC LIMIT 1
+                        """
+                    ).fetchone()
+                    if last:
+                        gap_n = conn.execute(
+                            "SELECT COUNT(*) AS n FROM data_reconcile_gaps WHERE run_id=?",
+                            (last["id"],),
+                        ).fetchone()
+                        reconcile_ok = {
+                            "run_id": last["id"],
+                            "ok": bool(last["ok"]),
+                            "finished_at": str(last["finished_at"]) if last["finished_at"] else None,
+                            "gaps": int(gap_n["n"]) if gap_n else 0,
+                        }
+                except Exception:
+                    reconcile_ok = None
+        return {
+            "ok": True,
+            "truth": truth,
+            "read_path": truth,
+            "postgres_required_in_prod": True,
+            "counts": counts,
+            "legacy_sqlite_rows": legacy,
+            "last_reconcile": reconcile_ok,
+            "migrate": "python scripts/migrate_sqlite_to_postgres.py --sqlite <path>",
+            "reconcile": "python scripts/reconcile_sqlite_postgres.py --sqlite <path>",
+            "note": "業務畫面應讀控制面／PostgreSQL。kolindex-api SQLite 只作遷移來源，不再當真相。",
+        }
 
     return app
 

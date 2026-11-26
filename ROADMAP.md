@@ -35,7 +35,7 @@
 - `GET /api/events`（SSE；目前全是輪詢）
 - `POST /api/takedown`（下架）
 
-工程面：畫面現在仍讀另一個 repo 的 SQLite。PostgreSQL 是收斂目標，目前承接控制面四個寫入端點。Meilisearch 是可重建的衍生索引。Redis 與 MinIO 不在第一版 Compose。開源容器在 `infra/compose/docker-compose.oss.yml`，不進 `data` 網路。登入是 dev-server 的 `KOL_GATE` 和三種角色；沒設通行碼時是 `viewer`。運行位置是本機 NAS。開發約束以 v4.1 為準。下面的表數對照仍是畫面語意 v2.2 的 25 表。
+工程面：PostgreSQL 是單一真相（ADR-009）。控制面設 `KOL_DATABASE_URL=postgres…` 時讀寫都走 PG；歷史 SQLite 用 `scripts/migrate_sqlite_to_postgres.py` 匯入，過渡期用 `scripts/reconcile_sqlite_postgres.py` 對帳。部分舊畫面仍代理 `kolindex-api` 的 `/api/*`，對帳通過前不得把那裡的數字當最終真相。Meilisearch 是可重建的衍生索引。Redis 與 MinIO 不在第一版 Compose。開源容器在 `infra/compose/docker-compose.oss.yml`，不進 `data` 網路。登入是 dev-server 的 `KOL_GATE` 和三種角色；沒設通行碼時是 `viewer`。運行位置是本機 NAS。開發約束以 v4.1 為準。下面的表數對照仍是畫面語意 v2.2 的 25 表。
 
 ## 三、未實作的功能（依優先級）
 
@@ -85,7 +85,7 @@
 23. API 認證與 CORS 收斂
 24. SSE 取代輪詢（現在 rail 15s、seats 1.5s、jobs 60s…）
 25. 後端 CI（前端 repo 已有 Actions；後端 repo 還沒有 workflow）
-26. 備份異地化（目前只有本機 7 份）
+26. 備份異地化 · **半** · `scripts/nas/backup.mjs` 本機預設 7 份；設 `KOL_BACKUP_OFFSITE` 才算異地。多架構核對 `verify-multiarch.mjs`＋CI `multiarch-images.yml`。還原演練仍待實做紀錄（ADR-010）
 
 ## 四、要講清楚的幾件事
 

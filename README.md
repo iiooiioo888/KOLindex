@@ -6,16 +6,16 @@
 
 > 畫面語意對齊 v2.2。開發約束以 KOL-SPEC-001 v4.1 為準。治理層還沒做，落差列在 ROADMAP。時間表和技術表在 PROJECT.md。
 
-12 個分頁裡，接上 `kolindex-api` 的那些畫面現在讀的是那個 repo 的 SQLite。PostgreSQL 是要收斂過去的真相，目前只承接控制面的四個寫入端點。過渡期以這張表判定一筆資料該看哪一邊：
+**單一真相是 PostgreSQL**（ADR-006／ADR-009）。控制面在 `KOL_DATABASE_URL=postgres…` 時讀寫都走 PG；未設且非正式環境才用 SQLite buffer。外部 `kolindex-api` SQLite 只作遷移來源。
 
-| 資料類 | 現在寫哪 | 畫面現在讀哪 | 收斂目標 |
+| 資料類 | 現在寫哪 | 畫面應讀哪 | 狀態 |
 |---|---|---|---|
-| intake、artifact、event、decision | PostgreSQL；沒設資料庫且不是正式環境時，才落到 `KOL_NAS_ROOT/buffer/` 的 SQLite | 畫面還沒讀這四個端點 | PostgreSQL |
-| 抖音作品、作者、素材庫 | `kolindex-api` 的 SQLite | SQLite | PostgreSQL，遷移日待確認 |
-| 審核裁決、收集認領 | SQLite | SQLite | PostgreSQL，遷移日待確認 |
-| 席位工單 | SQLite | SQLite | 要留在 SQLite 還是遷到 PostgreSQL，待確認 |
+| intake、artifact、event、decision | PostgreSQL（或過渡 buffer） | `/__control` → 控制面 | 已接控制面；設 PG 即為真相 |
+| subjects／帳號／indexed_posts／media_index | 控制面 → PG | `/__control/subjects*` | 已接；歷史用遷移腳本匯入 |
+| 抖音作品、作者、素材庫（舊 API） | 曾寫 `kolindex-api` SQLite | 遷移後讀 PG；過渡期對帳 | `scripts/migrate_sqlite_to_postgres.py` |
+| 審核／席位等未映射表 | 遷移進 `legacy_sqlite_rows` | 對帳後再接畫面 | 不發明未核對表 |
 
-在遷移完成前，畫面上的人數和作品數以 SQLite 為準。控制面新寫入的那四類以 PostgreSQL 為準。兩邊現在不會自動對帳。
+過渡期對帳：`python scripts/reconcile_sqlite_postgres.py --sqlite <path>`（比對筆數與 `content_hash`／`checksum`）。結果在 PG 的 `data_reconcile_*` 與 `GET /__control/truth/status`。
 
 哪些頁面接真資料、哪些還是示範、規格書（v2.2）還缺哪些表與端點，都列在 **[ROADMAP.md](ROADMAP.md)**（2026-11-24）。
 
@@ -148,6 +148,22 @@ Pages 是純靜態，沒有 `/api`：接後端的分頁會顯示示範資料，U
 
 這組服務要在家裡的 NAS 上跑，不靠 GitHub Pages。預設埠只聽 `127.0.0.1`，可用 `.env` 的 `*_BIND` 改。資料卷落在 NAS 的磁碟上。
 
+**部署自動化（ADR-010）**
+
+```bash
+# 1) 多架構阻斷核對（需要 Docker；CI 每週一也會跑）
+node scripts/nas/verify-multiarch.mjs --main-only --write-inventory
+
+# 2) 拉起 Compose（見下方）
+cd infra/compose && docker compose -p kolindex up -d
+
+# 3) 備份：本機 7 份；異地目錄用環境變數（只寫在 NAS）
+export KOL_BACKUP_OFFSITE=/path/to/other-disk/kolindex-backups
+node scripts/nas/backup.mjs
+```
+
+排程範例在 `scripts/nas/schedule.example.md`。未設 `KOL_BACKUP_OFFSITE` 時結果只算本機備份，不得寫成異地完成。
+
 ```
 copy infra\compose\.env.example infra\compose\.env
 docker compose -f infra/compose/docker-compose.yml -f infra/compose/docker-compose.oss.yml up -d --build
@@ -173,7 +189,7 @@ python apps/control/app.py
 | 2 | 這個階段用 Docker。規格裡的 rootless Podman 延後，等確認 NAS 的容器工具支援之後再改 |
 | 3 | 若用 DDNS、QuickConnect 或 Tailscale 從外面看，先核對業務 API 自己有沒有認證。`KOL_GATE` 只擋這個網頁行程 |
 | 4 | 媒體目錄和知識庫只給跑這個站的帳號讀，不開放給 NAS 上的其他家庭帳號 |
-| 5 | 磁碟陣列不是備份。異地備份和還原演練仍待做 |
+| 5 | 磁碟陣列不是備份。每日／排程跑 `node scripts/nas/backup.mjs`（本機 7 份）；設 `KOL_BACKUP_OFFSITE` 才算異地。上線前跑 `node scripts/nas/verify-multiarch.mjs` 核對 amd64＋arm64。細節：ADR-010、`docs/runbooks/nas-deploy-and-backup.md`、`scripts/nas/schedule.example.md` |
 
 容器監測和開關不在網頁容器裡做，也不掛 Docker socket。在 NAS 上另開這個站的行程，並設 `KOL_DOCKER=1`：
 

@@ -1,0 +1,39 @@
+name: multiarch-images
+
+on:
+  push:
+    paths:
+      - 'infra/compose/docker-compose*.yml'
+      - 'scripts/nas/**'
+      - '.github/workflows/multiarch-images.yml'
+  pull_request:
+    paths:
+      - 'infra/compose/docker-compose*.yml'
+      - 'scripts/nas/**'
+      - '.github/workflows/multiarch-images.yml'
+  schedule:
+    - cron: '17 4 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Verify amd64+arm64 digests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: 核對 Compose 固定摘要多架構
+        run: node scripts/nas/verify-multiarch.mjs --write-inventory
+
+      - name: 上傳 inventory 產物
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: image-arch-inventory
+          path: scripts/nas/image-arch-inventory.json
+          if-no-files-found: warn

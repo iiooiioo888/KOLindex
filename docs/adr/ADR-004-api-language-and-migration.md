@@ -19,3 +19,7 @@
 ## 何時重審
 
 buffer 連續兩週沒有新的寫入，而且四個端點的讀取已由 PostgreSQL 提供。那時拆掉 SQLite buffer，不再保留雙寫。
+
+## 2026-11-26 補充
+
+執行層已由 ADR-009 落地：控制面接上 PostgreSQL、單向遷移腳本、content_hash／筆數對帳。本 ADR 的「逐步搬」仍然有效；未映射的 `kolindex-api` 表先入 `legacy_sqlite_rows`。

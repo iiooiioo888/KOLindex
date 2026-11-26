@@ -1,0 +1,56 @@
+{
+  "generatedAt": null,
+  "required": ["amd64", "arm64"],
+  "note": "由 node scripts/nas/verify-multiarch.mjs --write-inventory 覆寫。未驗證前 ok 皆為未知。",
+  "images": {
+    "pgvector/pgvector@sha256:484e838076e04939d27d3e176e91c86eea96236126023be8d3059761122e579f": {
+      "arches": ["amd64", "arm64"],
+      "ok": true,
+      "files": ["infra/compose/docker-compose.yml"],
+      "checkedAt": "2026-11-24T00:00:00.000Z",
+      "note": "PROJECT.md 記載兩架構 PG_VERSION 皆 16.16-1.pgdg12+1；部署前仍須本機／CI 重跑 verify"
+    },
+    "getmeili/meilisearch:v1.57.0@sha256:91bf09897482c17205c8faeca8daa8d57999fb9de20d862763cdfa92ba4ec790": {
+      "arches": [],
+      "ok": false,
+      "files": ["infra/compose/docker-compose.yml"],
+      "checkedAt": null,
+      "note": "待 CI 或 NAS 上 docker buildx imagetools 驗證"
+    },
+    "sherlock/sherlock@sha256:9d6602b98179fb15ceab88433626fb0ae603ae9880e13cab886970317fe1475f": {
+      "arches": [],
+      "ok": false,
+      "files": ["infra/compose/docker-compose.oss.yml"],
+      "checkedAt": null,
+      "note": "待驗證"
+    },
+    "soxoj/maigret@sha256:0dba1e81178a4ce62bc73167ae68687217320ebb62b59ced094ba3cb879615e7": {
+      "arches": [],
+      "ok": false,
+      "files": ["infra/compose/docker-compose.oss.yml"],
+      "checkedAt": null,
+      "note": "待驗證"
+    },
+    "joeanamier/xhs-downloader@sha256:5878c0972cc1236cd8ac4e069f9202152434d8402df52bf427210229b8a53fb9": {
+      "arches": [],
+      "ok": false,
+      "files": ["infra/compose/docker-compose.oss.yml"],
+      "checkedAt": null,
+      "note": "待驗證"
+    },
+    "evil0ctal/douyin_tiktok_download_api@sha256:c0907e1bf08f4b7eda0a79c8157b29523a0b28f63bb26670bf666f4c88f50c00": {
+      "arches": [],
+      "ok": false,
+      "files": ["infra/compose/docker-compose.oss.yml"],
+      "checkedAt": null,
+      "note": "待驗證"
+    },
+    "redis:7.4.7-bookworm@sha256:976ab0f0939b78c06d802bcd3bea44c5142ea9a756a57b861e08819817f768c8": {
+      "arches": [],
+      "ok": false,
+      "files": ["infra/compose/docker-compose.later.yml"],
+      "checkedAt": null,
+      "note": "第一版不啟動；仍須列入多架構清單"
+    }
+  }
+}

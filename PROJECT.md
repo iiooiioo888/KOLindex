@@ -58,7 +58,7 @@ MediaCrawler、feedgrab、sociopath 沒有收進執行清單：沒有可核對�
 
 | 約束 | 做到什麼程度算數 | 現況 |
 |---|---|---|
-| 控制面與資料分開 | 採集程式不直連任何資料服務，只經控制面 API 寫入 | **半** · `apps/control/app.py` 的四個寫入端點不寫 SQLite。舊的 kolindex-api 仍可寫它自己的 SQLite |
+| 控制面與資料分開 | 採集程式不直連任何資料服務，只經控制面 API 寫入 | **半** · 控制面設 `KOL_DATABASE_URL=postgres…` 時讀寫 PostgreSQL（ADR-009）。舊 kolindex-api 仍可寫自己的 SQLite，須經遷移／對帳收斂 |
 | 同框範圍 | 只對已經建檔的目標公開帳號成立。畫面裡的路人、家屬、未成年人不建紀錄、不指認 | **假** · 分析功能未做，這條尚未落地 |
 | 關係類型 | 只記公開可陳述的協作：提及、合集、引用、同台。不推斷親屬、伴侶、健康、宗教 | **假** · 關係功能未做 |
 | 模型只產候選 | 模型輸出不觸發採集、刪除或發布 | **半** · 文件已寫明。線框生成不會寫業務庫；其餘模型路徑未接 |
@@ -163,7 +163,7 @@ GitHub Pages 只發靜態畫面。正式運行在家裡的 NAS。分頁細節見
 | 2 | 這個階段用 Docker | 規格寫優先 rootless Podman。家用 NAS 的容器工具對 Podman 的支援待確認。此階段先用 Docker，Podman 延後，並在這裡記上一筆 |
 | 3 | 從外面看這台 NAS 的途徑 | 若用 DDNS、QuickConnect 或 Tailscale 對外，`KOL_GATE` 只擋到網頁行程。業務 API 的認證就更要先核對 |
 | 4 | 媒體目錄的檔案權限 | 家庭共用一台 NAS 時，媒體和知識庫只給跑這個站的帳號讀 |
-| 5 | 備份 | 磁碟陣列壞掉不等於還有備份。異地備份和還原演練仍待確認 |
+| 5 | 備份 | 磁碟陣列壞掉不等於還有備份。自動化：`node scripts/nas/backup.mjs`（本機 7 份）；異地靠 `KOL_BACKUP_OFFSITE`。多架構：`node scripts/nas/verify-multiarch.mjs`。還原演練見 `docs/runbooks/nas-deploy-and-backup.md`，演練前不得宣稱已驗證 |
 
 MinIO 不在第一版主 Compose。映像仍在 `infra/compose/docker-compose.later.yml`，標籤是 `RELEASE.2025-10-15T17-29-55Z`。sha256 在 2026-11-24 沒有補上：這台開發機沒有 Docker，向 Quay 要 manifest 回 401。
 

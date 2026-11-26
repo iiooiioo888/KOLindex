@@ -37,3 +37,15 @@ PostgreSQL 是唯一真相。文件放 `jsonb`，向量放 pgvector。Meilisearc
 ## 何時重審
 
 Celery 的任務協調要進場時，再把 Redis 加回來，而且只當協調，不當真相。若 NAS 檔案的備份演練失敗，再重審媒體是否改放物件儲存。
+
+## 2026-11-26 補充
+
+SQLite／PostgreSQL 雙軌收斂見 ADR-009。運維入口：
+
+```text
+python scripts/migrate_sqlite_to_postgres.py --sqlite <sqlite路徑>
+python scripts/reconcile_sqlite_postgres.py --sqlite <sqlite路徑>
+GET /__control/truth/status
+```
+
+已有 PostgreSQL 資料目錄須補跑 `infra/compose/postgres/init/004-truth-reconcile.sql`。

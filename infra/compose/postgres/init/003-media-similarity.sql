@@ -3,8 +3,9 @@
 
 CREATE TABLE IF NOT EXISTS media_similarity_links (
   seq bigserial PRIMARY KEY,
+  id text UNIQUE,
   recorded_at timestamptz NOT NULL DEFAULT now(),
-  source_id text NOT NULL,
+  source_id text NOT NULL DEFAULT 'control',
   left_media_id text NOT NULL,
   right_media_id text NOT NULL,
   score double precision NOT NULL CHECK (score >= 0 AND score <= 1),
