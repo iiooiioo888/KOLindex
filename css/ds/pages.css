@@ -11,9 +11,9 @@
   gap:0;
   background:transparent;
 }
-.rail{background:var(--bg);border-right:1px solid var(--line)}
+.rail{background:var(--bg);border-right:1px solid var(--line);padding:8px 8px 12px;gap:8px}
 .rail-right{background:var(--bg);border-left:1px solid var(--line)}
-.stage{padding:0 0 var(--s-6);container:stage / inline-size;background:transparent}
+.stage{padding:0 0 var(--s-4);container:stage / inline-size;background:transparent}
 .waterfall{padding:var(--frame-y) var(--frame-x) 0;gap:var(--frame-y)}
 /* 切頁不淡入：任何 .on 上的動畫都會讓「無感切頁」破功 */
 .waterfall.on{animation:none}
@@ -24,6 +24,63 @@
 .rail-right .hero-chart .hc-val{display:block}
 .rail-right .hero-chart .hc-delta{display:inline-block}
 .rail-right .note{display:block}
+.stack-docker-list{margin-top:8px;max-height:220px;overflow:auto;display:grid;gap:4px}
+.stack-docker-list .kv{margin:0}
+.stack-docker-list .note{padding-top:0;margin-top:0}
+
+/* ── 1b. 版面收斂：頂欄／主題列／左軌摘要 ───────────────────── */
+.topbar{
+  min-height:var(--topbar-h);
+  padding:4px 10px;
+  gap:6px 10px;
+  flex-wrap:nowrap;
+}
+.brand-sub{display:none}
+.brand-mark{width:22px;height:22px}
+.brand-name{font-size:13px}
+.chip{padding:2px 6px}
+.searchbox{flex:0 1 200px;min-width:140px;min-height:28px}
+.icon-btn{min-width:28px;height:28px;padding:0 6px}
+.rail .rail-label{padding:0 4px 3px;margin-bottom:2px;font-size:9.5px}
+.rail .nav-item{padding:5px 6px;gap:6px}
+.rail .nav-item .nm{font-size:12px}
+.rail .micro-card{padding:6px 8px}
+.rail .micro-card h4{margin:0 0 4px;font-size:10px}
+.rail .kv{padding:1px 0;line-height:1.35}
+.rail-summary{margin-top:auto}
+.topic-bar{
+  min-height:36px;
+  padding:4px 8px;
+  gap:8px;
+  flex-wrap:nowrap;
+  align-items:center;
+}
+.topic-head{
+  display:flex;
+  align-items:baseline;
+  gap:8px;
+  padding:0;
+  min-width:0;
+  flex:0 1 auto;
+}
+.topic-head .th-main{display:flex;align-items:baseline;gap:8px;min-width:0}
+.topic-head #topicTitle{font-size:14px;margin:0;white-space:nowrap}
+.topic-head .th-kicker{margin:0;font-size:10px}
+.topic-hint{margin:0;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* 寬螢幕：左軌已有導覽，主題列頁籤收起，舞台多一截 */
+@media(min-width:1280px){
+  .topic-tabs{display:none}
+}
+.topic-tabs{gap:4px;padding:0;border:0}
+.topic-btn{padding:4px 7px;font-size:11px}
+.topic-group{display:none}
+.panel-head{padding:6px 10px;min-height:var(--frame-h)}
+.panel-body{padding:8px 10px}
+.statusbar{min-height:var(--statusbar-h);padding:0 10px;font-size:11px}
+.rail-right .rr-head{padding:6px 8px}
+.rail-right .rr-body{padding:8px}
+.rail-right .hero-chart{margin-bottom:6px}
+.rail-right .note{font-size:10px;line-height:1.4}
 
 /* ── 2. 各頁節奏 ───────────────────────────────────────────── */
 #topic-collect .collect-stats{gap:var(--col-gap)}
@@ -110,14 +167,15 @@
 
 /* ── 5. 斷點 ───────────────────────────────────────────────── */
 @media(max-width:1680px){
-  .shell{grid-template-columns:248px minmax(0,1fr) 372px}
+  .shell{grid-template-columns:212px minmax(0,1fr) 340px}
 }
 @media(max-width:1439px){
-  .shell{grid-template-columns:240px minmax(0,1fr) 356px}
+  .shell{grid-template-columns:200px minmax(0,1fr) 320px}
 }
 @media(max-width:1279px){
-  .shell{grid-template-columns:248px minmax(0,1fr)}
+  .shell{grid-template-columns:200px minmax(0,1fr)}
   .rail-right{border-left:0;border-top:1px solid var(--line);grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--s-2);padding:var(--s-4) var(--s-4) var(--s-9)}
+  .topic-tabs{display:flex}
   #topic-out.on{height:auto;min-height:0}
 }
 @media(max-width:767px){

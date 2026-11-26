@@ -20,6 +20,8 @@ class AccountCandidate(BaseModel):
     profile_url: str
     status: CandidateStatus = "candidate"
     source_trust: Literal["public_platform"] = "public_platform"
+    confidence: float = Field(default=0.5, ge=0, le=1)
+    match_reasons: list[str] = Field(default_factory=list)
 
 
 class PlatformSkip(BaseModel):

@@ -1,4 +1,4 @@
-version: "2026-11-24.1"
+version: "2026-11-26.1"
 max_failures: 2
 relation_whitelist:
   - mention
@@ -13,6 +13,11 @@ label_whitelist:
   - logo
   - scene
   - safety
+media_similarity_threshold: 0.9999
+media_link_kinds:
+  - near_duplicate
+  - copy_suspect
+media_link_auto_confirm: false
 time_fact_sources:
   - public_post
 time_candidate_sources:

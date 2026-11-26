@@ -103,13 +103,20 @@
       if (btn) btn.disabled = false;
       if (res.status === 429) { showErr((res.data && res.data.message) || '請稍後再試'); return; }
       if (res.status === 401) { showErr('通行碼不對'); return; }
-      if (!res.data || !res.data.ok) { showErr('登入沒有完成'); return; }
+      if (res.status === 502 || res.status === 503 || res.status === 504) {
+        showErr('登入 BFF 沒開。另開終端：set PORT=5201 && set KOL_GATE=你的通行碼 && set KOL_ROLE=operator && node tests/dev-server.mjs . 5201');
+        return;
+      }
+      if (!res.data || !res.data.ok) {
+        showErr((res.data && res.data.message) || '登入沒有完成。若走 Next.js，請先開 5201 的 BFF。');
+        return;
+      }
       enter({ name: res.data.name || name, role: res.data.role || 'viewer', mode: res.data.gate ? 'server' : 'local', caps: res.data.caps || null });
       write(window.KOLINDEX_SESSION);
       showErr('');
     }).catch(function () {
       if (btn) btn.disabled = false;
-      showErr('登入服務沒有回應，沒有建立工作階段。');
+      showErr('登入服務沒有回應。Next.js 會把 /__auth 轉到 127.0.0.1:5201，請先開 BFF。');
     });
   }
 
@@ -124,7 +131,7 @@
       .then(function (d) {
         var lead = document.querySelector('.login-lead');
         if (lead && d && d.gate === false) {
-          lead.textContent = '這台沒有設定通行碼，填操作者就能進入。要擋住未登入的人，啟動時加上 KOL_GATE。';
+          lead.textContent = '開發模式：任填名稱即可。';
         }
         if (d && d.ok && d.name) {
           var session = { name: d.name, role: d.role || 'viewer', mode: 'server', caps: d.caps || null };

@@ -25,6 +25,12 @@
 }
 #topic-person .pm-sub{ letter-spacing:0; text-transform:none; color:var(--dim); }
 #topic-person .pm-empty{ font:400 11px/1.5 var(--mono); color:var(--faint); }
+#topic-person .plain-list{
+  margin:0; padding:0 0 0 1.1em; list-style:disc;
+  font:400 12px/1.55 var(--sans); color:var(--text);
+}
+#topic-person .plain-list li{ margin:0 0 4px; }
+#topic-person .plain-list .mini-btn{ margin-left:6px; vertical-align:baseline; }
 #topic-person .pm-rows{
   display:grid;
   gap:3px;

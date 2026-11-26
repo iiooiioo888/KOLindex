@@ -70,3 +70,64 @@ th {
 a {
   color: var(--text);
 }
+
+code {
+  font-family: var(--mono);
+  font-size: 0.92em;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 20px 0 28px;
+}
+
+.btn {
+  display: inline-block;
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  text-decoration: none;
+  color: var(--text);
+  background: var(--surface);
+}
+
+.btn.primary {
+  border-color: #2f6f4a;
+  background: #143023;
+}
+
+.card {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 16px 18px;
+  background: var(--surface);
+}
+
+.card h2 {
+  margin: 0 0 10px;
+  font-size: 18px;
+}
+
+.card ul {
+  margin: 0;
+  padding-left: 1.2em;
+  color: var(--dim);
+  line-height: 1.7;
+}
+
+.note {
+  margin-top: 14px;
+  color: var(--faint);
+  font-size: 13px;
+}
+
+.mono {
+  font-family: var(--mono);
+  font-size: 12px;
+}
+
+.absent {
+  color: var(--orange);
+}

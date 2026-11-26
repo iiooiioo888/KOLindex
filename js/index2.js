@@ -1509,20 +1509,22 @@
   $('#autoClaimBtn').addEventListener('click',toggleAuto);
 
   /* ================= 路由 + 轉頁 ================= */
-  var TOPICS=['collect','queue','sense','out','seat','pipe','infra','oss','studio','person','review','library'];
+  /* 順序對齊側欄分組：工作 → 內容 → 監控 → 工具 */
+  var TOPICS=['collect','queue','seat','review','person','library','out','health','infra','oss','pipe','sense','studio'];
   var TOPIC_META={
-    collect:{label:'任務收集',hint:'待收項確認後才進隊列 · 這頁不拉取外部內容'},
-    queue:{label:'任務隊列',hint:'席位自動拉取任務 · 等 LLM 空檔才執行'},
-    sense:{label:'感測上下文',hint:'壓縮與文本感知 · 8 槽各自回寫'},
-    out:{label:'產出庫',hint:'另存新版 · 舊檔不覆蓋'},
-    seat:{label:'席位執行',hint:'8 個席位真的會跑工單 · worker pool 接真資料'},
-    pipe:{label:'統一管線',hint:'resolve_execution_path · 唯一判斷源'},
-    infra:{label:'基礎設施',hint:'Docker Compose · 阿里雲唯讀'},
-    oss:{label:'開源組件',hint:'GitHub 鎖定版本 · 候選不進主棧'},
-    studio:{label:'UI 生成',hint:'一句話需求 → 線框圖 · 只出結構不出像素'},
-    person:{label:'人物檔案',hint:'抖音作者清單與檔案兩個檢視，人數以後端為準，只讀'},
-    review:{label:'審核台',hint:'AI 只產候選 · 人工裁決寫回 review_task 並留審計'},
-    library:{label:'素材庫',hint:'抖音點讚／收藏，件數以後端為準'}
+    collect:{label:'任務收集',group:'工作',hint:'待收項確認後才進隊列 · 這頁不拉取外部內容'},
+    queue:{label:'任務隊列',group:'工作',hint:'席位自動拉取任務 · 等 LLM 空檔才執行'},
+    seat:{label:'席位執行',group:'工作',hint:'8 個席位真的會跑工單 · worker pool 接真資料'},
+    review:{label:'審核台',group:'工作',hint:'AI 只產候選 · 人工裁決寫回 review_task 並留審計'},
+    person:{label:'人物檔案',group:'內容',hint:'人物主檔與公開帳號候選 · 只讀／掛候選'},
+    library:{label:'素材庫',group:'內容',hint:'抖音點讚／收藏，件數以後端為準'},
+    out:{label:'產出庫',group:'內容',hint:'另存新版 · 舊檔不覆蓋'},
+    health:{label:'元件健康',group:'監控',hint:'GET /__health/components · BFF 代問 · 不直連容器埠'},
+    infra:{label:'基礎設施',group:'監控',hint:'服務／席位／儲存／連接器／排程'},
+    oss:{label:'開源組件',group:'監控',hint:'GitHub 鎖定版本 · 候選不進主棧'},
+    pipe:{label:'統一管線',group:'監控',hint:'resolve_execution_path · 唯一判斷源'},
+    sense:{label:'感測上下文',group:'監控',hint:'壓縮與文本感知 · 8 槽各自回寫'},
+    studio:{label:'UI 生成',group:'工具',hint:'一句話需求 → 線框圖 · 只出結構不出像素'}
   };
   var INFRA_PANES=['docker','ecs','bill','cost','conn','jobs'];
   var INFRA_LABEL={docker:'服務',ecs:'席位',bill:'儲存',cost:'磁碟',conn:'連接器',jobs:'排程工作'};
@@ -1639,7 +1641,7 @@
     if (t==='infra') hintText='基礎設施 / '+(INFRA_LABEL[r.pane]||r.pane);
     else if (r.focus) hintText=meta.label+' / '+r.focus;
     var hint=$('#topicHint');
-    if (hint) hint.textContent='#/'+routePath(r)+'  ·  '+hintText;
+    if (hint) hint.textContent='#/'+routePath(r)+'  ·  '+(meta.group?meta.group+' · ':'')+hintText;
     var tTitle=$('#topicTitle');
     if (tTitle) tTitle.textContent=meta.label;
     var tIndex=$('#topicIndex');
@@ -1648,7 +1650,10 @@
       tIndex.textContent=(ord<10?'0':'')+ord+' / '+(total<10?'0':'')+total;
     }
     var bar=$('#topicBar');
-    if (bar) bar.setAttribute('data-route',routePath(r));
+    if (bar){
+      bar.setAttribute('data-group', meta.group||'');
+      bar.setAttribute('data-route',routePath(r));
+    }
     document.title='靈境·Linkin · '+meta.label+(t==='infra'&&r.pane?' / '+INFRA_LABEL[r.pane]:r.focus?' / '+r.focus:'');
     document.body.setAttribute('data-topic', t);
   }
@@ -1751,9 +1756,15 @@
   window.addEventListener('hashchange',syncFromBrowser);
   window.addEventListener('popstate',syncFromBrowser);
   $$('[data-topic]').forEach(function(el){
-    if (el.matches('.topic-btn, .nav-item, .tab, .mini-btn[data-topic]'))
+    if (el.matches('.topic-btn, .nav-item, .tab, .mini-btn[data-topic], .stack-card[data-topic]'))
       el.addEventListener('click',function(){ setTopic(el.getAttribute('data-topic')); });
   });
+  var stackCard=$('#stackCard');
+  if (stackCard){
+    stackCard.addEventListener('keydown',function(e){
+      if (e.key==='Enter' || e.key===' '){ e.preventDefault(); setTopic('health'); }
+    });
+  }
   function setupRoving(container,itemSel){
     var items=$$(itemSel,container);
     items.forEach(function(it){ it.tabIndex=it.getAttribute('aria-selected')==='true'?0:-1; });
@@ -2570,11 +2581,11 @@
     {id:'noto',name:'Noto Sans TC',repo:'notofonts/noto-cjk',license:'OFL',pin:'系統字',face:'正文字型',state:'wired',use:'中文走系統字堆疊（蘋方、微軟正黑體、思源黑體）。不向 Google Fonts 取字。'},
     {id:'plex',name:'IBM Plex Mono',repo:'IBM/plex',license:'OFL',pin:'自託管 5.2.6',face:'等寬字型',state:'wired',use:'拉丁子集 woff2 放在 fonts/。編號、槽位、路由與計數。'},
     {id:'chakra',name:'Chakra Petch',repo:'google/fonts',license:'OFL',pin:'自託管 5.2.6',face:'標題字型',state:'wired',use:'拉丁子集 woff2 放在 fonts/。品牌與大數字的英文。漢字改走系統字。'},
-    {id:'xhs',name:'XHS-Downloader',repo:'JoeanAmier/XHS-Downloader',license:'GPL-3.0',pin:'2.8',face:'Sandbox 候選',state:'candidate',use:'映像摘要在 docker-compose.oss.yml。未批准，不進主棧，這頁也不啟動。'},
+    {id:'xhs',name:'XHS-Downloader',repo:'JoeanAmier/XHS-Downloader',license:'GPL-3.0',pin:'2.8',face:'Sandbox 候選',state:'candidate',use:'容器待命控制。抓取 off，人物發現 not_enabled。狀態見 /__oss/status 與基礎設施頁。'},
     {id:'douyin-api',name:'Douyin_TikTok_Download_API',repo:'Evil0ctal/Douyin_TikTok_Download_API',license:'Apache-2.0',pin:'5.1.13',face:'Sandbox 候選',state:'candidate',use:'只收 API 映像。不接本專案資料庫，不含瀏覽器側車。未批准，這頁不啟動。'},
     {id:'douyin-dl',name:'douyin-dl',repo:'Achaiccccc/douyin-dl',license:'Apache-2.0',pin:'未鎖定',face:'Sandbox 候選',state:'candidate',use:'沒有可釘住的 Docker Hub 映像，未寫入 Compose。這頁不建置、不拉取。'},
-    {id:'maigret',name:'Maigret',repo:'soxoj/maigret',license:'MIT',pin:'327c2bc',face:'Sandbox 候選',state:'candidate',use:'CLI 映像摘要在 docker-compose.oss.yml。不能直連主庫，這頁不執行搜尋。'},
-    {id:'sherlock',name:'Sherlock',repo:'sherlock-project/sherlock',license:'MIT',pin:'0.16.0',face:'Sandbox 候選',state:'candidate',use:'收集頁用固定摘要呼叫。候選不是已批准的 Connector。'},
+    {id:'maigret',name:'Maigret',repo:'soxoj/maigret',license:'MIT',pin:'327c2bc',face:'Sandbox 候選',state:'candidate',use:'開源組件頁可直接跑用戶名查詢。一次性容器，結果只當候選。'},
+    {id:'sherlock',name:'Sherlock',repo:'sherlock-project/sherlock',license:'MIT',pin:'0.16.0',face:'Sandbox 候選',state:'candidate',use:'開源組件頁與收集頁可直接跑。固定摘要、查完即退出。'},
     {id:'maitian',name:'麦田',repo:'CzzzzzzJ/mdldm-maitian',license:'MIT',pin:'未鎖定',face:'自有帳號發布台 · 未收錄',state:'candidate',load:'block',sample:true,use:'操作者自己的多平台發布與創作者後台數據工作台。沒有官方 Docker。這頁只登記來源，不啟動 Chrome、不登入、不發布、不採數。'}
   ];
   ACQ.forEach(function(a){
@@ -2596,10 +2607,11 @@
     item.checked=true;
   });
   var ossFilter='all';
-  var ossPick='skill-evaluator';
-  var ossDocker={enabled:false,armed:false,message:'',busy:''};
+  var ossPick='sherlock';
+  var ossDocker={enabled:false,armed:false,maigretArmed:false,message:'',busy:'',runBusy:'',items:[],at:''};
   var ossDockerAsked=false;
-  var OSS_BLOCK={scrapling:1,xhs:1,'douyin-api':1,'douyin-dl':1,maigret:1,sherlock:1,maitian:1};
+  var ossToolHits=[];
+  var OSS_BLOCK={scrapling:1,xhs:1,'douyin-api':1,'douyin-dl':1,maitian:1};
   function ossLoadOf(x){
     if (x.load) return x.load;
     if (x.state==='wired') return 'on';
@@ -2607,18 +2619,40 @@
     return 'off';
   }
   function ossCanPull(id){ return id==='sherlock'||id==='maigret'; }
+  function ossLiveOf(id){
+    var list=ossDocker.items||[];
+    for (var i=0;i<list.length;i++) if (list[i].id===id) return list[i];
+    return null;
+  }
+  function ossStateLabel(live){
+    if (!live) return '未檢查';
+    if (live.discovery==='not_enabled') return '發現未開';
+    if ((live.id==='sherlock'||live.id==='maigret')&&live.armed) return '可查詢';
+    if (live.wait==='control') return '待命控制';
+    if (live.wait==='idle') return '閒置待命';
+    if (live.state==='running') return '容器在跑';
+    if (live.state==='absent') return '容器不在';
+    if (live.state==='unset') return '未監測';
+    return live.state||'未檢查';
+  }
   function askOssDocker(){
     if (ossDockerAsked) return;
     ossDockerAsked=true;
-    fetch('/__oss/pull',{credentials:'same-origin',cache:'no-store',headers:{accept:'application/json'}})
+    fetch('/__oss/status',{credentials:'same-origin',cache:'no-store',headers:{accept:'application/json'}})
       .then(function(r){ return r.json().then(function(j){ return {status:r.status,data:j||{}}; }); })
       .then(function(res){
         var d=res.data||{};
         ossDocker.enabled=!!d.enabled;
         ossDocker.armed=!!d.armed;
+        ossDocker.maigretArmed=!!d.maigret_armed;
+        ossDocker.items=Array.isArray(d.items)?d.items:[];
+        ossDocker.at=d.at||'';
         if (d.message) ossDocker.message=d.message;
         renderOss();
-      }).catch(function(){});
+      }).catch(function(){
+        ossDocker.message='連不到 /__oss/status';
+        renderOss();
+      });
   }
   function pullOss(id){
     if (!ossCanPull(id)||ossDocker.busy) return;
@@ -2637,7 +2671,9 @@
       ossDocker.busy='';
       ossDocker.enabled=d.enabled!==false;
       ossDocker.armed=!!d.armed;
+      ossDocker.maigretArmed=!!d.maigret_armed;
       ossDocker.message=d.message||(d.ok?'映像已在本機':'沒有拉完');
+      ossDockerAsked=false;
       renderOss();
       toast(ossDocker.message,d.ok?'ok':'err');
     }).catch(function(){
@@ -2645,6 +2681,72 @@
       ossDocker.message='連不到這個站的 /__oss/pull。GitHub Pages 沒有這個入口。';
       renderOss();
       toast(ossDocker.message,'err');
+    });
+  }
+  function paintOssToolHits(tool, name, hits){
+    var box=$('#ossToolHits');
+    var out=$('#ossToolOut');
+    ossToolHits=Array.isArray(hits)?hits:[];
+    if (out) out.textContent=(tool||'')+' · '+name+' · 找到 '+ossToolHits.length+' 個公開頁（候選）';
+    if (!box) return;
+    if (!ossToolHits.length){
+      box.hidden=true;
+      box.innerHTML='';
+      return;
+    }
+    box.hidden=false;
+    box.innerHTML=ossToolHits.map(function(h){
+      return '<div class="oss-hit"><b>'+esc(h.site||'site')+'</b><a href="'+esc(h.url||'')+'" target="_blank" rel="noopener noreferrer">'+esc(h.url||'')+'</a></div>';
+    }).join('');
+  }
+  function runOssTool(tool){
+    var name=String(($('#ossToolName')&&$('#ossToolName').value)||'').trim().replace(/^@/,'');
+    var out=$('#ossToolOut');
+    if (!/^[A-Za-z0-9._-]{2,32}$/.test(name)){
+      toast('用戶名用 2–32 位英數、點、底線或連字號','err');
+      if (out) out.textContent='用戶名格式不對。';
+      return;
+    }
+    if (ossDocker.runBusy) return;
+    ossDocker.runBusy=tool;
+    if (out) out.textContent='正在用 Docker 跑 '+tool+'…';
+    $$('#ossToolForm [data-oss-run]').forEach(function(b){ b.disabled=true; });
+    fetch('/__oss/run',{
+      method:'POST',
+      credentials:'same-origin',
+      headers:{'content-type':'application/json',accept:'application/json'},
+      body:JSON.stringify({tool:tool,name:name})
+    }).then(function(r){
+      return r.json().then(function(j){ return {status:r.status,data:j||{}}; });
+    }).then(function(res){
+      ossDocker.runBusy='';
+      $$('#ossToolForm [data-oss-run]').forEach(function(b){ b.disabled=false; });
+      var d=res.data||{};
+      if (!d.ok){
+        var msg=d.message||('HTTP '+res.status);
+        if (out) out.textContent=msg;
+        toast(msg,'err');
+        paintOssToolHits(tool,name,[]);
+        return;
+      }
+      paintOssToolHits(d.tool||tool,d.name||name,d.hits||[]);
+      toast((d.name||name)+' · '+(d.count||0)+' 筆','ok');
+      if ((d.tool||tool)==='sherlock' && Array.isArray(d.hits)){
+        var brief=d.hits.slice(0,8).map(function(h){ return h.site; }).join('、');
+        var id='D-'+(collectSeq++);
+        DISCOVER.unshift({id:id, name:d.name||name, count:d.count||0});
+        COLLECT.unshift({
+          id:id, title:'Sherlock '+(d.name||name), source:'sherlock', pri:'p2', priLabel:'P2', role:'審核席', state:'inbox',
+          note:'開源工具台找到 '+(d.count||0)+' 個公開頁'+(brief?'：'+brief:'')+'。'
+        });
+        syncDiscoverBoard();
+        renderCollect();
+      }
+    }).catch(function(){
+      ossDocker.runBusy='';
+      $$('#ossToolForm [data-oss-run]').forEach(function(b){ b.disabled=false; });
+      if (out) out.textContent='連不到 /__oss/run。請用 node tests/dev-server.mjs 開這個站。';
+      toast('連不到開源工具入口','err');
     });
   }
   function ossById(id){ return OSS_LIST.filter(function(x){ return x.id===id; })[0]||OSS_LIST[0]; }
@@ -2656,12 +2758,15 @@
     if (ossBd) ossBd.textContent=String(OSS_LIST.length);
     var wired=OSS_LIST.filter(function(x){ return x.state==='wired'; }).length;
     var cand=OSS_LIST.length-wired;
+    var liveRows=ossDocker.items||[];
+    var waitN=liveRows.filter(function(x){ return x.wait==='control'||x.wait==='idle'; }).length;
+    var crawlOff=liveRows.filter(function(x){ return x.crawl==='off'; }).length;
     if (kpis){
       kpis.innerHTML=[
         ['組件',OSS_LIST.length,'全部列管'],
         ['已接入',wired,'版本已鎖'],
-        ['候選',cand,'未批准'],
-        ['主棧執行',0,'候選不進主棧']
+        ['待命',waitN||'—','開源容器'],
+        ['抓取',crawlOff?(crawlOff+' 關'):'—','開機不送出']
       ].map(function(row){
         return '<div class="oss-kpi" data-oss-kpi="'+esc(row[0])+'"><div class="ok-l">'+esc(row[2])+'</div><div class="ok-v">'+esc(row[1])+'</div><div class="ok-l">'+esc(row[0])+'</div></div>';
       }).join('');
@@ -2675,16 +2780,19 @@
       var pull=ossCanPull(x.id)
         ? '<button type="button" class="mini-btn" data-cap="operate" data-oss-pull="'+esc(x.id)+'"'+(ossDocker.busy?' disabled':'')+'>'+(ossDocker.busy===x.id?'拉取中…':'拉起映像')+'</button>'
         : '';
-      var live=x.id==='sherlock'&&ossDocker.armed?'入口已開':st;
+      var live=ossLiveOf(x.id);
+      var badge=live?ossStateLabel(live):st;
       return '<article class="oss-card'+(x.id===ossPick?' selected':'')+(load==='on'?' on':'')+'" data-oss-id="'+esc(x.id)+'" data-search>'+
-        '<div class="oc-top"><span class="oc-name">'+esc(x.name)+'</span>'+(x.sample?'<span class="oc-sample">範例</span>':'')+'<span class="oss-st '+(load==='on'?'wired':x.state)+'">'+esc(live)+'</span></div>'+
+        '<div class="oc-top"><span class="oc-name">'+esc(x.name)+'</span>'+(x.sample?'<span class="oc-sample">範例</span>':'')+'<span class="oss-st '+(load==='on'?'wired':x.state)+'">'+esc(badge)+'</span></div>'+
         '<div class="oc-repo">'+esc(x.repo)+'</div>'+
         '<div class="oc-use">'+esc(x.use)+'</div>'+
+        (live?'<div class="oc-use">容器 '+esc(live.state||'—')+' · 抓取 '+esc(live.crawl||'—')+' · 發現 '+esc(live.discovery||'—')+'</div>':'')+
         '<div class="oc-actions"><button type="button" class="mini-btn" data-oss-open="'+esc(x.id)+'">檢視</button>'+
         pull+
         '<button type="button" class="load-btn'+(load==='on'?' on':'')+'" data-oss-load="'+esc(x.id)+'"'+(disabled?' disabled':'')+'>'+btn+'</button></div></article>';
     }).join('')||'<div class="flow-empty">這個狀態下沒有組件</div>';
     var cur=ossById(ossPick);
+    var curLive=ossLiveOf(cur.id);
     var href=cur.repo.indexOf('/')>0?'https://github.com/'+cur.repo:'';
     var repoHtml=href?'<a href="'+esc(href)+'" target="_blank" rel="noopener noreferrer">'+esc(cur.repo)+'</a>':esc(cur.repo);
     renderPacks();
@@ -2692,12 +2800,24 @@
     var imageHtml=cur.image && cur.image!=='—'
       ? '<a href="https://hub.docker.com/r/'+esc(cur.image)+'" target="_blank" rel="noopener noreferrer">'+esc(cur.image)+'</a>'
       : esc(cur.image||'');
+    var statusTable=liveRows.length
+      ? '<div class="pn-months"><div class="pm-cap">開源容器整合 · 來源 GET /__oss/status'+(ossDocker.at?' · '+esc(ossDocker.at):'')+'</div>'+
+        '<table class="plain"><thead><tr><th>組件</th><th>容器</th><th>抓取</th><th>發現</th><th>埠</th></tr></thead><tbody>'+
+        liveRows.map(function(r){
+          return '<tr><td>'+esc(r.name)+'</td><td>'+esc(r.state||'—')+'</td><td>'+esc(r.crawl||'—')+'</td><td>'+esc(r.discovery||'—')+'</td><td class="mono">'+esc(r.bind||'—')+'</td></tr>';
+        }).join('')+'</tbody></table></div>'
+      : '<p class="note">還沒讀到 /__oss/status。GitHub Pages 沒有這個入口。</p>';
     detail.innerHTML=
-      '<div class="oss-st '+cur.state+'">'+(cur.state==='wired'?'已接入':'候選 · 未批准')+'</div>'+
+      '<div class="oss-st '+cur.state+'">'+(curLive?ossStateLabel(curLive):(cur.state==='wired'?'已接入':'候選 · 未批准'))+'</div>'+
       '<h3>'+esc(cur.name)+'</h3>'+
       '<div class="od-repo">'+repoHtml+'</div>'+
       '<p class="od-use">'+esc(cur.use)+'</p>'+
       '<div class="kv"><span>接入面</span><b>'+esc(cur.face)+'</b></div>'+
+      (curLive?'<div class="kv"><span>容器狀態</span><b>'+esc(curLive.state||'—')+'</b></div>':'')+
+      (curLive?'<div class="kv"><span>抓取</span><b>'+esc(curLive.crawl||'—')+'</b></div>':'')+
+      (curLive?'<div class="kv"><span>人物發現</span><b>'+esc(curLive.discovery||'—')+'</b></div>':'')+
+      (curLive&&curLive.discovery_detail?'<div class="kv"><span>發現說明</span><b>'+esc(curLive.discovery_detail)+'</b></div>':'')+
+      (curLive?'<div class="kv"><span>監聽</span><b class="mono">'+esc(curLive.bind||'—')+'</b></div>':'')+
       (cur.image?'<div class="kv"><span>官方鏡像</span><b>'+imageHtml+'</b></div>':'')+
       (cur.imageSrc?'<div class="kv"><span>鏡像來源</span><b>'+esc(cur.imageSrc)+'</b></div>':'')+
       (cur.compose?'<div class="kv"><span>官方 Compose</span><b>'+esc(cur.compose)+'</b></div>':'')+
@@ -2708,13 +2828,17 @@
       '<div class="kv"><span>變更</span><b>'+(cur.state==='wired'?'改版本就要改這頁的鎖定':'新版本從 candidate 重走')+'</b></div>'+
       (cur.cmd?'<pre class="acq-cmd">'+esc(cur.cmd)+'</pre>':'')+
       (ossCanPull(cur.id)?'<div class="oc-actions"><button type="button" class="mini-btn" data-cap="operate" data-oss-pull="'+esc(cur.id)+'"'+(ossDocker.busy?' disabled':'')+'>'+(ossDocker.busy===cur.id?'拉取中…':'拉起映像')+'</button></div>':'')+
-      (ossCanPull(cur.id)&&ossDocker.message?'<p class="note">'+esc(ossDocker.message)+'</p>':'')+
+      (ossDocker.message?'<p class="note">'+esc(ossDocker.message)+'</p>':'')+
+      statusTable+
+      (cur.id==='sherlock'||cur.id==='maigret'
+        ? '<div class="oc-actions"><button type="button" class="mini-btn primary" data-cap="operate" data-oss-run="'+esc(cur.id)+'">在工具台跑 '+esc(cur.name)+'</button></div>'
+        : '')+
       '<div class="note">'+(cur.id==='sherlock'
-        ?'容器隨主 Compose 閒置，自己不查用戶名。拉起映像仍只打開收集頁入口。網頁容器拒絕這個按鈕。'
+        ?'上方工具台可直接送出用戶名。固定摘要、一次性容器、查完即退出。結果只當候選。'
         :(cur.id==='maigret'
-          ?'容器隨主 Compose 閒置。不開 Web UI，收集頁不改走 Maigret。'
+          ?'上方工具台可直接送出用戶名。不開常駐 Web UI，不進主庫。'
           :(cur.id==='xhs'||cur.id==='douyin-api'
-            ?'隨主 Compose 啟動，只聽 127.0.0.1，不接資料庫。開機不送出抓取。開關在基礎設施頁。失敗兩次後不再自動重啟。'
+            ?'隨主 Compose 待命，只聽 127.0.0.1，不接資料庫。開機不送出抓取。人物發現是 not_enabled。'
           :(cur.state==='wired'
         ?'這顆已經接在運行時頁面。不使用 latest，也不會因為上游更新自動換版本。'
         :(cur.checked
@@ -2948,6 +3072,12 @@
     if (ossLoad){ toggleOss(ossLoad.getAttribute('data-oss-load')); return; }
     var ossPull=e.target.closest('[data-oss-pull]');
     if (ossPull){ pullOss(ossPull.getAttribute('data-oss-pull')); return; }
+    var ossRun=e.target.closest('[data-oss-run]');
+    if (ossRun){
+      e.preventDefault();
+      runOssTool(ossRun.getAttribute('data-oss-run'));
+      return;
+    }
     var open=e.target.closest('[data-oss-open]');
     if (open){ go({topic:'oss',pane:null,focus:open.getAttribute('data-oss-open')},'replace'); return; }
     var card=e.target.closest('.oss-card[data-oss-id]');
@@ -2969,6 +3099,11 @@
   });
   var parAll=$('#parAll');
   if (parAll) parAll.addEventListener('click', advanceAll);
+  var ossToolForm=$('#ossToolForm');
+  if (ossToolForm) ossToolForm.addEventListener('submit', function(e){
+    e.preventDefault();
+    runOssTool('sherlock');
+  });
 
   document.addEventListener('click',function(e){
     var b=e.target.closest('[data-std-level]'); if (!b) return;

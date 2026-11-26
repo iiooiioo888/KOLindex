@@ -12,10 +12,11 @@
 | 04 | 產出庫 | 假 | `index2.js:825` 的 `OUTPUTS` 陣列、假編輯器 | 沒有產出物表／檔案儲存，存檔只改記憶體 |
 | 05 | 席位執行 | 半 | 上方 fleet 八席真的跑（`GET/POST /api/seats`，`seat`／`seat_task` 表）；下方 80 席、角色目錄、里程碑仍是示範 | 席位是規則型掃描器（rule-v1），不是 LLM agent；80 席 STANDARD_ROLES 沒有後端 |
 | 06 | 統一管線 | 假 | `FIXTURES.slots`（8 槽位、配額、lock TTL）+ 假事件流 | 沒有實際的管線執行器；`slot` 相關都是前端動畫 |
-| 07 | 基礎設施 | 半 | 連接器 `GET /api/health/connectors`、排程 `GET /api/jobs`、元件健康 `GET /__health/components`（含 `duration_ms`）、容器清單要 `KOL_DOCKER=1` | 第一版 Compose 只有網頁、PostgreSQL、Meilisearch。Redis 與 MinIO 不啟動 |
-| 08 | 開源組件 | 假 | 靜態清單與授權字串 | 沒有解析器、沒有授權掃描 |
+| 07 | 基礎設施 | 半 | 連接器 `GET /api/health/connectors`、排程 `GET /api/jobs`、容器開關要 `KOL_DOCKER=1` | 元件健康已拆成 Topics `#/health` 與 SSR `/ops/health`。第一版 Compose 只有網頁、PostgreSQL、Meilisearch。Redis 與 MinIO 不啟動 |
+| 07b | 元件健康 | 真 | `GET /__health/components`；側欄卡可開 `#/health` | Docker 監測仍要 `KOL_DOCKER=1`；未設探測顯示「未設定」 |
+| 08 | 開源組件 | 半 | 靜態清單 + `GET /__oss/status` + 工具台 `POST /__oss/run`（Sherlock／Maigret） | 沒有授權掃描。小紅書／抖音發現仍是 `not_enabled`，抓取固定 `off` |
 | 09 | UI 生成 | 真 | `POST /__llm` 本地代理 → OpenAI 相容 API（需 `.env` 的 `LLM_API_KEY`） | 產物是線框圖 JSON，不是可執行頁面；沒金鑰時只顯示示範線框 |
-| 10 | 人物檔案 | 半 | `GET /api/library/authors` 等，抖音作者 19,058 位 | **沒有跨平台歸戶**（`person` 表 0 筆）、沒有 F2 打分、沒有小紅書／微博／YouTube |
+| 10 | 人物檔案 | 半 | 人物主檔：`/__control/subjects`；抖音索引：`/api/library/authors` | 主檔可建人物、掛候選帳號、呼叫 `/__discovery`。覆蓋缺口仍無測量。抖音／小紅書發現仍是 `not_enabled` |
 | 11 | 審核台 | 真 | `review_task`、`POST /api/review/:id/verdict`、`GET /api/audit` | 佇列只有 6 筆人工造的候選；沒有真正的 F2 產生的 review_task |
 | 12 | 素材庫 | 真 | `GET /api/library`、`/api/library/authors`、`/api/library/:id`、MyLike 同步、無損清理、衍生層 | 1,361 件只有索引沒有本機檔；14 個收藏夾未索引；影片未處理。**衍生層不改原檔**（新增 `<原檔>.q50.webp` + `media_derivative` 血緣），所以不省空間 |
 
@@ -89,6 +90,7 @@
 ## 四、要講清楚的幾件事
 
 - **席位不是 AI agent**：八席跑的是六種規則掃描（素材庫、審核、收集、排程、磁碟、審計），沒有模型推理。要做成 LLM agent 需要 `.env` 的 `LLM_API_KEY` 與每人 token 預算。
+- **智能層邊界**：發現結果有確定性 `confidence` 排序；控制面 `GET /intelligence/inbox` 聚合相似待審與覆蓋缺口。模型仍無工具、不自動合併、不因候選開啟抖音／小紅書抓取。
 - **人物＝抖音作者，不是規格書的人**：`person` 表是空的，F2 歸戶完全沒做；人物檔案頁是「抖音作者索引」的包裝。
 - **抓取靠本機 MyLike + CDP**：`kolindex-api` 會開 9222 的 Chrome DevTools 連線，換到伺服器要重寫。
 - **GitHub Pages 是靜態的**：沒有 `/api`，線上版所有真資料頁都會退回示範資料。

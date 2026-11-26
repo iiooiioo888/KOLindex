@@ -40,6 +40,8 @@ const LLM = {
 
 // ── 後端 API（kolindex-api）：/api/* 反向代理，同源就沒有 CORS 問題 ────
 const API_BASE = (process.env.KOL_API || 'http://127.0.0.1:5210').replace(/\/+$/, '');
+const CONTROL_BASE = (process.env.KOL_CONTROL || 'http://127.0.0.1:5220').replace(/\/+$/, '');
+const DISCOVERY_BASE = (process.env.KOL_DISCOVERY || 'http://127.0.0.1:5221').replace(/\/+$/, '');
 const GATE = process.env.KOL_GATE || '';
 const SERVER_ROLE = normalizeRole(process.env.KOL_ROLE);
 
@@ -209,6 +211,99 @@ async function proxyApi(req, res) {
   }
 }
 
+function controlTokenFor(role) {
+  if (role === 'operator') return process.env.KOL_TOKEN_OPERATOR || '';
+  if (role === 'reviewer') return process.env.KOL_TOKEN_REVIEWER || '';
+  return process.env.KOL_TOKEN_VIEWER || '';
+}
+
+async function proxyControl(req, res) {
+  const sess = GATE ? currentSession(req) : null;
+  if (GATE && !sess) return json(res, 401, { error: 'login_required' });
+  const role = GATE ? sess.role : localRole();
+  const token = controlTokenFor(role);
+  if (!token) {
+    return json(res, 503, {
+      error: 'control_token_missing',
+      message: '這個行程沒有對應角色的 KOL_TOKEN_*，控制面人物主檔打不過去。',
+    });
+  }
+  const targetPath = String(req.url || '').replace(/^\/__control/, '') || '/';
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 8000);
+  try {
+    const body = req.method === 'GET' || req.method === 'HEAD' ? undefined : await readBody(req, 256 * 1024);
+    const headers = {
+      accept: 'application/json',
+      authorization: 'Bearer ' + token,
+    };
+    if (req.headers['content-type']) headers['content-type'] = req.headers['content-type'];
+    const r = await fetch(CONTROL_BASE + targetPath, {
+      method: req.method,
+      headers,
+      body,
+      signal: ctrl.signal,
+    });
+    const buf = Buffer.from(await r.arrayBuffer());
+    res.writeHead(r.status, {
+      'Content-Type': r.headers.get('content-type') || 'application/json; charset=utf-8',
+      'Cache-Control': 'no-store',
+      'X-KOL-Control': 'up',
+    });
+    res.end(buf);
+  } catch (err) {
+    const why = err.name === 'AbortError' ? '逾時 8000ms' : err.message;
+    json(res, 503, {
+      error: 'control_unavailable',
+      message: '控制面沒回應（' + CONTROL_BASE + '）：' + why,
+      hint: '另開一個終端跑 python apps/control/app.py',
+    });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function proxyDiscovery(req, res) {
+  const sess = GATE ? currentSession(req) : null;
+  if (GATE && !sess) return json(res, 401, { error: 'login_required' });
+  const role = GATE ? sess.role : localRole();
+  if (req.method === 'POST' && !caps(role).operate && !caps(role).review) {
+    return json(res, 403, { error: 'forbidden', message: '只有審核或操作者可以送出帳號發現。' });
+  }
+  let targetPath = String(req.url || '');
+  if (targetPath.startsWith('/__discovery')) targetPath = targetPath.slice('/__discovery'.length) || '/discovery';
+  if (targetPath === '/' || !targetPath) targetPath = '/discovery';
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 20000);
+  try {
+    const body = req.method === 'GET' || req.method === 'HEAD' ? undefined : await readBody(req, 64 * 1024);
+    const headers = { accept: 'application/json' };
+    if (req.headers['content-type']) headers['content-type'] = req.headers['content-type'];
+    const r = await fetch(DISCOVERY_BASE + targetPath, {
+      method: req.method,
+      headers,
+      body,
+      signal: ctrl.signal,
+    });
+    const buf = Buffer.from(await r.arrayBuffer());
+    res.writeHead(r.status, {
+      'Content-Type': r.headers.get('content-type') || 'application/json; charset=utf-8',
+      'Cache-Control': 'no-store',
+      'X-KOL-Discovery': 'up',
+    });
+    res.end(buf);
+  } catch (err) {
+    const why = err.name === 'AbortError' ? '逾時 20000ms' : err.message;
+    json(res, 503, {
+      error: 'discovery_unavailable',
+      message: '發現服務沒回應（' + DISCOVERY_BASE + '）：' + why,
+      hint: '另開一個終端跑 python -m kolindex_discovery',
+    });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 const MIME = {
   '.html': 'text/html; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8',
@@ -289,14 +384,85 @@ function readBody(req, limit) {
 const SHERLOCK_NAME = /^[A-Za-z0-9._-]{2,32}$/;
 const SHERLOCK_IMAGE = process.env.SHERLOCK_DOCKER
   || 'sherlock/sherlock@sha256:9d6602b98179fb15ceab88433626fb0ae603ae9880e13cab886970317fe1475f';
+const MAIGRET_IMAGE = process.env.MAIGRET_DOCKER
+  || 'soxoj/maigret@sha256:0dba1e81178a4ce62bc73167ae68687217320ebb62b59ced094ba3cb879615e7';
 const SHERLOCK_IMAGE_OK = /^[a-z0-9][a-z0-9._/-]*@sha256:[a-f0-9]{64}$/;
 let sherlockBusy = false;
+let maigretBusy = false;
 let sherlockArmed = process.env.KOL_SHERLOCK === '1';
+let maigretArmed = process.env.KOL_MAIGRET === '1';
 
 const OSS_PULL = {
   sherlock: { service: 'sherlock', profile: 'oss' },
   maigret: { service: 'maigret', profile: 'backup' },
 };
+
+function authActor(req) {
+  if (GATE) {
+    const sess = currentSession(req);
+    if (!sess) return null;
+    return sess;
+  }
+  return { name: 'local', role: localRole() };
+}
+
+function discoveryArmed(tool) {
+  if (tool === 'sherlock') {
+    return process.env.KOL_SHERLOCK === '1' || sherlockArmed || (!GATE && !PROD);
+  }
+  if (tool === 'maigret') {
+    return process.env.KOL_MAIGRET === '1' || maigretArmed || (!GATE && !PROD);
+  }
+  return false;
+}
+
+/** 開源容器在 UI 上要顯示的固定整合狀態。crawl 一律 off，等系統另下指令。 */
+const OSS_CATALOG = [
+  {
+    id: 'sherlock',
+    service: 'sherlock',
+    name: 'Sherlock',
+    platform: 'username_probe',
+    bind: '—',
+    wait: 'idle',
+    crawl: 'off',
+    discovery: 'operator',
+    discovery_detail: '收集頁由操作者送出用戶名。站點清單沒有小紅書、抖音、微博',
+  },
+  {
+    id: 'maigret',
+    service: 'maigret',
+    name: 'Maigret',
+    platform: 'username_probe',
+    bind: '—',
+    wait: 'idle',
+    crawl: 'off',
+    discovery: 'operator',
+    discovery_detail: '開源組件頁可由操作者送出用戶名；一次性容器，查完即退出',
+  },
+  {
+    id: 'xhs',
+    service: 'xhs-downloader',
+    name: 'XHS-Downloader',
+    platform: 'xiaohongshu',
+    bind: '127.0.0.1:5556',
+    wait: 'control',
+    crawl: 'off',
+    discovery: 'not_enabled',
+    discovery_detail: '使用協議尚未核對；人物發現不會呼叫它',
+  },
+  {
+    id: 'douyin-api',
+    service: 'douyin-tiktok-api',
+    name: 'Douyin_TikTok_Download_API',
+    platform: 'douyin',
+    bind: '127.0.0.1:8000',
+    wait: 'control',
+    crawl: 'off',
+    discovery: 'not_enabled',
+    discovery_detail: '人物發現不會呼叫它；不含 browser／downloader／transcriber',
+  },
+];
 
 function parseSherlockHits(text) {
   const hits = [];
@@ -309,8 +475,32 @@ function parseSherlockHits(text) {
   return hits;
 }
 
-function runSherlock(name) {
-  if (!SHERLOCK_IMAGE_OK.test(SHERLOCK_IMAGE)) {
+function parseMaigretHits(text) {
+  const hits = [];
+  const seen = new Set();
+  for (const line of String(text || '').split(/\r?\n/)) {
+    let m = line.match(/\[\+\]\s+([^:]+):\s+(https?:\/\/\S+)/);
+    if (!m) m = line.match(/([A-Za-z0-9._-]{2,40})\s+[—\-:]+\s+(https?:\/\/\S+)/);
+    if (!m) {
+      const url = line.match(/https?:\/\/[^\s"'<>]+/);
+      if (url && /maigret|Claimed|found/i.test(line)) {
+        m = [null, 'site', url[0]];
+      }
+    }
+    if (!m) continue;
+    const site = String(m[1]).trim().slice(0, 80);
+    const href = String(m[2]).replace(/[),.;]+$/, '').slice(0, 300);
+    const key = site + '|' + href;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    hits.push({ site, url: href });
+    if (hits.length >= 80) break;
+  }
+  return hits;
+}
+
+function runOssTool(image, name, toolArgs) {
+  if (!SHERLOCK_IMAGE_OK.test(image)) {
     const err = new Error('image');
     err.code = 'image';
     return Promise.reject(err);
@@ -321,11 +511,11 @@ function runSherlock(name) {
     '--cap-drop', 'ALL',
     '--security-opt', 'no-new-privileges',
     '--read-only',
+    '--tmpfs', '/tmp:rw,noexec,nosuid,size=64m',
     '--memory', '512m',
     '--pids-limit', '128',
-    SHERLOCK_IMAGE,
-    name, '--print-found', '--no-color', '--timeout', '8',
-  ];
+    image,
+  ].concat(toolArgs);
   return new Promise((resolve, reject) => {
     const child = spawn('docker', args, {
       shell: false,
@@ -353,16 +543,34 @@ function runSherlock(name) {
     });
     child.on('close', (code) => {
       clearTimeout(timer);
-      const hits = parseSherlockHits(out);
-      if (code && !hits.length) {
-        const err = new Error('exit');
-        err.code = 'exit';
-        err.detail = errText.replace(/\s+/g, ' ').trim().slice(0, 180);
-        reject(err);
-        return;
-      }
-      resolve(hits);
+      resolve({ code, out, errText });
     });
+  });
+}
+
+function runSherlock(name) {
+  return runOssTool(SHERLOCK_IMAGE, name, [name, '--print-found', '--no-color', '--timeout', '8']).then((res) => {
+    const hits = parseSherlockHits(res.out);
+    if (res.code && !hits.length) {
+      const err = new Error('exit');
+      err.code = 'exit';
+      err.detail = res.errText.replace(/\s+/g, ' ').trim().slice(0, 180);
+      return Promise.reject(err);
+    }
+    return hits;
+  });
+}
+
+function runMaigret(name) {
+  return runOssTool(MAIGRET_IMAGE, name, [name, '--timeout', '8', '--retries', '0', '--no-progressbar']).then((res) => {
+    const hits = parseMaigretHits(res.out + '\n' + res.errText);
+    if (res.code && !hits.length) {
+      const err = new Error('exit');
+      err.code = 'exit';
+      err.detail = res.errText.replace(/\s+/g, ' ').trim().slice(0, 180);
+      return Promise.reject(err);
+    }
+    return hits;
   });
 }
 
@@ -398,24 +606,73 @@ function probeHttp(raw) {
   });
 }
 
+function dockerStateWord(row) {
+  const raw = String((row && (row.state || row.Status)) || '').toLowerCase();
+  if (!raw || raw === 'unset') return 'unset';
+  if (raw === 'absent') return 'absent';
+  if (raw.includes('running') || raw === 'up') return 'up';
+  if (raw.includes('exit') || raw.includes('dead') || raw.includes('stopp') || raw === 'down') return 'down';
+  return 'down';
+}
+
+function dockerContentOf(service) {
+  const core = CORE_CATALOG[service];
+  if (core) return core.content;
+  const oss = ossMetaByService(service);
+  if (oss) return oss.discovery_detail || (oss.name + ' · crawl ' + oss.crawl);
+  return '';
+}
+
 async function componentHealth() {
   const pgHost = safeHost(process.env.POSTGRES_HOST);
   const redisHost = safeHost(process.env.REDIS_HOST);
   const minio = process.env.MINIO_ENDPOINT || '';
   const meili = process.env.MEILI_HOST || '';
-  const [postgres, redis, minioHit, meiliHit] = await Promise.all([
+  const [postgres, redis, minioHit, meiliHit, docker] = await Promise.all([
     probeTcp(pgHost, process.env.POSTGRES_PORT || 5432),
     probeTcp(redisHost, process.env.REDIS_PORT || 6379),
     probeHttp(minio ? minio.replace(/\/+$/, '') + '/minio/health/live' : ''),
     probeHttp(meili ? meili.replace(/\/+$/, '') + '/health' : ''),
+    dockerStatus().catch((err) => ({
+      ok: false,
+      enabled: process.env.KOL_DOCKER === '1',
+      items: [],
+      message: (err && err.detail) || (err && err.message) || '讀不到 Docker',
+    })),
   ]);
-  return [
-    { id: 'postgres', name: 'PostgreSQL', via: 'tcp', state: postgres.state },
-    { id: 'redis', name: 'Redis', via: 'tcp', state: redis.state },
-    { id: 'minio', name: 'MinIO', via: 'http', state: minioHit.state },
-    { id: 'meilisearch', name: 'Meilisearch', via: 'http', state: meiliHit.state },
-    nasDisk(),
+  const probeItems = [
+    { id: 'postgres', name: 'PostgreSQL', kind: 'probe', via: 'tcp', state: postgres.state, content: CORE_CATALOG.postgres.content },
+    { id: 'redis', name: 'Redis', kind: 'probe', via: 'tcp', state: redis.state, content: '快取與隊列協調（第一版 Compose 未啟動）' },
+    { id: 'minio', name: 'MinIO', kind: 'probe', via: 'http', state: minioHit.state, content: '物件儲存（第一版 Compose 未啟動）' },
+    { id: 'meilisearch', name: 'Meilisearch', kind: 'probe', via: 'http', state: meiliHit.state, content: CORE_CATALOG.meilisearch.content },
+    Object.assign(nasDisk(), { kind: 'probe', content: 'KOL_NAS_ROOT/media 唯讀掛載與本機磁碟' }),
   ];
+  const dockerItems = (docker.items || []).map((row) => {
+    const state = docker.enabled ? dockerStateWord(row) : 'unset';
+    return {
+      id: 'docker.' + row.service,
+      name: row.name || row.service,
+      kind: 'docker',
+      via: 'compose',
+      service: row.service,
+      state,
+      container: row.state || (docker.enabled ? 'absent' : 'unset'),
+      health: row.health || '',
+      image: row.image || '',
+      bind: row.bind || '',
+      content: row.content || dockerContentOf(row.service),
+      docker_enabled: !!docker.enabled,
+    };
+  });
+  return {
+    items: [...probeItems, ...dockerItems],
+    docker: {
+      enabled: !!docker.enabled,
+      message: docker.message || '',
+      total: dockerItems.length,
+      up: dockerItems.filter((x) => x.state === 'up').length,
+    },
+  };
 }
 
 function mediaRoot() {
@@ -477,7 +734,13 @@ function handleComponentHealth(req, res) {
   if (req.method !== 'GET' && req.method !== 'HEAD') return json(res, 405, { error: 'method' });
   if (GATE && !currentSession(req)) return json(res, 401, { error: 'login_required' });
   const started = Date.now();
-  return componentHealth().then((items) => json(res, 200, { ok: true, items, duration_ms: Date.now() - started }));
+  return componentHealth().then((body) => json(res, 200, {
+    ok: true,
+    items: body.items,
+    docker: body.docker,
+    duration_ms: Date.now() - started,
+    source: 'GET /__health/components',
+  }));
 }
 
 const DOCKER_SERVICES = new Set([
@@ -485,6 +748,27 @@ const DOCKER_SERVICES = new Set([
   'sherlock', 'maigret', 'xhs-downloader', 'douyin-tiktok-api',
 ]);
 const DOCKER_ACTIONS = new Set(['start', 'stop', 'restart']);
+
+const CORE_CATALOG = {
+  web: {
+    name: 'web',
+    image: 'kolindex-site:2026.11.24',
+    bind: '127.0.0.1:5200',
+    content: 'Next／靜態 console · BFF · 不掛 docker.sock · 媒體唯讀掛載',
+  },
+  postgres: {
+    name: 'postgres',
+    image: 'pgvector/pgvector@sha256:484e838076e04939d27d3e176e91c86eea96236126023be8d3059761122e579f',
+    bind: '127.0.0.1:5432',
+    content: 'pgvector · init SQL · NAS postgres 資料卷',
+  },
+  meilisearch: {
+    name: 'meilisearch',
+    image: 'getmeili/meilisearch:v1.57.0@sha256:91bf09897482c17205c8faeca8daa8d57999fb9de20d862763cdfa92ba4ec790',
+    bind: '127.0.0.1:7700',
+    content: '全文搜尋 · 可重建衍生索引 · 不存秘密',
+  },
+};
 
 function composeArgs(extra) {
   return [
@@ -528,6 +812,16 @@ function runDocker(args, timeoutMs) {
   });
 }
 
+function parseComposePublishers(row) {
+  const pubs = row.Publishers || row.PublishersList || [];
+  if (!Array.isArray(pubs) || !pubs.length) return '';
+  const first = pubs[0] || {};
+  const host = first.URL || first.HostIP || '127.0.0.1';
+  const port = first.PublishedPort || first.Published || first.PublicPort;
+  if (!port) return '';
+  return String(host === '0.0.0.0' ? '127.0.0.1' : host) + ':' + String(port);
+}
+
 function parseComposePs(text) {
   const items = [];
   for (const line of String(text || '').split(/\r?\n/)) {
@@ -535,25 +829,149 @@ function parseComposePs(text) {
     if (!raw || raw[0] !== '{') continue;
     let row;
     try { row = JSON.parse(raw); } catch { continue; }
-    const service = String(row.Service || row.Name || '');
+    const service = String(row.Service || '');
     if (!DOCKER_SERVICES.has(service)) continue;
     items.push({
       service,
+      name: String(row.Name || '').slice(0, 80),
       state: String(row.State || row.Status || '').slice(0, 40),
       health: String(row.Health || '').slice(0, 40),
+      image: String(row.Image || '').slice(0, 180),
+      bind: parseComposePublishers(row).slice(0, 60),
     });
   }
   return items;
 }
 
+function ossMetaByService(service) {
+  return OSS_CATALOG.find((row) => row.service === service) || null;
+}
+
+function decorateDockerItem(row) {
+  const core = CORE_CATALOG[row.service];
+  const meta = ossMetaByService(row.service);
+  if (!meta && !core) {
+    return Object.assign({}, row, {
+      kind: 'core',
+      wait: '',
+      crawl: '',
+      discovery: '',
+      content: dockerContentOf(row.service),
+      image: row.image || '',
+      bind: row.bind || '',
+    });
+  }
+  if (!meta) {
+    return Object.assign({}, row, {
+      kind: 'core',
+      id: row.service,
+      name: core.name,
+      bind: row.bind || core.bind || '',
+      image: row.image || core.image || '',
+      content: core.content,
+      wait: '',
+      crawl: '',
+      discovery: '',
+    });
+  }
+  return Object.assign({}, row, {
+    kind: 'oss',
+    id: meta.id,
+    name: meta.name,
+    platform: meta.platform,
+    bind: row.bind || meta.bind,
+    image: row.image || '',
+    content: meta.discovery_detail || dockerContentOf(row.service),
+    wait: meta.wait,
+    crawl: meta.crawl,
+    discovery: meta.discovery,
+    discovery_detail: meta.discovery_detail,
+  });
+}
+
 async function dockerStatus() {
-  if (process.env.KOL_DOCKER !== '1') return { ok: true, enabled: false, items: [] };
+  if (process.env.KOL_DOCKER !== '1') {
+    return {
+      ok: true,
+      enabled: false,
+      items: [...DOCKER_SERVICES].map((service) => decorateDockerItem({ service, state: 'unset', health: '' })),
+    };
+  }
   const text = await runDocker(composeArgs(['ps', '--all', '--format', 'json']), 15000);
   const found = parseComposePs(text);
   const by = {};
   found.forEach((row) => { by[row.service] = row; });
-  const items = [...DOCKER_SERVICES].map((service) => by[service] || { service, state: 'absent', health: '' });
+  const items = [...DOCKER_SERVICES].map((service) => decorateDockerItem(by[service] || { service, state: 'absent', health: '' }));
   return { ok: true, enabled: true, items };
+}
+
+async function ossStatus() {
+  const docker = await dockerStatus().catch((err) => {
+    if (err && err.code === 'ENOENT') {
+      return { ok: true, enabled: true, items: [], message: '這台找不到 docker 指令。' };
+    }
+    return { ok: true, enabled: process.env.KOL_DOCKER === '1', items: [], message: (err && err.detail) || '讀不到容器狀態。' };
+  });
+  const byService = {};
+  (docker.items || []).forEach((row) => { byService[row.service] = row; });
+  const items = OSS_CATALOG.map((meta) => {
+    const live = byService[meta.service] || {};
+    return {
+      id: meta.id,
+      service: meta.service,
+      name: meta.name,
+      platform: meta.platform,
+      bind: live.bind || meta.bind,
+      wait: meta.wait,
+      crawl: meta.crawl,
+      discovery: meta.discovery,
+      discovery_detail: meta.discovery_detail,
+      content: live.content || meta.discovery_detail,
+      image: live.image || '',
+      docker_enabled: !!docker.enabled,
+      state: live.state || (docker.enabled ? 'absent' : 'unset'),
+      health: live.health || '',
+      armed: meta.id === 'sherlock'
+        ? discoveryArmed('sherlock')
+        : (meta.id === 'maigret' ? discoveryArmed('maigret') : false),
+      source: 'GET /__oss/status',
+    };
+  });
+  return {
+    ok: true,
+    enabled: !!docker.enabled,
+    armed: discoveryArmed('sherlock'),
+    maigret_armed: discoveryArmed('maigret'),
+    runnable: ['sherlock', 'maigret'],
+    message: docker.message || '',
+    items,
+    at: new Date().toISOString(),
+  };
+}
+
+function handleOssStatus(req, res) {
+  if (req.method !== 'GET' && req.method !== 'HEAD') return json(res, 405, { error: 'method' });
+  if (GATE && !currentSession(req)) return json(res, 401, { error: 'login_required' });
+  return ossStatus().then((body) => json(res, 200, body)).catch((err) => {
+    return json(res, 200, {
+      ok: true,
+      enabled: false,
+      armed: discoveryArmed('sherlock'),
+      maigret_armed: discoveryArmed('maigret'),
+      runnable: ['sherlock', 'maigret'],
+      items: OSS_CATALOG.map((meta) => Object.assign({}, meta, {
+        docker_enabled: false,
+        state: 'unset',
+        health: '',
+        armed: meta.id === 'sherlock'
+          ? discoveryArmed('sherlock')
+          : (meta.id === 'maigret' ? discoveryArmed('maigret') : false),
+        source: 'GET /__oss/status',
+      })),
+      message: (err && err.message) || '讀不到開源容器狀態。',
+      at: new Date().toISOString(),
+    });
+  });
 }
 
 function ossComposeArgs(profile, extra) {
@@ -596,13 +1014,15 @@ function handleOssPull(req, res) {
     if (!spec) return json(res, 400, { error: 'bad_request' });
     await runDocker(ossComposeArgs(spec.profile, ['pull', spec.service]), 180000);
     if (id === 'sherlock') sherlockArmed = true;
+    if (id === 'maigret') maigretArmed = true;
     return json(res, 200, {
       ok: true,
       id,
-      armed: sherlockArmed,
+      armed: discoveryArmed('sherlock'),
+      maigret_armed: discoveryArmed('maigret'),
       message: id === 'sherlock'
-        ? 'Sherlock 映像已在本機。收集頁入口已打開，查詢仍由操作者送出，查完即退出。'
-        : 'Maigret 映像已在本機。它是備援，收集頁仍只呼叫 Sherlock。',
+        ? 'Sherlock 映像已在本機。開源組件頁與收集頁可送出用戶名，查完即退出。'
+        : 'Maigret 映像已在本機。開源組件頁可送出用戶名，查完即退出。',
     });
   }).catch((err) => {
     if (err && err.code === 'ENOENT') {
@@ -659,46 +1079,74 @@ function auditSherlock(sess, name, status, count) {
   }
 }
 
-function handleSherlock(req, res) {
-  const sess = GATE ? currentSession(req) : null;
-  if (!sess) {
-    return json(res, 401, { error: 'login_required', message: 'Sherlock 只開放給已登入的操作者。' });
+function handleOssToolRun(req, res, forcedTool) {
+  const sess = authActor(req);
+  if (GATE && !sess) {
+    return json(res, 401, { error: 'login_required', message: '帳號發現工具只開放給已登入的操作者。' });
   }
   if (!caps(sess.role).operate) {
     return json(res, 403, { error: 'forbidden', message: '只有操作者可以送出用戶名查詢', role: sess.role });
   }
-  if (process.env.KOL_SHERLOCK !== '1' && !sherlockArmed) {
-    return json(res, 404, { error: 'disabled', message: '收集頁入口還沒打開。操作者要在開源組件頁拉起 Sherlock 映像，或在這個宿主行程設 KOL_SHERLOCK=1。' });
-  }
   if (req.method !== 'POST') return json(res, 405, { error: 'method' });
-  if (sherlockBusy) return json(res, 409, { error: 'busy' });
   return readBody(req, 4096).then(async (raw) => {
     let body = {};
     try { body = raw ? JSON.parse(raw) : {}; } catch { body = {}; }
-    const name = String(body.name || '').trim().replace(/^@/, '');
+    const tool = String(forcedTool || body.tool || 'sherlock').trim().toLowerCase();
+    if (tool !== 'sherlock' && tool !== 'maigret') {
+      return json(res, 400, { error: 'tool', message: '只接受 sherlock 或 maigret。小紅書／抖音抓取仍是 not_enabled。' });
+    }
+    if (!discoveryArmed(tool)) {
+      return json(res, 404, {
+        error: 'disabled',
+        message: tool === 'sherlock'
+          ? '先在開源組件頁拉起 Sherlock 映像，或設 KOL_SHERLOCK=1。'
+          : '先在開源組件頁拉起 Maigret 映像，或設 KOL_MAIGRET=1。',
+      });
+    }
+    const name = String(body.name || body.username || '').trim().replace(/^@/, '');
     if (!SHERLOCK_NAME.test(name)) return json(res, 400, { error: 'name' });
-    sherlockBusy = true;
+    if (tool === 'sherlock' && sherlockBusy) return json(res, 409, { error: 'busy' });
+    if (tool === 'maigret' && maigretBusy) return json(res, 409, { error: 'busy' });
+    if (tool === 'sherlock') sherlockBusy = true;
+    else maigretBusy = true;
     try {
-      const hits = await runSherlock(name);
-      auditSherlock(sess, name, 'ok', hits.length);
-      console.log('[sherlock] docker hits ' + hits.length);
-      return json(res, 200, { ok: true, engine: 'docker', name, count: hits.length, hits });
+      const hits = tool === 'sherlock' ? await runSherlock(name) : await runMaigret(name);
+      auditSherlock(sess, name, tool + ':ok', hits.length);
+      console.log('[' + tool + '] docker hits ' + hits.length);
+      return json(res, 200, {
+        ok: true,
+        tool,
+        engine: 'docker',
+        name,
+        count: hits.length,
+        hits,
+        note: '結果只是公開頁候選，不是已確認帳號。',
+      });
     } catch (err) {
-      auditSherlock(sess, name, err && err.code ? err.code : 'failed', null);
+      auditSherlock(sess, name, tool + ':' + (err && err.code ? err.code : 'failed'), null);
       if (err && err.code === 'ENOENT') {
-        return json(res, 503, { error: 'missing', message: '這台找不到 docker 指令。裝好 Docker 後再送出，會用官方映像的固定摘要啟動一次性容器。' });
+        return json(res, 503, { error: 'missing', message: '這台找不到 docker 指令。裝好 Docker 後再送出。' });
       }
       if (err && err.code === 'image') {
-        return json(res, 500, { error: 'image', message: 'SHERLOCK_DOCKER 必須是名稱@sha256:64位摘要。' });
+        return json(res, 500, { error: 'image', message: '映像必須是名稱@sha256:64位摘要。' });
       }
       if (err && err.code === 'timeout') {
-        return json(res, 504, { error: 'timeout', message: 'Sherlock 容器超過 90 秒，已停止。' });
+        return json(res, 504, { error: 'timeout', message: tool + ' 容器超過 90 秒，已停止。' });
       }
-      return json(res, 502, { error: 'failed', message: err && err.detail ? err.detail : 'Sherlock 容器沒有跑完。' });
+      return json(res, 502, { error: 'failed', message: err && err.detail ? err.detail : (tool + ' 容器沒有跑完。') });
     } finally {
-      sherlockBusy = false;
+      if (tool === 'sherlock') sherlockBusy = false;
+      else maigretBusy = false;
     }
   }).catch((err) => json(res, 400, { error: err.message }));
+}
+
+function handleSherlock(req, res) {
+  return handleOssToolRun(req, res, 'sherlock');
+}
+
+function handleOssRun(req, res) {
+  return handleOssToolRun(req, res, null);
 }
 
 // OpenAI 相容上游；失敗回 {status, txt}，由呼叫端決定怎麼回報
@@ -761,9 +1209,17 @@ const server = http.createServer(async (req, res) => {
 
   if (url.startsWith('/__health/components')) return handleComponentHealth(req, res);
 
+  if (url.startsWith('/__control/') || url === '/__control') return proxyControl(req, res);
+  if (url.startsWith('/__discovery') || url === '/discovery' || url.startsWith('/discovery')) {
+    return proxyDiscovery(req, res);
+  }
+
   if (url === '/media' || url.startsWith('/media/')) return serveMedia(req, res, url);
 
+  if (url.startsWith('/__oss/status')) return handleOssStatus(req, res);
+
   if (url.startsWith('/__oss/pull')) return handleOssPull(req, res);
+  if (url.startsWith('/__oss/run')) return handleOssRun(req, res);
 
   if (url.startsWith('/__docker')) return handleDocker(req, res);
 
@@ -908,7 +1364,9 @@ function listen(port, attempt = 0) {
     console.log('  live reload: ' + (PROD ? 'off' : 'on (edit index2.html / js / css, page refreshes itself)'));
     console.log('  llm        : ' + (LLM.key ? LLM.model + ' @ ' + LLM.base + ' → POST /__llm' : 'disabled (no LLM_API_KEY in .env)'));
     console.log('  api        : ' + API_BASE + ' → GET/POST /api/*  (沒跑就回 503，頁面自動退回示範資料)');
-    console.log('  sherlock   : ' + (process.env.KOL_SHERLOCK === '1' || sherlockArmed ? 'operator + docker run ' + SHERLOCK_IMAGE + ' → POST /__sherlock' : 'off（開源組件頁拉起映像，或設 KOL_SHERLOCK=1）'));
+    console.log('  oss tools  : POST /__oss/run {tool:sherlock|maigret,name} · /__sherlock 仍可用');
+    console.log('  sherlock   : ' + (discoveryArmed('sherlock') ? 'operator + docker run ' + SHERLOCK_IMAGE : 'off（開源組件頁拉起映像，或設 KOL_SHERLOCK=1）'));
+    console.log('  maigret    : ' + (discoveryArmed('maigret') ? 'operator + docker run ' + MAIGRET_IMAGE : 'off（開源組件頁拉起映像，或設 KOL_MAIGRET=1）'));
     console.log('  stop : Ctrl+C');
     console.log('');
     if (!PROD) watch();

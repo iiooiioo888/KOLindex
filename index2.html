@@ -9,10 +9,10 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tippy.js@6.3.7/dist/tippy.css" integrity="sha384-IBgYl+I5X6ZDZXI5zv1vsSE3VopDomz4BxSu/GlxaPHfFtcrJ3uj70z1w6srO9zU" crossorigin="anonymous">
 <link rel="stylesheet" href="css/index2.css?v=20261120">
 <!-- design system：權杖 → 基礎 → 元件 → 版面，之後才是各頁覆寫 -->
-<link rel="stylesheet" href="css/ds/tokens.css?v=20261121">
+<link rel="stylesheet" href="css/ds/tokens.css?v=20261126b">
 <link rel="stylesheet" href="css/ds/base.css?v=20261121">
-<link rel="stylesheet" href="css/ds/components.css?v=20261125a">
-<link rel="stylesheet" href="css/ds/pages.css?v=20261125c">
+<link rel="stylesheet" href="css/ds/components.css?v=20261126a">
+<link rel="stylesheet" href="css/ds/pages.css?v=20261126b">
 <link rel="stylesheet" href="css/studio.css?v=20261121">
 <link rel="stylesheet" href="css/review.css?v=20261121">
 <link rel="stylesheet" href="css/connectors.css?v=20261121">
@@ -21,7 +21,7 @@
 <link rel="stylesheet" href="css/person.css?v=20261122">
 <link rel="stylesheet" href="css/seats.css?v=20261123">
 <link rel="stylesheet" href="css/queue.css?v=20261124">
-<link rel="stylesheet" href="css/login.css?v=20261123">
+<link rel="stylesheet" href="css/login.css?v=20261126b">
 <link rel="stylesheet" href="css/caps.css?v=20261124">
 <style>
 #demoBanner{display:none}
@@ -38,9 +38,9 @@ if (new URLSearchParams(location.search).get('demo') === '1') document.documentE
   <form class="login-card" id="loginForm" autocomplete="on">
     <div class="login-kicker">靈境 · Linkin</div>
     <h1>進入工作台</h1>
-    <p class="login-lead">先核對操作者。角色由伺服器決定，這張表單不能自選權限。</p>
+    <p class="login-lead">填操作者即可。角色由伺服器決定。</p>
     <label for="loginName">操作者
-      <input id="loginName" name="username" autocomplete="username" required maxlength="40" placeholder="例如 AD">
+      <input id="loginName" name="username" autocomplete="username" required maxlength="40" placeholder="名稱">
     </label>
     <label for="loginPass">通行碼
       <input id="loginPass" name="password" type="password" autocomplete="current-password" maxlength="200">
@@ -76,14 +76,11 @@ if (new URLSearchParams(location.search).get('demo') === '1') document.documentE
       <circle cx="25" cy="5" r="1.7" fill="#7fb2c9"/>
     </svg>
     <div class="brand-name">靈境<em>·</em>Linkin</div>
-    <div class="brand-sub">Auto-Claim × LLM Slot</div>
   </div>
   <div class="chip-row">
-    <span class="chip green">自動認領 ON</span>
-    <span class="chip or" id="dataChip" data-api="offline" title="示範資料：後端沒開時這頁照樣能看">DEMO DATA</span>
-    <span class="chip or" id="stackChip" title="PostgreSQL、Redis、MinIO、Meilisearch">元件 —</span>
-    <span class="chip cyan">LLM 槽位 <span data-num="slotUsed">—</span>/8</span>
-    <span class="chip red" id="guardChip">guard: <span data-num="guardPending">—</span> 待審</span>
+    <span class="chip or" id="dataChip" data-api="offline" title="示範資料：後端沒開時這頁照樣能看">DEMO</span>
+    <span class="chip or" id="stackChip" title="探測項 + Docker Compose 容器與內容">元件 —</span>
+    <span class="chip red" id="guardChip"><span data-num="guardPending">—</span> 待審</span>
   </div>
   <label class="searchbox" for="globalSearch">
     <svg class="ic" aria-hidden="true"><use href="#i-search"/></svg>
@@ -104,58 +101,50 @@ if (new URLSearchParams(location.search).get('demo') === '1') document.documentE
 <div class="shell">
 
   <aside class="rail" aria-label="分頁導覽">
-    <div>
-      <div class="rail-label">分頁 Topics<span id="railQueueCount">— 在列</span></div>
+    <div class="rail-nav">
+      <div class="rail-label">Topics · 工作<span id="railQueueCount">— 在列</span></div>
       <button class="nav-item" data-topic="collect"><svg class="ic"><use href="#i-inbox"/></svg><span class="nm">任務收集</span><span class="bd" id="navCollectBd">—</span></button>
       <button class="nav-item active" data-topic="queue"><svg class="ic"><use href="#i-queue"/></svg><span class="nm">任務隊列</span><span class="bd" id="navQueueBd">—</span></button>
-      <button class="nav-item" data-topic="sense"><svg class="ic"><use href="#i-opc"/></svg><span class="nm">感測上下文</span><span class="bd" id="navSenseBd">—</span></button>
-      <button class="nav-item" data-topic="out"><svg class="ic"><use href="#i-cube"/></svg><span class="nm">產出庫</span><span class="bd" id="navOutBd">—</span></button>
       <button class="nav-item" data-topic="seat"><svg class="ic"><use href="#i-tasks"/></svg><span class="nm">席位執行</span><span class="bd" id="navSeatBd">—</span></button>
-      <button class="nav-item" data-topic="pipe"><svg class="ic"><use href="#i-monitor"/></svg><span class="nm">統一管線</span><span class="bd" id="navPipeBd">—</span></button>
+      <button class="nav-item" data-topic="review"><svg class="ic"><use href="#i-shield"/></svg><span class="nm">審核台</span><span class="bd" id="navReviewBd">—</span></button>
+
+      <div class="rail-label">Topics · 內容</div>
+      <button class="nav-item" data-topic="person"><svg class="ic"><use href="#i-pulse"/></svg><span class="nm">人物檔案</span><span class="bd" id="navPersonBd">—</span></button>
+      <button class="nav-item" data-topic="library"><svg class="ic"><use href="#i-cube"/></svg><span class="nm">素材庫</span><span class="bd" id="navLibraryBd">—</span></button>
+      <button class="nav-item" data-topic="out"><svg class="ic"><use href="#i-cube"/></svg><span class="nm">產出庫</span><span class="bd" id="navOutBd">—</span></button>
+
+      <div class="rail-label">Topics · 監控</div>
+      <button class="nav-item" data-topic="health"><svg class="ic"><use href="#i-monitor"/></svg><span class="nm">元件健康</span><span class="bd" id="navHealthBd">—</span></button>
       <button class="nav-item" data-topic="infra"><svg class="ic"><use href="#i-docker"/></svg><span class="nm">基礎設施</span><span class="bd" id="navInfraBd">—</span></button>
       <button class="nav-item" data-topic="oss"><svg class="ic"><use href="#i-git"/></svg><span class="nm">開源組件</span><span class="bd" id="navOssBd">—</span></button>
-      <button class="nav-item" data-topic="studio"><svg class="ic"><use href="#i-cube"/></svg><span class="nm">UI 生成</span><span class="bd" id="navStudioBd">—</span></button>
-      <button class="nav-item" data-topic="person"><svg class="ic"><use href="#i-pulse"/></svg><span class="nm">人物檔案</span><span class="bd" id="navPersonBd">—</span></button>
-      <button class="nav-item" data-topic="review"><svg class="ic"><use href="#i-shield"/></svg><span class="nm">審核台</span><span class="bd" id="navReviewBd">—</span></button>
-<button class="nav-item" data-topic="library"><svg class="ic"><use href="#i-cube"/></svg><span class="nm">素材庫</span><span class="bd" id="navLibraryBd">—</span></button>
-          </div>
+      <button class="nav-item" data-topic="pipe"><svg class="ic"><use href="#i-monitor"/></svg><span class="nm">統一管線</span><span class="bd" id="navPipeBd">—</span></button>
+      <button class="nav-item" data-topic="sense"><svg class="ic"><use href="#i-opc"/></svg><span class="nm">感測上下文</span><span class="bd" id="navSenseBd">—</span></button>
 
-    <div class="micro-card">
-      <h4>自動認領 · Auto-Claim</h4>
-      <div class="kv"><span>模式</span><b class="ok">席位自動拉取</b></div>
-      <div class="kv"><span>匹配</span><b>角色→心跳→負載→SLA</b></div>
-      <div class="kv"><span>執行門檻</span><b class="warn">LLM 空檔釋放</b></div>
-      <div class="kv"><span>手動覆寫</span><b class="or">強制派發（審計）</b></div>
+      <div class="rail-label">Topics · 工具</div>
+      <button class="nav-item" data-topic="studio"><svg class="ic"><use href="#i-cube"/></svg><span class="nm">UI 生成</span><span class="bd" id="navStudioBd">—</span></button>
     </div>
 
-    <div class="micro-card">
-      <h4>系統摘要</h4>
+    <div class="micro-card rail-summary">
+      <h4>摘要</h4>
       <div class="kv"><span>席位</span><b id="sysSeats">—</b></div>
       <div class="kv"><span>佇列</span><b id="sysQueue">—</b></div>
-      <div class="kv"><span>連接器</span><b id="sysConn">—</b></div>
-      <div class="kv"><span>磁碟</span><b id="sysDisk">—</b></div>
-      <div class="kv"><span>今日完成</span><b id="sysToday">—</b></div>
-      <div class="kv"><span>自動派工</span><b id="sysAuto">—</b></div>
+      <div class="kv"><span>今日</span><b id="sysToday">—</b></div>
+      <div class="kv"><span>自動</span><b id="sysAuto">—</b></div>
+      <div class="kv"><span>Docker</span><b id="stackDocker">—</b></div>
     </div>
-
-    <div class="micro-card">
-      <h4>LLM 槽位 · 8</h4>
-      <div class="slot-rail" id="slotRail"></div>
-    </div>
-
-    <div class="micro-card" id="stackCard">
-      <h4>元件</h4>
+    <div class="micro-card stack-card rail-stack" id="stackCard" role="button" tabindex="0" data-topic="health" title="打開元件健康分頁" hidden>
+      <h4>元件健康</h4>
       <div class="kv"><span>PostgreSQL</span><b id="stackPg">—</b></div>
       <div class="kv"><span>Redis</span><b id="stackRedis">—</b></div>
       <div class="kv"><span>MinIO</span><b id="stackMinio">—</b></div>
       <div class="kv"><span>Meilisearch</span><b id="stackMeili">—</b></div>
-    </div>
-
-    <div class="micro-card">
-      <h4>埠號</h4>
+      <div class="kv"><span>連接器</span><b id="sysConn">—</b></div>
+      <div class="kv"><span>磁碟</span><b id="sysDisk">—</b></div>
       <div class="kv"><span>頁面</span><b id="sysPortWeb">—</b></div>
-      <div class="kv"><span>API</span><b id="sysPortApi">同源 /api</b></div>
       <div class="kv"><span>媒體</span><b id="sysPortMedia">—</b></div>
+      <div id="stackDockerList" class="stack-docker-list" aria-label="Docker 容器與內容"></div>
+      <div class="slot-rail" id="slotRail" hidden></div>
+      <span id="sysPortApi" hidden>同源 /api</span>
     </div>
   </aside>
 
@@ -163,25 +152,26 @@ if (new URLSearchParams(location.search).get('demo') === '1') document.documentE
     <div class="topic-bar" id="topicBar">
       <div class="topic-head">
         <div class="th-main">
-          <div class="th-kicker">section<span class="rule"></span><b id="topicIndex">02 / 11</b></div>
+          <div class="th-kicker"><b id="topicIndex">02 / 13</b></div>
           <h2 id="topicTitle">任務隊列</h2>
         </div>
-        <div class="topic-hint" id="topicHint">#/queue  ·  席位自動拉取任務 · 等 LLM 空檔才執行</div>
+        <div class="topic-hint" id="topicHint">#/queue</div>
       </div>
       <div class="topic-tabs" role="tablist" aria-label="主題分頁">
-        <button class="topic-btn" id="tab-collect" role="tab" aria-selected="false" aria-controls="topic-collect" data-topic="collect">任務收集</button>
-        <button class="topic-btn" id="tab-queue" role="tab" aria-selected="true" aria-controls="topic-queue" data-topic="queue">任務隊列</button>
-        <button class="topic-btn" id="tab-sense" role="tab" aria-selected="false" aria-controls="topic-sense" data-topic="sense">感測上下文</button>
-        <button class="topic-btn" id="tab-out" role="tab" aria-selected="false" aria-controls="topic-out" data-topic="out">產出庫</button>
-        <button class="topic-btn" id="tab-seat" role="tab" aria-selected="false" aria-controls="topic-seat" data-topic="seat">席位執行</button>
-        <button class="topic-btn" id="tab-pipe" role="tab" aria-selected="false" aria-controls="topic-pipe" data-topic="pipe">統一管線</button>
-        <button class="topic-btn" id="tab-infra" role="tab" aria-selected="false" aria-controls="topic-infra" data-topic="infra">基礎設施</button>
-        <button class="topic-btn" id="tab-oss" role="tab" aria-selected="false" aria-controls="topic-oss" data-topic="oss">開源組件</button>
-        <button class="topic-btn" id="tab-studio" role="tab" aria-selected="false" aria-controls="topic-studio" data-topic="studio">UI 生成</button>
-        <button class="topic-btn" id="tab-person" role="tab" aria-selected="false" aria-controls="topic-person" data-topic="person">人物檔案</button>
-        <button class="topic-btn" id="tab-review" role="tab" aria-selected="false" aria-controls="topic-review" data-topic="review">審核台</button>
-<button class="topic-btn" id="tab-library" role="tab" aria-selected="false" aria-controls="topic-library" data-topic="library">素材庫</button>
-              </div>
+        <button class="topic-btn" id="tab-collect" role="tab" aria-selected="false" aria-controls="topic-collect" data-topic="collect">收集</button>
+        <button class="topic-btn" id="tab-queue" role="tab" aria-selected="true" aria-controls="topic-queue" data-topic="queue">隊列</button>
+        <button class="topic-btn" id="tab-seat" role="tab" aria-selected="false" aria-controls="topic-seat" data-topic="seat">席位</button>
+        <button class="topic-btn" id="tab-review" role="tab" aria-selected="false" aria-controls="topic-review" data-topic="review">審核</button>
+        <button class="topic-btn" id="tab-person" role="tab" aria-selected="false" aria-controls="topic-person" data-topic="person">人物</button>
+        <button class="topic-btn" id="tab-library" role="tab" aria-selected="false" aria-controls="topic-library" data-topic="library">素材</button>
+        <button class="topic-btn" id="tab-out" role="tab" aria-selected="false" aria-controls="topic-out" data-topic="out">產出</button>
+        <button class="topic-btn" id="tab-health" role="tab" aria-selected="false" aria-controls="topic-health" data-topic="health">健康</button>
+        <button class="topic-btn" id="tab-infra" role="tab" aria-selected="false" aria-controls="topic-infra" data-topic="infra">基建</button>
+        <button class="topic-btn" id="tab-oss" role="tab" aria-selected="false" aria-controls="topic-oss" data-topic="oss">開源</button>
+        <button class="topic-btn" id="tab-pipe" role="tab" aria-selected="false" aria-controls="topic-pipe" data-topic="pipe">管線</button>
+        <button class="topic-btn" id="tab-sense" role="tab" aria-selected="false" aria-controls="topic-sense" data-topic="sense">感測</button>
+        <button class="topic-btn" id="tab-studio" role="tab" aria-selected="false" aria-controls="topic-studio" data-topic="studio">UI</button>
+      </div>
     </div>
 
     <!-- ═══ 任務收集 ═══ -->
@@ -664,6 +654,34 @@ if (new URLSearchParams(location.search).get('demo') === '1') document.documentE
       </div>
     </section>
 
+    <!-- ═══ 元件健康 ═══ -->
+    <section class="waterfall" id="topic-health" role="tabpanel" aria-labelledby="tab-health" aria-hidden="true">
+      <div class="panel">
+        <div class="panel-head">
+          <div class="panel-title">元件健康<span class="en">GET /__health/components</span></div>
+          <div class="panel-tools">
+            <span class="chip or" id="healthChip">未檢查</span>
+            <button type="button" class="mini-btn" id="healthRefresh">重新檢查</button>
+            <a class="mini-btn" href="/ops/health" target="_blank" rel="noopener noreferrer">SSR 頁</a>
+            <button type="button" class="mini-btn" data-topic="infra">基礎設施</button>
+            <button type="button" class="mini-btn" data-topic="oss">開源組件</button>
+          </div>
+        </div>
+        <p class="note" id="healthNote">瀏覽器不直連容器埠；由 BFF 代問。數字來自探測結果，沒來源顯示「—」。</p>
+        <div class="roster-wrap plain">
+          <table class="table tbl-md" id="healthProbeTable">
+            <thead><tr><th>探測項</th><th>問法</th><th>狀態</th><th>內容</th></tr></thead>
+            <tbody id="healthProbeBody"><tr><td colspan="4" class="conn-empty">正在讀 /__health/components…</td></tr></tbody>
+          </table>
+          <table class="table tbl-md" id="healthDockerTable">
+            <thead><tr><th>Compose 服務</th><th>狀態</th><th>健康</th><th>埠</th><th>映像／內容</th></tr></thead>
+            <tbody id="healthDockerBody"><tr><td colspan="5" class="conn-empty">正在讀容器目錄…</td></tr></tbody>
+          </table>
+        </div>
+        <div class="jobs-foot"><span id="healthSource" class="chip or">來源 —</span><span>與左側「元件健康」卡、基礎設施／服務表同源。監測開關仍要 <code>KOL_DOCKER=1</code>。</span></div>
+      </div>
+    </section>
+
     <!-- ═══ 基礎設施 ═══ -->
     <section class="waterfall" id="topic-infra" role="tabpanel" aria-labelledby="tab-infra">
       <div class="panel">
@@ -672,6 +690,7 @@ if (new URLSearchParams(location.search).get('demo') === '1') document.documentE
           <div class="panel-tools">
             <span class="chip or" id="sysLive">未連線</span>
             <span class="chip or" id="connChip" title="連接器憑證健康 · GET /api/health/connectors">連接器 · 未連線</span>
+            <button type="button" class="mini-btn" data-topic="health">元件健康</button>
           </div>
         </div>
         <div class="tabs-row" id="infraTabs" role="tablist" aria-label="基礎設施子分頁">
@@ -689,14 +708,14 @@ if (new URLSearchParams(location.search).get('demo') === '1') document.documentE
         <div class="tab-pane on" id="pane-docker" role="tabpanel" aria-labelledby="itab-docker">
           <div class="roster-wrap plain">
             <table class="table tbl-md" id="dockerTable">
-              <thead><tr><th>服務</th><th>來源</th><th>狀態</th><th>讀到</th></tr></thead>
+              <thead><tr><th>服務</th><th>來源</th><th>狀態</th><th>內容／讀到</th></tr></thead>
               <tbody id="sysServices"><tr><td colspan="4" class="conn-empty">正在連後端…</td></tr></tbody>
             </table>
             <table class="table tbl-md" id="dockerCtl">
-              <thead><tr><th>NAS 容器</th><th>狀態</th><th>健康</th><th>控制</th></tr></thead>
-              <tbody id="dockerCtlBody"><tr><td colspan="4" class="conn-empty">正在讀本機 Docker…</td></tr></tbody>
+              <thead><tr><th>NAS 容器</th><th>角色</th><th>映像／內容</th><th>狀態</th><th>健康</th><th>控制</th></tr></thead>
+              <tbody id="dockerCtlBody"><tr><td colspan="6" class="conn-empty">正在讀本機 Docker…</td></tr></tbody>
             </table>
-            <p class="note">這組容器在本機 NAS 上跑。監測與開關走本機 docker compose，只限 web、postgres、redis、minio、meilisearch。網頁容器沒有掛上 Docker socket。</p>
+            <p class="note">探測與容器目錄已獨立成 Topics「元件健康」（<code>#/health</code>、<a href="/ops/health">/ops/health</a>）。本表是同一份資料的摘要。監測與開關走本機 docker compose；開源容器另見開源組件頁。網頁容器沒有掛上 Docker socket。</p>
           </div>
         </div>
 
@@ -810,6 +829,23 @@ if (new URLSearchParams(location.search).get('demo') === '1') document.documentE
           <button class="mini-btn" data-oss="candidate" aria-pressed="false">候選</button>
         </div>
         <div class="panel-body oss-body">
+          <form class="oss-tools" id="ossToolForm" data-cap="operate">
+            <div class="oss-tools-head">
+              <div class="kicker">帳號發現工具台</div>
+              <p class="note">直接呼叫 Sherlock／Maigret（固定摘要、一次性容器）。小紅書／抖音抓取仍是 not_enabled。</p>
+            </div>
+            <label class="oss-tools-field">公開用戶名
+              <input type="text" id="ossToolName" name="username" maxlength="32" autocomplete="off" placeholder="例如 public_name" pattern="[A-Za-z0-9._-]{2,32}" required>
+            </label>
+            <div class="oss-tools-actions">
+              <button type="submit" class="mini-btn primary" data-oss-run="sherlock" id="ossRunSherlock">跑 Sherlock</button>
+              <button type="button" class="mini-btn" data-oss-run="maigret" id="ossRunMaigret">跑 Maigret</button>
+              <button type="button" class="mini-btn" data-cap="operate" data-oss-pull="sherlock">拉 Sherlock 映像</button>
+              <button type="button" class="mini-btn" data-cap="operate" data-oss-pull="maigret">拉 Maigret 映像</button>
+            </div>
+            <div class="oss-tools-out" id="ossToolOut" aria-live="polite">還沒跑過。開發模式可直接送出；正式環境要先拉映像或設 KOL_SHERLOCK／KOL_MAIGRET。</div>
+            <div class="oss-tools-hits" id="ossToolHits" hidden></div>
+          </form>
           <div class="oss-kpis" id="ossKpis"></div>
           <div class="oss-layout">
             <div class="oss-list" id="ossList" aria-label="GitHub 開源組件清單"></div>
@@ -946,13 +982,22 @@ if (new URLSearchParams(location.search).get('demo') === '1') document.documentE
     <section class="waterfall" id="topic-person" role="tabpanel" aria-labelledby="tab-person" aria-hidden="true">
       <div class="panel">
         <div class="panel-head">
-          <div class="panel-title">人物檔案<span class="en" id="pnTitleEn">douyin authors</span></div>
+          <div class="panel-title">人物檔案<span class="en" id="pnTitleEn">subjects</span></div>
           <div class="panel-tools">
             <span class="chip or" id="pnStatus">待連線</span>
             <span class="chip cyan" id="pnCount">—</span>
           </div>
         </div>
         <div class="panel-body">
+          <div class="pn-seg" id="pnMode" role="group" aria-label="人物資料來源">
+            <button type="button" data-pn-mode="subjects" aria-pressed="true">人物主檔</button>
+            <button type="button" data-pn-mode="douyin" aria-pressed="false">抖音作者索引</button>
+          </div>
+          <form class="pn-bar" id="pnSubjectForm" data-cap="operate">
+            <input type="text" id="pnSubjectName" class="pn-input" maxlength="80" placeholder="新建人物顯示名" autocomplete="off">
+            <button type="submit" class="mini-btn primary" id="pnSubjectAdd">建立人物</button>
+            <span class="note" id="pnSubjectOut">人物主檔走控制面 <code>/subjects</code>。確認的平台帳號才算掛上。</span>
+          </form>
           <div class="pn-kpis" id="pnKpis"></div>
           <div class="pn-bar">
             <input type="search" id="pnSearch" class="pn-input" placeholder="搜尋人物名…" aria-label="搜尋人物">
@@ -973,8 +1018,8 @@ if (new URLSearchParams(location.search).get('demo') === '1') document.documentE
             </div>
             <aside class="pn-side" id="pnSide"></aside>
           </div>
-          <div class="p-cap">
-            <b>抖音作者就是這裡的人物。</b>清單人數跟左欄徽章一樣，來自 <code>/api/library/authors</code>，不寫死。點一位進<b>人物檔案</b>，看作品時間軸、作品牆與容量，左上「← 人物清單」回來。縮圖開的是素材庫那個檢視器。這頁只讀，不會回抖音抓東西。
+          <div class="p-cap" id="pnCap">
+            <b>人物主檔</b>是一個人對多個已確認平台帳號。抖音作者索引仍可切換查看，那是素材庫來源，不是歸戶結果。覆蓋缺口沒有測量數字時顯示「—」。
           </div>
         </div>
       </div>
@@ -1257,17 +1302,18 @@ if (new URLSearchParams(location.search).get('demo') === '1') document.documentE
   <div class="inner">
     <button class="tab" data-topic="collect"><svg class="ic"><use href="#i-inbox"/></svg>收集</button>
     <button class="tab active" data-topic="queue"><svg class="ic"><use href="#i-queue"/></svg>隊列</button>
-    <button class="tab" data-topic="sense"><svg class="ic"><use href="#i-opc"/></svg>感測</button>
-    <button class="tab" data-topic="out"><svg class="ic"><use href="#i-cube"/></svg>產出</button>
     <button class="tab" data-topic="seat"><svg class="ic"><use href="#i-tasks"/></svg>席位</button>
-    <button class="tab" data-topic="pipe"><svg class="ic"><use href="#i-monitor"/></svg>管線</button>
+    <button class="tab" data-topic="review"><svg class="ic"><use href="#i-shield"/></svg>審核</button>
+    <button class="tab" data-topic="person"><svg class="ic"><use href="#i-pulse"/></svg>人物</button>
+    <button class="tab" data-topic="library"><svg class="ic"><use href="#i-cube"/></svg>素材</button>
+    <button class="tab" data-topic="out"><svg class="ic"><use href="#i-cube"/></svg>產出</button>
+    <button class="tab" data-topic="health"><svg class="ic"><use href="#i-monitor"/></svg>健康</button>
     <button class="tab" data-topic="infra"><svg class="ic"><use href="#i-docker"/></svg>設施</button>
     <button class="tab" data-topic="oss"><svg class="ic"><use href="#i-git"/></svg>組件</button>
+    <button class="tab" data-topic="pipe"><svg class="ic"><use href="#i-monitor"/></svg>管線</button>
+    <button class="tab" data-topic="sense"><svg class="ic"><use href="#i-opc"/></svg>感測</button>
     <button class="tab" data-topic="studio"><svg class="ic"><use href="#i-cube"/></svg>生成</button>
-    <button class="tab" data-topic="person"><svg class="ic"><use href="#i-pulse"/></svg>人物</button>
-    <button class="tab" data-topic="review"><svg class="ic"><use href="#i-shield"/></svg>審核</button>
-<button class="tab" data-topic="library"><svg class="ic"><use href="#i-cube"/></svg>素材</button>
-      </div>
+  </div>
 </nav>
 
 <div class="toast-wrap" id="toastWrap" aria-live="polite"></div>
@@ -1317,19 +1363,19 @@ if (new URLSearchParams(location.search).get('demo') === '1') document.documentE
 
 <script defer src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js" integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r" crossorigin="anonymous"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/tippy.js@6.3.7/dist/tippy.umd.min.js" integrity="sha384-pjtv4LzKGI/lGxchW/wd/upB/HsGOP/Q2iPYyDU8qo2bp4JLbN34hQkdAArvidZX" crossorigin="anonymous"></script>
-<script defer src="js/login.js?v=20261123"></script>
+<script defer src="js/login.js?v=20261126b"></script>
 <script defer src="js/fixtures/demo.js?v=20261124"></script>
 <script defer src="js/api.js?v=20261124"></script>
-<script defer src="js/index2.js?v=20261124e"></script>
+<script defer src="js/index2.js?v=20261126c"></script>
 <script defer src="js/wireframe.js?v=20261121"></script>
 <script defer src="js/studio.js?v=20261123c"></script>
 <script defer src="js/review.js?v=20261123d"></script>
 <script defer src="js/infra.js?v=20261121"></script>
 <script defer src="js/jobs.js?v=20261123b"></script>
 <script defer src="js/library.js?v=20261124a"></script>
-<script defer src="js/person.js?v=20261124a"></script>
+<script defer src="js/person.js?v=20261126b"></script>
 <script defer src="js/seats.js?v=20261123c"></script>
 <script defer src="js/rail.js?v=20261123b"></script>
-<script defer src="js/system.js?v=20261124"></script>
+<script defer src="js/system.js?v=20261126a"></script>
 </body>
 </html>

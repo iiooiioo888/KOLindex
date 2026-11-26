@@ -5,6 +5,7 @@ import httpx
 from kolindex_discovery.bilibili import search_bilibili
 from kolindex_discovery.models import DiscoveryResponse, PlatformSkip
 from kolindex_discovery.query import normalize_query
+from kolindex_discovery.rank import rank_candidates
 from kolindex_discovery.sherlock_probe import probe_username
 
 _NOT_ENABLED = (
@@ -33,4 +34,5 @@ def discover_accounts(
     skipped = [*sherlock_skips, *_NOT_ENABLED]
     if skip is not None:
         skipped.insert(0, skip)
-    return DiscoveryResponse(query=text, candidates=[*candidates, *found], skipped=skipped)
+    ranked = rank_candidates(text, [*candidates, *found])
+    return DiscoveryResponse(query=text, candidates=ranked, skipped=skipped)

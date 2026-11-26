@@ -2,7 +2,7 @@
 
 [![pages](https://github.com/iiooiioo888/KOLindex/actions/workflows/pages.yml/badge.svg)](https://github.com/iiooiioo888/KOLindex/actions/workflows/pages.yml)
 
-網紅索引與監控平台的介面原型。時間表、技術表、技術目標和格式要求在 [PROJECT.md](PROJECT.md)。畫面語意對齊較早的 v2.2；開發約束以 KOL-SPEC-001 v4.1 為準。現用畫面是 HTML + CSS + 原生 JS。`apps/web` 另有一套 Next.js 骨架，還沒取代這個畫面。
+網紅索引與監控平台的介面原型。時間表、技術表、技術目標和格式要求在 [PROJECT.md](PROJECT.md)。畫面語意對齊較早的 v2.2；開發約束以 KOL-SPEC-001 v4.1 為準。前端宿主依 ADR-008 改為 `apps/web`（Next.js）。十二個分頁仍在原型層，建置時同步到 `/console/`；登入、Sherlock、Docker 仍由 `tests/dev-server.mjs` 當 BFF。
 
 > 畫面語意對齊 v2.2。開發約束以 KOL-SPEC-001 v4.1 為準。治理層還沒做，落差列在 ROADMAP。時間表和技術表在 PROJECT.md。
 
@@ -44,13 +44,32 @@
 
 ## 快速開始
 
-### 只有前端
+### 只有前端（舊入口，仍可用）
 
 ```
 node tests/dev-server.mjs . 5200
 ```
 
 開 <http://127.0.0.1:5200/>。零依賴靜態伺服器，改檔案會自動重新整理。後端沒開時，收集與告警會清掉示範卡片；其餘分頁是否仍顯示示範資料，見「安全需求」。
+
+### Next.js 宿主（ADR-008）
+
+另開 BFF（埠不要跟 Next 撞）：
+
+```
+set PORT=5201
+node tests/dev-server.mjs . 5201
+```
+
+然後：
+
+```
+cd apps/web
+npm run sync:console
+npm run dev
+```
+
+開 <http://127.0.0.1:5200/> 進殼層，<http://127.0.0.1:5200/console/> 進現用監控台，<http://127.0.0.1:5200/ops/health> 看 SSR 元件健康。可用 `KOL_API`、`KOL_CONTROL`、`KOL_BFF` 覆寫 rewrite 目標。
 
 任務收集的「呼叫 Sherlock」只給操作者。開源組件頁的「拉起映像」會在設了 `KOL_DOCKER=1` 的宿主行程拉取官方映像 `sherlock/sherlock` 0.16.0 的固定摘要，並打開這個入口；查詢仍是 `docker run`，查完就退出。沒有按過拉起、也沒設 `KOL_SHERLOCK=1` 時，入口回 `{"error":"disabled"}`。Maigret 用同一個按鈕只拉取備援映像，不接到收集頁。兩者都是命令列映像，沒有網頁埠。網頁容器把 `KOL_DOCKER` 和 `KOL_SHERLOCK` 固定為 `0`，也不掛 Docker socket，所以容器裡的按鈕會被拒絕。GitHub Pages 沒有這個入口。
 
@@ -117,7 +136,7 @@ node tests/test-api-auth.mjs   # API 認證閘：無 Cookie 401、登入後可�
 | 全鏈刪除要清掉資料庫、搜尋索引、NAS 檔案、衍生檔和收件匣 | **未完成**。現在沒有這條流程 |
 | 日誌不記通行碼、Cookie、token、私鑰或未去敏的全文 | 這是需求。這個 README 沒有逐條掃過現有日誌 |
 
-登入操作：設了 `KOL_GATE` 才會核對通行碼，角色用 `KOL_ROLE`。沒設時，在本機填名字就能進，角色是 `viewer`，寫入按鈕收起，寫入請求回 `403`。本機要寫入時設 `KOL_DEV_OPERATOR=1`。登出打 `POST /__auth/logout`。檢查指令是 `node tests/test-authz.mjs` 和 `node tests/test-caps.mjs`。
+登入操作：設了 `KOL_GATE` 才會核對通行碼，角色用 `KOL_ROLE`。沒設時，在本機任填操作者名稱就能進，通行碼可留空。`npm run dev:bff`（在 `apps/web`）預設走這條開發開閘，並帶 `KOL_DEV_OPERATOR=1`，角色是 `operator`。直接跑 `tests/dev-server.mjs` 且沒設 `KOL_DEV_OPERATOR` 時角色是 `viewer`，寫入按鈕收起，寫入請求回 `403`。要測閘門時不要用 `dev:bff`，改直接帶 `KOL_GATE` 啟動。登出打 `POST /__auth/logout`。檢查指令是 `node tests/test-authz.mjs` 和 `node tests/test-caps.mjs`。
 
 ## 部署
 
@@ -144,7 +163,7 @@ docker compose -f infra/compose/docker-compose.yml -f infra/compose/docker-compo
 python apps/control/app.py
 ```
 
-沒有 `KOL_DATABASE_URL` 時，它把 SQLite 放在 `KOL_NAS_ROOT/buffer/`，只當 intake buffer。`KOL_PROD=1` 時拒絕這樣啟動。寫入要帶 `Authorization: Bearer`。viewer 不能寫，reviewer 只能 `POST /decisions`，operator 可以打四個寫入端點。明文範例在 `secrets/api-tokens.example.yaml`，不能拿來登入。
+沒有 `KOL_DATABASE_URL` 時，它把 SQLite 放在 `KOL_NAS_ROOT/buffer/`，只當 intake buffer。`KOL_PROD=1` 時拒絕這樣啟動。寫入要帶 `Authorization: Bearer`。viewer 不能寫，reviewer 可 `POST /decisions` 與確認帳號連結，operator 可打 intake／artifacts／events／decisions，以及建立人物主檔、`POST /posts`、`POST /media-index`。人物頁經 `/__control/subjects` 代理到這裡，並可讀 `/subjects/{id}/media` 看作品與圖片索引；帳號發現經 `/__discovery` 代理到 `KOL_DISCOVERY`（預設 `127.0.0.1:5221`）。PostgreSQL 初始化還有 `003-kol-index.sql`。圖片原檔仍在 `KOL_NAS_ROOT`，庫裡只存 checksum 與路徑。覆蓋缺口沒有測量前顯示「—」。明文範例在 `secrets/api-tokens.example.yaml`，不能拿來登入。
 
 上線前先核對下面五項。判定和現況寫在 [PROJECT.md](PROJECT.md) 第 7 節。
 

@@ -5,6 +5,7 @@ infra/compose/.env
 /AGENTS.md
 node_modules
 .next
+apps/web/public/console/
 __pycache__/
 *.pyc
 .pytest_cache/

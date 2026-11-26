@@ -1,6 +1,6 @@
 # KOL-Index 項目文件
 
-更新日期：2026-11-24。這份文件整理時間表、技術表、技術目標、格式要求和阻斷項。怎麼把站跑起來見 [README.md](README.md)。哪一頁是真資料、哪一頁還是示範，見 [ROADMAP.md](ROADMAP.md)。
+更新日期：2026-11-25。這份文件整理時間表、技術表、技術目標、格式要求和阻斷項。怎麼把站跑起來見 [README.md](README.md)。哪一頁是真資料、哪一頁還是示範，見 [ROADMAP.md](ROADMAP.md)。
 
 規格基線是 KOL-SPEC-001 v4.1。README 裡的畫面語意對齊較早的 v2.2。兩份都還沒有逐條核對完成，不能把規格條文寫成這個倉庫已經做完。
 
@@ -12,7 +12,7 @@
 
 | # | 功能 | 做什麼 | 現況 |
 |---|---|---|---|
-| 1 | 人物主檔 | 一個人一套檔案，下面掛已確認的各平台公開帳號 | **半** · 人物頁仍是抖音作者清單 |
+| 1 | 人物主檔 | 一個人一套檔案，下面掛已確認的各平台公開帳號 | **半** · 控制面有人物、帳號連結、`indexed_posts`、`media_index`。人物頁可讀作品／圖片索引。覆蓋缺口的「聲稱作品」仍是「—」 |
 | 2 | 帳號發現 | 從公開用戶名找出可能屬於同一人的其他公開頁，列成待確認 | **半** · 會呼叫的是 Sherlock。Maigret 降為 `backup` profile，不同時維護 |
 | 3 | 公開時間軸 | 貼文、圖片、影片按時間排在同一條軸上，原始檔與整理結果分開 | **半** · 素材庫與人物頁有抖音作品。跨平台時間軸未做 |
 | 4 | 圖片與影片分析 | 對 NAS 上已有的檔做文字、物件、標誌、場景和關鍵幀。時間和地點的寫法見下方紀錄表。同框紀錄要能回到那一張圖 | **假** · 分析未做。衍生層只另存縮圖，原檔不動 |
@@ -20,9 +20,9 @@
 | 6 | 變化監控 | 已建檔的人物出現新的公開動態或關係候選時，進事件列表等人看 | **半** · 審核台和告警表在。自動產生器未做 |
 | 7 | 社交群組 | 把反覆一起出現的已確認公開帳號收成一個群組。成員是帳號。依據是公開標籤、提及、合集、引用和已確認的同框 | **假** · 排在覆蓋缺口和變化監控之後 |
 | 8 | 任務看板 | 發現、入庫、重解析、分類都進同一塊看板，帶狀態、逾時和停止 | **半** · 看板已聚合排程、複核和席位。模型監督標籤尚未分成「已接線」和「已看過」 |
-| 9 | 本機運行 | NAS 上的資料庫、搜尋、媒體目錄、磁碟用量和容器狀態能在頁上看到 | **半** · 元件健康是 `GET /__health/components`，回應帶 `duration_ms`。磁碟用量來自 `/api/rail`，沒回應就顯示「—」 |
+| 9 | 本機運行 | NAS 上的資料庫、搜尋、媒體目錄、磁碟用量和容器狀態能在頁上看到 | **半** · 元件健康是 `GET /__health/components`，含探測項與 Docker Compose 容器目錄（映像、埠、內容說明），回應帶 `duration_ms`。磁碟用量來自 `/api/rail`，沒回應就顯示「—」。設 `KOL_DOCKER=1` 才讀真實 `compose ps` |
 | 10 | 審核與刪除 | 歸戶、同框和關係由人裁決。保存期限到期或收到刪除要求時，能沿整條鏈清掉 | **半** · 審核裁決已有。全鏈刪除未做 |
-| 11 | 個人知識庫 | 每個人一份知識庫。已確認的事實和尚未確認的候選分開存放，每筆都寫明證據和出處 | **半** · 初始化 SQL 已寫在 `infra/compose/postgres/init`。資料庫還沒跑過這份 SQL，也沒有程式寫入 |
+| 11 | 個人知識庫 | 每個人一份知識庫。已確認的事實和尚未確認的候選分開存放，每筆都寫明證據和出處 | **半** · 控制面有 subjects／posts／media_index。圖片相似 ≥ 0.9999 只建 waiting_review；人物或帳號不同標 copy_suspect，不自動合併 |
 | 12 | 開源整合 | 用 GitHub 上的開源項目補採集、發現、畫面和評估。每個項目先登記倉庫、授權和版本，再決定能不能跑 | **半** · Sherlock 會被呼叫。XHS-Downloader 與 Douyin_TikTok_Download_API 在 profile `oss`。Maigret 只在 profile `backup` |
 
 開源整合用來補本項目還沒有的能力。新項目先寫進「開源組件」頁：官方倉庫、授權、固定版本。沒有官方映像或 Dockerfile 的，只保留說明。會跑的程式不使用 `latest`。
@@ -33,10 +33,10 @@
 | 已接入，預設啟動，等待控制 | XHS-Downloader 2.8 | `JoeanAmier/XHS-Downloader` | 只聽 `127.0.0.1`。不接資料網路。開機不抓取 |
 | 已接入，預設啟動，等待控制 | Douyin_TikTok_Download_API 5.1.13 | `Evil0ctal/Douyin_TikTok_Download_API` | 只有 API 映像。不接本專案資料庫，不含上游的 browser、downloader、transcriber。開機不抓取 |
 | 未寫入 Compose | douyin-dl | `Achaiccccc/douyin-dl` | 沒有可釘住的 Docker Hub 映像。不在這裡建置 |
-| 已接入，預設閒置 | Maigret `327c2bc` | `soxoj/maigret` | 備援。容器只停在 `sleep`，收集頁不呼叫它 |
+| 已接入，可 UI 呼叫 | Maigret `327c2bc` | `soxoj/maigret` | 開源組件頁 `POST /__oss/run` 送用戶名；一次性容器，查完即退出 |
 | 只登記來源 | 麦田 | `CzzzzzzJ/mdldm-maitian` | 自有帳號的發布工作台。沒有官方映像，不在這裡啟動 |
 | 已接畫面，不載入上游套件 | Tippy.js、Popper、IBM Plex、Chakra Petch | 見開源組件頁 | 提示、定位、字型。圖表和圖示改由頁內實作 |
-| 骨架，未取代現用畫面 | Next.js、React、TypeScript | `apps/web` 的鎖檔 | 之後的網頁工程 |
+| 已接宿主，分頁漸進遷移 | Next.js、React、TypeScript | `apps/web` | ADR-008。殼層在 `/`，現用畫面同步到 `/console/` |
 
 MediaCrawler、feedgrab、sociopath 沒有收進執行清單：沒有可核對的官方映像。Scrapling 只登記為沙箱候選。
 
@@ -74,8 +74,9 @@ GitHub Pages 只發靜態畫面。正式運行在家裡的 NAS。分頁細節見
 
 | 層 | 技術 | 狀態 | 位置 |
 |---|---|---|---|
-| 現用畫面 | HTML、CSS、原生 JavaScript | 真 | `index2.html`、`css/`、`js/` |
-| 本機站 | Node，零依賴 `tests/dev-server.mjs` | 真 | 預設 `127.0.0.1:5200` |
+| 前端宿主 | Next.js 16.4.6、React 19.3.1、TypeScript 5.9.3 | 半 | `apps/web`。殼層 `/`，SSR 健康 `/ops/health` |
+| 現用監控台 | HTML、CSS、原生 JavaScript | 真 | 根目錄 `index2.html`；建置時同步到 `apps/web/public/console/` |
+| 本機 BFF | Node，零依賴 `tests/dev-server.mjs` | 真 | 建議 `5201`，供 Next rewrite 登入／Sherlock／Docker |
 | 業務資料 | `kolindex-api` 的 `node:sqlite` | 真 | 另一個 repo。表數以該 repo 為準，本檔不另寫死 |
 | 關聯資料與知識庫 | PostgreSQL 16.16，pgvector 0.8.7 | 待確認 | 映像 `pgvector/pgvector@sha256:484e838076e04939d27d3e176e91c86eea96236126023be8d3059761122e579f`。amd64 與 arm64 的 `PG_VERSION` 都是 `16.16-1.pgdg12+1`，2026-11-24 讀自登錄檔。業務 API 未接。知識庫 SQL 只在空資料目錄第一次啟動時執行 |
 | 快取 | Redis 7.4.7 | 假 | 第一版不啟動。定義在 `infra/compose/docker-compose.later.yml`，等 Celery |
@@ -86,7 +87,7 @@ GitHub Pages 只發靜態畫面。正式運行在家裡的 NAS。分頁細節見
 | 帳號發現 | Sherlock 官方映像 0.16.0，固定摘要 | 半 | 只在設了 `KOL_SHERLOCK=1` 的本機行程 |
 | 開源候選容器 | Sherlock、XHS-Downloader、Douyin_TikTok_Download_API | 半 | `docker-compose.oss.yml` 的 profile `oss`。Maigret 只在 profile `backup` |
 | 登入 | `KOL_GATE` 與 `KOL_ROLE` | 半 | 擋在這個網頁行程。業務 API 自身的認證待確認 |
-| 另一套畫面骨架 | Next.js 16.4.6、React 19.3.1、TypeScript 5.9.3 | 假 | `apps/web`。尚未取代 `index2.html` |
+| Compose 網頁映像 | 仍可走 `infra/compose/Dockerfile`（dev-server） | 半 | Next standalone 映像是 `apps/web/Dockerfile`，切換前要先開 BFF |
 
 ### 2.2 規格 v4.1 要求、這個倉庫尚未當成完成狀態
 

@@ -1,10 +1,7 @@
 /* ============================================================
    person.js · 「人物檔案」分頁
-   抖音作者（18,883 位）當人物索引：兩個檢視，清單與檔案。
-   後端：GET /api/library/authors?q=&sort=&limit=&offset=
-         GET /api/library?author=<名>&sort=recent&limit=24&offset=
-         GET /api/library/months?author=<名>   （作品時間軸）
-   縮圖與影片由 5400 靜態站給；點作品開素材庫那個檢視器。這頁只讀。
+   模式 subjects：控制面人物主檔 GET/POST /__control/subjects
+   模式 douyin：舊抖音作者索引 GET /api/library/authors
    ============================================================ */
 (function(){
 'use strict';
@@ -14,6 +11,8 @@ var LIMIT=100, WORK_LIMIT=24, POLL_MS=120000;
 var KIND_LABEL={gallery:'圖集',video:'影片'};
 
 var A={ok:false,loaded:false,loading:false,active:false,q:'',sort:'count',
+  mode:'subjects',subjects:[],subjectSel:null,discover:[],discoverSkip:[],discoverBusy:false,ossLive:[],
+  mediaIndex:null,mediaBusy:false,inbox:[],inboxBusy:false,inboxSource:'',
   items:[],total:0,offset:0,counts:null,error:'',at:0,tok:0,
   sel:'',meta:null,works:[],worksTotal:0,worksOffset:0,worksLoading:false,wtok:0,
   months:[],monthsLoading:false,mtok:0,
@@ -80,7 +79,42 @@ function req(path){
   });
 }
 
+function loadSubjects(){
+  var tok=++A.tok;
+  A.loading=true;
+  setStatus('載入人物主檔…','or');
+  var path='/__control/subjects';
+  if(A.q) path+='?q='+encodeURIComponent(A.q);
+  return req(path).then(function(res){
+    if(tok!==A.tok) return false;
+    A.loading=false;
+    if(!res.ok){
+      A.ok=false;
+      A.error=(res.data&&(res.data.error||res.data.message))||('HTTP '+res.status);
+      A.subjects=[];
+      A.total=0;
+      setStatus(res.status===503?'控制面未連線':'人物主檔失敗','or');
+      renderAll();
+      return false;
+    }
+    var d=res.data||{};
+    A.ok=true; A.loaded=true; A.at=Date.now(); A.error='';
+    A.subjects=Array.isArray(d.items)?d.items:[];
+    A.total=Number(d.total)||A.subjects.length;
+    A.counts={source:d.source||'control.subjects'};
+    setStatus('主檔 · LIVE','cyan');
+    renderAll();
+    loadInbox();
+    return true;
+  }).catch(function(err){
+    if(tok!==A.tok) return false;
+    A.loading=false; A.ok=false; A.error=String(err&&err.message||err);
+    setStatus('控制面未連線','or'); renderAll(); return false;
+  });
+}
+
 function load(reset){
+  if(A.mode==='subjects') return loadSubjects();
   if(A.loading){ A.queued=!!(reset||A.queued); return Promise.resolve(false); }
   if(reset) A.offset=0;
   var tok=++A.tok;
@@ -238,15 +272,58 @@ function monthsHtml(){
     '<div class="pm-rows">'+rows+'</div></div>';
 }
 
+function syncModeChrome(){
+  var form=$('pnSubjectForm');
+  var sort=$('pnSort');
+  var more=$('pnMore');
+  var cap=$('pnCap');
+  if(form) form.hidden=A.mode!=='subjects';
+  if(sort) sort.hidden=A.mode==='subjects';
+  if(more) more.hidden=A.mode==='subjects';
+  if(cap){
+    cap.innerHTML=A.mode==='subjects'
+      ? '<b>人物主檔</b>是一個人對多個已確認平台帳號。覆蓋缺口沒有測量數字時顯示「—」。抖音、小紅書發現若未開放，只會列在略過清單。'
+      : '<b>抖音作者索引</b>來自 <code>/api/library/authors</code>。這是素材來源清單，不是歸戶後的人物主檔。';
+  }
+  var mode=$('pnMode');
+  if(mode) mode.querySelectorAll('[data-pn-mode]').forEach(function(btn){
+    btn.setAttribute('aria-pressed', String(btn.getAttribute('data-pn-mode')===A.mode));
+  });
+}
+
 /* ---------- 畫面 ---------- */
 function renderKpis(){
   var box=$('pnKpis'); if(!box) return;
+  syncModeChrome();
   if(!A.loaded){
-    box.innerHTML=['人物','已命名','純數字帳號','未命名作品'].map(function(name){
+    box.innerHTML=(A.mode==='subjects'
+      ?['人物主檔','已確認帳號','候選帳號','覆蓋缺口']
+      :['人物','已命名','純數字帳號','未命名作品']
+    ).map(function(name){
       return '<div class="pn-kpi"><span>'+esc(name)+'</span><b>—</b></div>';
     }).join('');
     var cnt0=$('pnCount'); if(cnt0) cnt0.textContent='—';
     var bd0=$('navPersonBd'); if(bd0) bd0.textContent='—';
+    var en0=$('pnTitleEn'); if(en0) en0.textContent=A.mode==='subjects'?'subjects':'douyin authors';
+    return;
+  }
+  if(A.mode==='subjects'){
+    var confirmed=0, candidates=0;
+    A.subjects.forEach(function(s){
+      confirmed+=(s.coverage&&s.coverage.confirmed_accounts)||0;
+      candidates+=(s.coverage&&s.coverage.candidate_accounts)||0;
+    });
+    box.innerHTML=[
+      ['人物主檔', nfmt(A.total)],
+      ['已確認帳號', nfmt(confirmed)],
+      ['候選帳號', nfmt(candidates)],
+      ['覆蓋缺口', '—']
+    ].map(function(x){
+      return '<div class="pn-kpi"><span>'+esc(x[0])+'</span><b>'+esc(x[1])+'</b></div>';
+    }).join('');
+    var cntS=$('pnCount'); if(cntS) cntS.textContent=nfmt(A.total)+' 位';
+    var bdS=$('navPersonBd'); if(bdS) bdS.textContent=compactCount(A.total);
+    var enS=$('pnTitleEn'); if(enS) enS.textContent='subjects · '+compactCount(A.total);
     return;
   }
   var c=A.counts||{};
@@ -294,8 +371,29 @@ function rowHtml(a){
   '</button>';
 }
 
+function subjectRowHtml(s){
+  var cov=s.coverage||{};
+  var meta=nfmt(cov.confirmed_accounts||0)+' 已確認 · '+nfmt(cov.candidate_accounts||0)+' 候選';
+  var on=A.subjectSel&&A.subjectSel.id===s.id?' on':'';
+  return '<button type="button" class="pn-row'+on+'" data-subject="'+esc(s.id)+'" title="'+esc(s.display_name)+'" aria-pressed="'+(on?'true':'false')+'">'+
+    '<span class="pr-name">'+esc(s.display_name)+'</span>'+
+    '<span class="pr-meta">'+esc(meta)+'</span>'+
+    '<span class="pr-day">'+esc((s.updated_at||'').slice(0,10)||'—')+'</span>'+
+    '<span class="pr-kind">缺口 —</span>'+
+  '</button>';
+}
+
 function renderList(){
   var box=$('pnList'); if(!box) return;
+  if(A.mode==='subjects'){
+    if(!A.subjects.length){
+      box.innerHTML='<div class="pn-empty">'+(A.loaded?(A.error?'控制面：'+esc(A.error):'還沒有人物主檔。上方可建立一位。'):'尚未載入')+'</div>';
+    } else {
+      box.innerHTML=A.subjects.map(subjectRowHtml).join('');
+    }
+    renderFoot();
+    return;
+  }
   if(!A.items.length){
     box.innerHTML='<div class="pn-empty">'+(A.loaded?'沒有符合的人物':'尚未載入')+'</div>';
   } else {
@@ -306,6 +404,11 @@ function renderList(){
 
 function renderFoot(){
   var more=$('pnMore'), foot=$('pnFoot');
+  if(A.mode==='subjects'){
+    if(more){ more.disabled=true; more.textContent='人物主檔一次載入'; }
+    if(foot) foot.textContent=A.subjects.length?('顯示 '+nfmt(A.subjects.length)+' 位人物主檔 · 來源 control.subjects'):'';
+    return;
+  }
   var has=A.items.length<A.total;
   if(more){
     more.disabled=!has||A.loading;
@@ -323,8 +426,96 @@ function workHtml(it){
   '</button>';
 }
 
+function loadOssLive(){
+  return fetch(BASE+'/__oss/status',{credentials:'same-origin',cache:'no-store',headers:{accept:'application/json'}})
+    .then(function(r){ return r.json().then(function(j){ return {ok:r.ok,data:j||{}}; }); })
+    .then(function(res){
+      A.ossLive=res.ok&&Array.isArray(res.data.items)?res.data.items:[];
+    }).catch(function(){ A.ossLive=[]; });
+}
+
+function loadInbox(){
+  if(A.mode!=='subjects'||A.inboxBusy) return Promise.resolve();
+  A.inboxBusy=true;
+  return fetch(BASE+'/__control/intelligence/inbox',{
+    credentials:'same-origin',cache:'no-store',headers:{accept:'application/json'}
+  }).then(function(r){
+    return r.json().then(function(j){ return {ok:r.ok,data:j||{}}; });
+  }).then(function(res){
+    A.inboxBusy=false;
+    A.inbox=res.ok&&Array.isArray(res.data.items)?res.data.items:[];
+    A.inboxSource=res.ok?(res.data.source||'control.intelligence'):'';
+    if(A.subjectSel) renderSubjectSide();
+  }).catch(function(){
+    A.inboxBusy=false;
+    A.inbox=[];
+    A.inboxSource='';
+    if(A.subjectSel) renderSubjectSide();
+  });
+}
+
+function renderSubjectSide(){
+  var box=$('pnSide'); if(!box) return;
+  var s=A.subjectSel;
+  if(!s){
+    box.innerHTML='<div class="pn-empty"><b>還沒選人物主檔。</b>點清單建立或選一位。</div>';
+    return;
+  }
+  var cov=s.coverage||{};
+  var posts=((A.mediaIndex&&A.mediaIndex.posts)||[]).slice(0,8);
+  var media=((A.mediaIndex&&A.mediaIndex.media)||[]).slice(0,8);
+  var sims=((A.mediaIndex&&A.mediaIndex.similarity_links)||[]).filter(function(l){ return l.status==='waiting_review'; }).slice(0,5);
+  var accounts=(s.accounts||[]).map(function(a){
+    var href=a.profile_url?('<a href="'+esc(a.profile_url)+'" target="_blank" rel="noopener noreferrer">開</a>'):'';
+    return '<tr><td>'+esc(a.platform)+'</td><td>'+esc(a.display_name)+'</td><td>'+esc(a.link_status)+'</td><td>'+href+'</td></tr>';
+  }).join('')||'<tr><td colspan="4">無帳號</td></tr>';
+  var discover=(A.discover||[]).slice(0,8).map(function(c){
+    var conf=c.confidence==null?'':(' '+Number(c.confidence).toFixed(2));
+    return '<button type="button" class="mini-btn" data-link-cand="1" data-platform="'+esc(c.platform)+'" data-ext="'+esc(c.external_account_id)+'" data-name="'+esc(c.display_name)+'" data-url="'+esc(c.profile_url||'')+'">'+esc(c.platform)+' · '+esc(c.display_name)+esc(conf)+'</button>';
+  }).join('')||'<span class="note">按「發現」取得候選</span>';
+  var todo=[];
+  (A.inbox||[]).slice(0,5).forEach(function(it){
+    var sid=(it.subject_ids&&it.subject_ids[0])||'';
+    var score=it.score==null?'':(' '+Number(it.score).toFixed(2));
+    todo.push('<li>'+esc(it.title||it.kind||'待辦')+esc(score)+(sid?(' <button type="button" class="mini-btn" data-open-subject="'+esc(sid)+'">開</button>'):'')+'</li>');
+  });
+  sims.forEach(function(l){
+    var label=l.kind==='copy_suspect'?'抄襲嫌疑':'近似重複';
+    todo.push('<li>'+esc(label)+' '+esc(Number(l.score).toFixed(2))+'</li>');
+  });
+  var skipLine=(A.discoverSkip||[]).map(function(x){ return (x.platform||'?')+':'+((x.status||'').replace('not_enabled','關')); }).join(' · ')||'—';
+  var ossLine=(A.ossLive||[]).filter(function(x){ return x.id==='xhs'||x.id==='douyin-api'||x.id==='sherlock'; }).map(function(x){
+    return (x.name||x.id)+':'+(x.discovery||x.state||'—');
+  }).join(' · ')||'—';
+  var stock=
+    '作品 '+(cov.indexed_posts==null?'—':nfmt(cov.indexed_posts))+
+    ' · 圖 '+(cov.media_assets==null?'—':nfmt(cov.media_assets))+
+    ' · 待審 '+(cov.similarity_pending==null?'—':nfmt(cov.similarity_pending));
+  var stockRows='';
+  if(A.mediaIndex){
+    stockRows=
+      '<table class="plain"><thead><tr><th>作品</th><th>圖</th></tr></thead><tbody><tr><td>'+
+      (posts.map(function(p){ return esc(trim(p.title||p.external_post_id||'—',28)); }).join('<br>')||'—')+
+      '</td><td>'+
+      (media.map(function(m){ return esc(m.media_kind)+' '+esc(String(m.checksum||'').slice(0,8)); }).join('<br>')||'—')+
+      '</td></tr></tbody></table>';
+  }
+  box.innerHTML=
+    '<div class="ph-head"><div class="ph-kicker">人物主檔</div><div class="ph-name">'+esc(s.display_name)+'</div>'+
+    '<div class="ph-meta"><span>確認 '+esc(nfmt(cov.confirmed_accounts||0))+'</span><span>候選 '+esc(nfmt(cov.candidate_accounts||0))+'</span><span>'+esc(stock)+'</span></div>'+
+    '<div class="ph-actions"><button type="button" class="mini-btn" data-pn-back="1">← 清單</button>'+
+    '<button type="button" class="mini-btn primary" data-cap="operate" data-discover="1"'+(A.discoverBusy?' disabled':'')+'>'+(A.discoverBusy?'發現中…':'發現')+'</button>'+
+    '<button type="button" class="mini-btn" data-media-index="1"'+(A.mediaBusy?' disabled':'')+'>'+(A.mediaBusy?'讀取中…':'索引')+'</button></div></div>'+
+    '<div class="pn-months"><div class="pm-cap">帳號</div><table class="plain"><thead><tr><th>平台</th><th>名稱</th><th>狀態</th><th></th></tr></thead><tbody>'+accounts+'</tbody></table></div>'+
+    '<div class="pn-months"><div class="pm-cap">發現</div><div class="ph-actions">'+discover+'</div><p class="note">略過 '+esc(skipLine)+'</p></div>'+
+    '<div class="pn-months"><div class="pm-cap">待辦</div>'+(todo.length?'<ul class="plain-list">'+todo.join('')+'</ul>':'<p class="note">無</p>')+'</div>'+
+    '<div class="pn-months"><div class="pm-cap">庫存</div>'+(stockRows||'<p class="note">按「索引」載入</p>')+'</div>'+
+    '<p class="note">OSS '+esc(ossLine)+'</p>';
+}
+
 function renderSide(){
   var box=$('pnSide'); if(!box) return;
+  if(A.mode==='subjects') return renderSubjectSide();
   if(!A.sel){
     box.innerHTML='<div class="pn-empty"><b>還沒選人物。</b>點清單裡任一位，這裡會顯示他的作品時間軸、作品牆與容量。</div>';
     return;
@@ -389,7 +580,8 @@ function selectAuthor(name){
 
 /* 回到人物清單：清單捲動位置保持不動（同一個 DOM，只是換顯示） */
 function backToList(){
-  A.view='index';
+  A.sel=''; A.meta=null; A.works=[]; A.months=[]; A.plat=null;
+  A.subjectSel=null; A.discover=[]; A.view='index';
   renderAll();
 }
 
@@ -417,9 +609,148 @@ function bind(){
   setStatus('待連線','or');
   renderSide();
   applyView();
+  syncModeChrome();
+
+  function selectSubject(id){
+    A.subjectSel=null;
+    A.discover=[];
+    A.discoverSkip=[];
+    A.mediaIndex=null;
+    for(var i=0;i<A.subjects.length;i++){
+      if(A.subjects[i].id===id){ A.subjectSel=A.subjects[i]; break; }
+    }
+    A.view='profile';
+    Promise.all([loadOssLive(), loadInbox()]).then(function(){ renderAll(); });
+    renderAll();
+    if(A.subjectSel) loadMediaIndex();
+  }
+
+  function loadMediaIndex(){
+    if(!A.subjectSel||A.mediaBusy) return Promise.resolve();
+    A.mediaBusy=true; renderSubjectSide();
+    return fetch(BASE+'/__control/subjects/'+encodeURIComponent(A.subjectSel.id)+'/media',{
+      credentials:'same-origin',cache:'no-store',headers:{accept:'application/json'}
+    }).then(function(r){
+      return r.json().then(function(j){ return {ok:r.ok,data:j||{}}; });
+    }).then(function(res){
+      A.mediaBusy=false;
+      A.mediaIndex=res.ok?{
+        posts:res.data.posts||[],
+        media:res.data.media||[],
+        similarity_links:res.data.similarity_links||[],
+        source:res.data.source||'control.media_index'
+      }:null;
+      renderSubjectSide();
+    }).catch(function(){
+      A.mediaBusy=false;
+      A.mediaIndex=null;
+      renderSubjectSide();
+    });
+  }
+
+  function createSubject(name){
+    var out=$('pnSubjectOut');
+    return fetch(BASE+'/__control/subjects',{
+      method:'POST',
+      credentials:'same-origin',
+      headers:{'content-type':'application/json',accept:'application/json'},
+      body:JSON.stringify({display_name:name})
+    }).then(function(r){
+      return r.json().then(function(j){ return {ok:r.ok,status:r.status,data:j||{}}; });
+    }).then(function(res){
+      if(!res.ok){
+        var msg=(res.data&&(res.data.message||res.data.detail||res.data.error))||('HTTP '+res.status);
+        if(out) out.textContent=String(msg);
+        return;
+      }
+      if(out) out.textContent='已建立 '+name;
+      A.q='';
+      if($('pnSearch')) $('pnSearch').value='';
+      return loadSubjects().then(function(){ selectSubject(res.data.id); });
+    }).catch(function(){
+      if(out) out.textContent='控制面沒回應。先跑 python apps/control/app.py';
+    });
+  }
+
+  function discoverForSubject(){
+    if(!A.subjectSel||A.discoverBusy) return;
+    A.discoverBusy=true; renderSubjectSide();
+    Promise.all([
+      fetch(BASE+'/__discovery',{
+        method:'POST',
+        credentials:'same-origin',
+        headers:{'content-type':'application/json',accept:'application/json'},
+        body:JSON.stringify({query:A.subjectSel.display_name})
+      }).then(function(r){
+        return r.json().then(function(j){ return {ok:r.ok,data:j||{}}; });
+      }),
+      loadOssLive()
+    ]).then(function(pair){
+      var res=pair[0];
+      A.discoverBusy=false;
+      A.discover=res.ok&&Array.isArray(res.data.candidates)?res.data.candidates:[];
+      A.discoverSkip=res.ok&&Array.isArray(res.data.skipped)?res.data.skipped:[];
+      loadInbox();
+      renderSubjectSide();
+    }).catch(function(){
+      A.discoverBusy=false;
+      A.discover=[];
+      A.discoverSkip=[];
+      renderSubjectSide();
+    });
+  }
+
+  function linkCandidate(btn){
+    if(!A.subjectSel) return;
+    fetch(BASE+'/__control/subjects/'+encodeURIComponent(A.subjectSel.id)+'/accounts',{
+      method:'POST',
+      credentials:'same-origin',
+      headers:{'content-type':'application/json',accept:'application/json'},
+      body:JSON.stringify({
+        platform:btn.getAttribute('data-platform'),
+        external_account_id:btn.getAttribute('data-ext'),
+        display_name:btn.getAttribute('data-name'),
+        profile_url:btn.getAttribute('data-url')||'',
+        link_status:'candidate',
+        linked_by:'operator'
+      })
+    }).then(function(r){ return r.json().then(function(j){ return {ok:r.ok,data:j||{}}; }); })
+      .then(function(res){
+        if(!res.ok) return;
+        A.subjectSel=res.data;
+        for(var i=0;i<A.subjects.length;i++){
+          if(A.subjects[i].id===res.data.id){ A.subjects[i]=res.data; break; }
+        }
+        renderAll();
+      });
+  }
+
+  var mode=$('pnMode');
+  on(mode,'click',function(e){
+    var btn=e.target.closest('[data-pn-mode]');
+    if(!btn) return;
+    var next=btn.getAttribute('data-pn-mode');
+    if(next===A.mode) return;
+    A.mode=next;
+    A.loaded=false; A.ok=false; A.subjects=[]; A.items=[]; A.subjectSel=null; A.sel=''; A.view='index';
+    load(true);
+  });
+
+  var subjectForm=$('pnSubjectForm');
+  on(subjectForm,'submit',function(e){
+    e.preventDefault();
+    var name=String(($('pnSubjectName')&&$('pnSubjectName').value)||'').trim();
+    if(!name) return;
+    createSubject(name).then(function(){
+      if($('pnSubjectName')) $('pnSubjectName').value='';
+    });
+  });
+
   var list=$('pnList');
   on(list,'click',function(e){
-    var row=e.target.closest('.pn-row');
+    var sub=e.target.closest('[data-subject]');
+    if(sub){ selectSubject(sub.getAttribute('data-subject')); return; }
+    var row=e.target.closest('[data-author]');
     if(!row) return;
     var who=row.getAttribute('data-author');
     if(who===A.sel) return;
@@ -429,6 +760,12 @@ function bind(){
   var side=$('pnSide');
   on(side,'click',function(e){
     if(e.target.closest('[data-pn-back]')){ backToList(); return; }
+    if(e.target.closest('[data-discover]')){ discoverForSubject(); return; }
+    if(e.target.closest('[data-media-index]')){ loadMediaIndex(); return; }
+    var openSub=e.target.closest('[data-open-subject]');
+    if(openSub){ selectSubject(openSub.getAttribute('data-open-subject')); return; }
+    var link=e.target.closest('[data-link-cand]');
+    if(link){ linkCandidate(link); return; }
     if(e.target.closest('[data-lib-all]')){ openInLibrary(); return; }
     if(e.target.closest('[data-work-more]')){ loadWorks(false); return; }
     var t=e.target.closest('.pp-top');
@@ -468,11 +805,12 @@ function bind(){
   window.addEventListener('kolindex:api',function(e){
     var d=(e&&e.detail)||{};
     if(!d.ok&&d.reason){
-      A.items=[]; A.works=[]; A.months=[]; A.counts=null; A.total=0; A.ok=false; A.loaded=false;
+      A.items=[]; A.subjects=[]; A.works=[]; A.months=[]; A.counts=null; A.total=0; A.ok=false; A.loaded=false;
       renderAll();
       setStatus(d.reason==='401'?'需要登入':'來源錯誤','or');
       return;
     }
+    if(A.mode==='subjects') return;
     if(d.ok&&!A.loaded) load(true);
     else if(d.ok&&A.active&&Date.now()-A.at>POLL_MS) load(true);
   });

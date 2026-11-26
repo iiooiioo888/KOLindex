@@ -61,6 +61,8 @@ def _scalar(value: str):
         return value == "true"
     if re.fullmatch(r"-?\d+", value):
         return int(value)
+    if re.fullmatch(r"-?\d+\.\d+", value):
+        return float(value)
     if len(value) >= 2 and value[0] == value[-1] and value[0] in "\"'":
         return value[1:-1]
     return value
@@ -100,3 +102,58 @@ def allow_label(policy: dict, label: str) -> bool:
 
 def allow_relation(policy: dict, kind: str) -> bool:
     return kind in policy.get("relation_whitelist", [])
+
+
+def classify_media_similarity(
+    policy: dict,
+    *,
+    score: float,
+    left_subject_id: str | None,
+    right_subject_id: str | None,
+    left_account_id: str | None,
+    right_account_id: str | None,
+) -> dict:
+    """圖片相似只建候選。門檻未到就略過；人物或帳號不同時標成 copy_suspect。
+
+    不做人臉比對，也不自動合併人物主檔。
+    """
+    version = str(policy["version"])
+    threshold = float(policy.get("media_similarity_threshold", 0.9999))
+    if score < threshold:
+        return {
+            "action": "skip",
+            "kind": None,
+            "status": None,
+            "reason": "below_threshold",
+            "policy_version": version,
+            "threshold": threshold,
+        }
+    kinds = set(policy.get("media_link_kinds") or [])
+    different_subject = bool(
+        left_subject_id and right_subject_id and left_subject_id != right_subject_id
+    )
+    different_account = bool(
+        left_account_id and right_account_id and left_account_id != right_account_id
+    )
+    if different_subject or different_account:
+        kind = "copy_suspect"
+    else:
+        kind = "near_duplicate"
+    if kind not in kinds:
+        return {
+            "action": "stop",
+            "kind": None,
+            "status": None,
+            "reason": "kind_not_allowed",
+            "policy_version": version,
+            "threshold": threshold,
+        }
+    return {
+        "action": "candidate",
+        "kind": kind,
+        "status": "waiting_review",
+        "reason": "high_similarity",
+        "policy_version": version,
+        "threshold": threshold,
+        "auto_confirm": bool(policy.get("media_link_auto_confirm")),
+    }

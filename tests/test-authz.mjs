@@ -122,6 +122,10 @@ async function runRole(role, port) {
     if (role === 'operator') ok('operator 可進 sherlock（不是 403）', sherlock.status !== 403, String(sherlock.status));
     else ok(role + ' 不可用 sherlock → 403', sherlock.status === 403, String(sherlock.status));
 
+    const ossRun = await hit(port, good.cookie, 'POST', '/__oss/run', '{"tool":"maigret","name":"x"}');
+    if (role === 'operator') ok('operator 可進 oss/run（不是 403）', ossRun.status !== 403, String(ossRun.status));
+    else ok(role + ' 不可用 oss/run → 403', ossRun.status === 403, String(ossRun.status));
+
     const pull = await hit(port, good.cookie, 'POST', '/__oss/pull', '{"id":"xhs"}');
     if (role === 'operator') ok('operator 不能用這個入口拉採集映像', pull.status === 400 || pull.status === 403, String(pull.status));
     else ok(role + ' 不能拉映像 → 403', pull.status === 403, String(pull.status));

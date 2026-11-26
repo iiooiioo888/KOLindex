@@ -33,6 +33,12 @@ def test_bilibili_candidates_and_other_platforms_skipped() -> None:
     assert [item.external_account_id for item in result.candidates] == ["42", "7"]
     assert result.candidates[0].profile_url == "https://space.bilibili.com/42"
     assert result.candidates[0].status == "candidate"
+    assert result.candidates[0].confidence == 0.95
+    assert "exact_name" in result.candidates[0].match_reasons
+    assert result.candidates[1].confidence < result.candidates[0].confidence
+    assert result.candidates[0].confidence == 0.95
+    assert "exact_name" in result.candidates[0].match_reasons
+    assert result.candidates[1].confidence < result.candidates[0].confidence
     assert {item.platform for item in result.skipped} == {"douyin", "xiaohongshu", "tiktok"}
 
 

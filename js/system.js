@@ -51,8 +51,70 @@
   function stackWord(state) {
     if (state === 'up') return '有回應';
     if (state === 'unset') return '未設定';
+    if (state === 'absent') return '不在';
     if (state === 'down') return '沒回應';
     return '沒檢查';
+  }
+
+  function shortImage(image) {
+    var s = String(image || '');
+    if (!s) return '—';
+    if (s.indexOf('@sha256:') >= 0) {
+      var parts = s.split('@sha256:');
+      return parts[0].split('/').pop() + '@' + parts[1].slice(0, 12);
+    }
+    return s.length > 42 ? s.slice(0, 41) + '…' : s;
+  }
+
+  function paintHealthPage(stack) {
+    var probes = ((stack && stack.items) || []).filter(function (x) { return x.kind !== 'docker'; });
+    var dockers = ((stack && stack.items) || []).filter(function (x) { return x.kind === 'docker'; });
+    var probeBody = $('healthProbeBody');
+    var dockerBody = $('healthDockerBody');
+    var note = $('healthNote');
+    var source = $('healthSource');
+    var chip = $('healthChip');
+    var navBd = $('navHealthBd');
+    if (probeBody) {
+      if (!stack) {
+        probeBody.innerHTML = '<tr><td colspan="4" class="conn-empty">讀不到 /__health/components。確認 BFF（5201）與 Next rewrite。</td></tr>';
+      } else if (!probes.length) {
+        probeBody.innerHTML = '<tr><td colspan="4" class="conn-empty">沒有探測項</td></tr>';
+      } else {
+        probeBody.innerHTML = probes.map(function (x) {
+          var via = x.via === 'http' ? 'HTTP' : x.via === 'disk' ? '磁碟' : (x.via || 'TCP');
+          return '<tr><td class="strong">' + esc(x.name || x.id) + '</td><td class="mono">' + esc(via) + '</td><td>' +
+            pill(x.state === 'up', stackWord(x.state)) + '</td><td class="mono">' + esc(x.content || '—') + '</td></tr>';
+        }).join('');
+      }
+    }
+    if (dockerBody) {
+      if (!stack) {
+        dockerBody.innerHTML = '<tr><td colspan="5" class="conn-empty">讀不到容器目錄</td></tr>';
+      } else if (!dockers.length) {
+        dockerBody.innerHTML = '<tr><td colspan="5" class="conn-empty">還沒有 Compose 目錄。確認 BFF，並視需要設 KOL_DOCKER=1。</td></tr>';
+      } else {
+        dockerBody.innerHTML = dockers.map(function (x) {
+          return '<tr><td class="mono strong">' + esc(x.service || x.name) + '</td><td>' +
+            pill(x.state === 'up', stackWord(x.state)) + '</td><td class="mono">' + esc(x.health || '—') +
+            '</td><td class="mono">' + esc(x.bind || '—') + '</td><td><div class="mono">' + esc(shortImage(x.image)) +
+            '</div><div class="note">' + esc(x.content || '—') + '</div></td></tr>';
+        }).join('');
+      }
+    }
+    var known = ((stack && stack.items) || []).filter(function (x) { return x.state === 'up' || x.state === 'down'; });
+    var up = known.filter(function (x) { return x.state === 'up'; }).length;
+    var text = !stack ? '沒檢查' : (known.length ? (up + '/' + known.length) : ('目錄 ' + dockers.length));
+    if (chip) {
+      chip.textContent = text;
+      chip.className = 'chip ' + (!stack || !known.length ? 'or' : (up === known.length ? 'green' : 'red'));
+    }
+    if (navBd) navBd.textContent = text;
+    if (source) {
+      source.textContent = !stack ? '來源 —' : ('來源 ' + (stack.source || 'bff') + (stack.duration_ms != null ? (' · ' + stack.duration_ms + ' ms') : ''));
+      source.className = 'chip ' + (stack ? 'green' : 'or');
+    }
+    if (note && stack && stack.note) note.textContent = stack.note;
   }
 
   function paintStack(stack) {
@@ -64,18 +126,37 @@
       var x = by[id];
       set(STACK_IDS[id], x ? stackWord(x.state) : '沒檢查');
     });
-    var known = items.filter(function (x) { return x.state !== 'unset'; });
+    var dockerItems = items.filter(function (x) { return x.kind === 'docker'; });
+    var dockerMeta = (stack && stack.docker) || {};
+    var dockerKnown = dockerItems.filter(function (x) { return x.state !== 'unset'; });
+    var dockerUp = dockerKnown.filter(function (x) { return x.state === 'up'; }).length;
+    set('stackDocker', !stack ? '沒檢查' : (dockerMeta.enabled === false ? ('目錄 ' + dockerItems.length + ' · 監測關') : (dockerUp + '/' + (dockerKnown.length || dockerItems.length))));
+    var list = $('stackDockerList');
+    if (list) {
+      if (!dockerItems.length) {
+        list.innerHTML = '<div class="note">還沒有 Docker 容器項</div>';
+      } else {
+        list.innerHTML = dockerItems.map(function (x) {
+          return '<div class="kv"><span class="mono">' + esc(x.service || x.name) + '</span><b title="' + esc(x.content || '') + '">' +
+            esc(stackWord(x.state)) + (x.health ? ' · ' + esc(x.health) : '') + '</b></div>' +
+            '<div class="note mono">' + esc(shortImage(x.image)) + (x.bind ? ' · ' + esc(x.bind) : '') + '</div>' +
+            '<div class="note">' + esc(x.content || '—') + '</div>';
+        }).join('');
+      }
+    }
+    var known = items.filter(function (x) { return x.state !== 'unset' && x.state !== 'absent'; });
     var up = known.filter(function (x) { return x.state === 'up'; }).length;
     var chip = $('stackChip');
     var foot = $('sysFootStack');
-    var text = !stack ? '沒檢查' : (!known.length ? '未設定' : (up + '/' + known.length));
+    var text = !stack ? '沒檢查' : (!known.length ? ('Docker ' + dockerItems.length) : (up + '/' + known.length));
     if (chip) {
       chip.textContent = '元件 ' + text;
       chip.className = 'chip ' + (!stack || !known.length ? 'or' : (up === known.length ? 'green' : 'red'));
     }
     if (foot) foot.textContent = text;
+    paintHealthPage(stack);
     try {
-      window.dispatchEvent(new CustomEvent('kolindex:health', { detail: { ok: !!stack, items: items } }));
+      window.dispatchEvent(new CustomEvent('kolindex:health', { detail: { ok: !!stack, items: items, docker: dockerMeta } }));
     } catch (e) { /* 事件是加分項 */ }
   }
 
@@ -120,20 +201,34 @@
     ];
     var by = {};
     ((stack && stack.items) || []).forEach(function (x) { by[x.id] = x; });
+    var rows;
     if (!stack) {
-      return order.map(function (pair) {
+      rows = order.map(function (pair) {
         return [pair[1], '健康檢查', pill(false, '沒檢查'), '—'];
       });
+    } else {
+      rows = order.map(function (pair) {
+        var x = by[pair[0]] || { state: 'unset', via: '' };
+        var label = x.state === 'up' ? '有回應' : x.state === 'unset' ? '未設定' : (x.state === 'absent' ? '不在' : '沒回應');
+        var detail = x.content || '—';
+        if (x.state === 'up' && x.freeBytes != null) detail = gb(x.freeBytes) + ' 可用';
+        else if (x.state === 'up' && !x.content) detail = x.via === 'http' ? '健康檢查通過' : '連接埠有回應';
+        var via = x.via === 'http' ? 'HTTP 健康檢查' : x.via === 'disk' ? '本機磁碟' : 'TCP';
+        return [pair[1], via, pill(x.state === 'up', label), detail];
+      });
     }
-    return order.map(function (pair) {
-      var x = by[pair[0]] || { state: 'unset', via: '' };
-      var label = x.state === 'up' ? '有回應' : x.state === 'unset' ? '未設定' : '沒回應';
-      var detail = '—';
-      if (x.state === 'up' && x.freeBytes != null) detail = gb(x.freeBytes) + ' 可用';
-      else if (x.state === 'up') detail = x.via === 'http' ? '健康檢查通過' : '連接埠有回應';
-      var via = x.via === 'http' ? 'HTTP 健康檢查' : x.via === 'disk' ? '本機磁碟' : 'TCP';
-      return [pair[1], via, pill(x.state === 'up', label), detail];
+    var dockerItems = ((stack && stack.items) || []).filter(function (x) { return x.kind === 'docker'; });
+    dockerItems.forEach(function (x) {
+      var label = stackWord(x.state);
+      var detail = (x.content || '—') + (x.image ? ' · ' + shortImage(x.image) : '') + (x.bind ? ' · ' + x.bind : '');
+      rows.push([
+        'Docker · ' + (x.service || x.name),
+        'compose',
+        pill(x.state === 'up', label + (x.health ? ' · ' + x.health : '')),
+        detail
+      ]);
     });
+    return rows;
   }
 
   function paintServices(rail, seats, jobs, stack) {
@@ -242,31 +337,48 @@
     });
   }
 
+  function dockerRole(row) {
+    if (!row) return '—';
+    if (row.kind === 'oss') {
+      if (row.crawl === 'off' && row.discovery === 'not_enabled') return '待命 · 發現未開';
+      if (row.wait === 'control') return '待命控制';
+      if (row.wait === 'idle') return '閒置待命';
+      if (row.discovery === 'backup') return '備援';
+      return '開源';
+    }
+    return '主服務';
+  }
+
   function paintDockerList(data) {
     var body = $('dockerCtlBody');
     if (!body) return;
     var session = window.KOLINDEX_SESSION;
     var can = !!(session && session.role === 'operator' && data && data.enabled);
     if (!data) {
-      body.innerHTML = '<tr><td colspan="4" class="conn-empty">讀不到容器狀態。</td></tr>';
+      body.innerHTML = '<tr><td colspan="6" class="conn-empty">讀不到容器狀態。</td></tr>';
       return;
     }
-    if (data.enabled === false) {
-      body.innerHTML = '<tr><td colspan="4" class="conn-empty">本機 NAS 未開啟容器監測。在跑這個站的機器上設 KOL_DOCKER=1。</td></tr>';
+    if (data.message && !(data.items || []).length && data.enabled === false) {
+      body.innerHTML = '<tr><td colspan="6" class="conn-empty">本機 NAS 未開啟容器監測。在跑這個站的機器上設 KOL_DOCKER=1。開源容器整合另見開源組件頁的 /__oss/status。</td></tr>';
       return;
     }
     if (data.message && !(data.items || []).length) {
-      body.innerHTML = '<tr><td colspan="4" class="conn-empty">' + esc(data.message) + '</td></tr>';
+      body.innerHTML = '<tr><td colspan="6" class="conn-empty">' + esc(data.message) + '</td></tr>';
       return;
     }
-    body.innerHTML = (data.items || []).map(function (row) {
+    var rows = (data.items || []).map(function (row) {
       var acts = can
         ? '<button type="button" class="mini-btn" data-docker-service="' + esc(row.service) + '" data-docker-action="start">啟動</button> ' +
           '<button type="button" class="mini-btn" data-docker-service="' + esc(row.service) + '" data-docker-action="restart">重啟</button> ' +
           '<button type="button" class="mini-btn" data-docker-service="' + esc(row.service) + '" data-docker-action="stop">停止</button>'
         : '—';
-      return '<tr><td class="strong mono">' + esc(row.service) + '</td><td class="mono">' + esc(row.state || '—') + '</td><td class="mono">' + esc(row.health || '—') + '</td><td>' + acts + '</td></tr>';
+      var content = '<div class="mono">' + esc(shortImage(row.image)) + '</div><div class="note">' + esc(row.content || row.discovery_detail || '—') + (row.bind ? ' · ' + esc(row.bind) : '') + '</div>';
+      return '<tr><td class="strong mono">' + esc(row.service) + '</td><td>' + esc(dockerRole(row)) + '</td><td>' + content + '</td><td class="mono">' + esc(row.state || '—') + '</td><td class="mono">' + esc(row.health || '—') + '</td><td>' + acts + '</td></tr>';
     }).join('');
+    var tip = data.enabled === false
+      ? '<tr><td colspan="6" class="conn-empty">監測未開（KOL_DOCKER≠1）。下表仍列出容器目錄與內容；狀態是 unset。</td></tr>'
+      : '';
+    body.innerHTML = tip + rows;
   }
 
   function paintDocker() {
@@ -285,6 +397,11 @@
       var d = (e && e.detail) || {};
       if (d.ok) load();
     });
+    var refresh = $('healthRefresh');
+    if (refresh) refresh.addEventListener('click', function () {
+      refresh.disabled = true;
+      load().finally(function () { refresh.disabled = false; });
+    });
     var dock = $('dockerCtl');
     if (dock) dock.addEventListener('click', function (e) {
       var btn = e.target.closest('[data-docker-action]');
@@ -300,7 +417,11 @@
         })
       }).then(function (r) { return r.json(); }).then(function (data) {
         paintDockerList(data);
-      }).catch(function () { paintDocker(); });
+      }).catch(function () {
+        paintDocker();
+      }).finally(function () {
+        btn.disabled = false;
+      });
     });
   }
 
