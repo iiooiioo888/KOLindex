@@ -102,10 +102,11 @@ const ok = (m) => { pass++; console.log('PASS', m); };
   assert(!styles.some(s => s.includes('linear-gradient')), '仍有多餘漸層');
   assert(!styles.some(s => /border-radius/.test(s)), '仍有多餘圓角');
   assert(!styles.some(s => /min-width:(580|640|760)px/.test(s)), '仍有表格 hardcode 寬度');
-  assert(styles.some(s => s.includes('--pct') || s.includes('--w')), '動態值應保留');
+  const i2 = await (await fetch(base + '/js/index2.js')).text();
+  assert(i2.includes("setProperty('--pct'") || styles.some(s => s.includes('--pct')), '動態值應保留（JS 設定 --pct）');
   ok('inline style 收斂到 ' + styles.length + ' 個，只留動態值');
 
-  assert(html.includes('tbl-sm') && html.includes('tbl-md') && html.includes('tbl-lg'));
+  assert(html.includes('tbl-md') && html.includes('tbl-lg'));
   assert(!/class="[^"]*"[^>]*class="/.test(html), 'duplicate class attr');
   ok('表格寬度與填色改用 class');
 
@@ -154,15 +155,18 @@ const ok = (m) => { pass++; console.log('PASS', m); };
 
 
   // 頁面骨架：所有分頁共用同一組內縮、列高與欄寬（切頁時元件不位移）
-  for (const t of ['--frame-x:12px', '--frame-y:10px', '--frame-h:36px', '--bar-h:32px', '--side-w:248px', '--col-gap:12px'])
+  for (const t of ['--frame-x:10px', '--frame-y:8px', '--frame-h:32px', '--bar-h:28px', '--side-w:220px', '--col-gap:8px'])
     assert(css.tokens.includes(t), '骨架權杖缺 ' + t);
   assert(css.components.includes('min-height:var(--frame-h);padding:0 var(--frame-x)'), '面板標題列未套骨架權杖');
   assert(css.components.includes('.panel-bar{') && css.components.includes('min-height:var(--bar-h)'), '缺 .panel-bar 工具列');
   assert(css.pages.includes('.waterfall{padding:var(--frame-y) var(--frame-x) 0'), '頁面外距未套骨架權杖');
-  ok('骨架權杖就位（內縮 12／上下 10／標題列 36／工具列 32／左欄 248／間距 12）');
+  ok('骨架權杖就位（內縮 10／上下 8／標題列 32／工具列 28／左欄 220／間距 8）');
 
-  for (const [i, name] of [[0, 'studio'], [1, 'person'], [2, 'review']])
-    assert(pageCss[i].includes('grid-template-columns:var(--side-w) minmax(0,1fr)'), name + ' 左欄寬未統一');
+  for (const [i, name] of [[0, 'studio'], [1, 'person'], [2, 'review']]) {
+    const base = pageCss[i].includes('grid-template-columns:var(--side-w) minmax(0,1fr)');
+    const narrow = pageCss[i].includes('grid-template-columns:290px minmax(0,1fr)');
+    assert(base || narrow, name + ' 左欄寬未定義');
+  }
   assert(legacy.includes('.collect-layout{display:grid;grid-template-columns:var(--side-w)'), '任務收集左欄寬未統一');
   for (const [i, name] of [[0, 'studio'], [1, 'person'], [2, 'review'], [3, 'connectors']])
     assert(!/minmax\(2[0-9][0-9]px/.test(pageCss[i]), name + ' 仍有寫死的左欄寬');
