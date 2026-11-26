@@ -1,0 +1,307 @@
+/* ============================================================================
+   ds/pixel.css — 像素風皮膚
+   用 html[data-skin="pixel"] 開關。不改 DOM 結構，可立即切換。
+   字體：Press Start 2P（英數標題）+ Fusion Pixel 12px（繁中／內文）
+   ============================================================================ */
+
+@font-face{
+  font-family:'Press Start 2P';
+  font-style:normal;
+  font-weight:400;
+  font-display:swap;
+  src:url('../../fonts/press-start-2p-latin-400.woff2') format('woff2');
+  unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+@font-face{
+  font-family:'Fusion Pixel 12';
+  font-style:normal;
+  font-weight:400;
+  font-display:swap;
+  src:url('../../fonts/fusion-pixel-12px-latin.woff2') format('woff2');
+  unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+@font-face{
+  font-family:'Fusion Pixel 12';
+  font-style:normal;
+  font-weight:400;
+  font-display:swap;
+  src:url('../../fonts/fusion-pixel-12px-zh-hant.woff2') format('woff2');
+}
+
+html[data-skin="pixel"]{
+  --bg:#0c0c12;
+  --bg-deep:#07070c;
+  --surface:#12121a;
+  --surface-2:#181822;
+  --surface-3:#222233;
+  --surface-4:#2c2c40;
+  --line-soft:#1e1e2a;
+  --line:#3a3a52;
+  --line-strong:#6a6a88;
+  --text:#f0f0f8;
+  --dim:#b8b8cc;
+  --faint:#8888a0;
+  --amber:#ffcc33;
+  --amber-hot:#ffe066;
+  --cyan:#66e0ff;
+  --green:#66ff99;
+  --red:#ff6680;
+  --violet:#cc99ff;
+  --orange:#ff9966;
+  --ice:#f0f0f8;
+  --accent:#ffe066;
+  --accent-soft:rgba(255,224,102,.12);
+  --accent-line:rgba(255,224,102,.55);
+  --focus:#66e0ff;
+  --sel-bg:#ffe066;
+  --sel-fg:#0a0a12;
+  --sel-edge:#ffffff;
+  --sel-mute:#1a1a28;
+  --track:#0a0a10;
+  --grid:rgba(255,255,255,.04);
+  --ok:var(--green);
+  --warn:var(--amber);
+  --bad:var(--red);
+  --pixel:'Fusion Pixel 12','Press Start 2P',monospace;
+  --pixel-title:'Press Start 2P','Fusion Pixel 12',monospace;
+  --mono:var(--pixel);
+  --disp:var(--pixel-title);
+  --body:var(--pixel);
+  --cjk:var(--pixel);
+  --fs-micro:10px;
+  --fs-meta:12px;
+  --fs-ui:12px;
+  --fs-body:12px;
+  --fs-title:12px;
+  --fs-lg:12px;
+  --fs-xl:16px;
+  --fs-2xl:16px;
+  --r-xs:0;
+  --r-sm:0;
+  --r-md:0;
+  --r-lg:0;
+  --r-pill:0;
+  --r-panel:0;
+  --r-card:0;
+  --r-ctl:0;
+  --e-1:none;
+  --e-2:none;
+  --e-3:4px 4px 0 #000;
+  image-rendering:pixelated;
+  font-synthesis:none;
+  -webkit-font-smoothing:none;
+  -moz-osx-font-smoothing:unset;
+}
+
+html[data-skin="pixel"] body,
+html[data-skin="pixel"] button,
+html[data-skin="pixel"] input,
+html[data-skin="pixel"] select,
+html[data-skin="pixel"] textarea{
+  font-family:var(--pixel) !important;
+  font-size:12px;
+  line-height:1.5;
+  letter-spacing:0;
+  font-smooth:never;
+  -webkit-font-smoothing:none;
+}
+
+html[data-skin="pixel"] body{
+  background:
+    linear-gradient(rgba(255,255,255,.03) 1px, transparent 1px) 0 0 / 8px 8px,
+    linear-gradient(90deg, rgba(255,255,255,.03) 1px, transparent 1px) 0 0 / 8px 8px,
+    var(--bg);
+}
+
+html[data-skin="pixel"] .topbar,
+html[data-skin="pixel"] .rail,
+html[data-skin="pixel"] .rail-right,
+html[data-skin="pixel"] .stage,
+html[data-skin="pixel"] .statusbar,
+html[data-skin="pixel"] .login-card,
+html[data-skin="pixel"] .panel,
+html[data-skin="pixel"] .micro-card,
+html[data-skin="pixel"] .rr,
+html[data-skin="pixel"] .qcard,
+html[data-skin="pixel"] .scard,
+html[data-skin="pixel"] .oss-card,
+html[data-skin="pixel"] .ccard,
+html[data-skin="pixel"] .kpi{
+  border-radius:0 !important;
+  box-shadow:none !important;
+}
+
+html[data-skin="pixel"] .topbar{
+  border-bottom:2px solid var(--line-strong);
+}
+html[data-skin="pixel"] .brand-mark{
+  image-rendering:pixelated;
+  shape-rendering:crispEdges;
+}
+html[data-skin="pixel"] .brand-name,
+html[data-skin="pixel"] .login-kicker,
+html[data-skin="pixel"] .login-card h1,
+html[data-skin="pixel"] #topicTitle,
+html[data-skin="pixel"] .panel-title,
+html[data-skin="pixel"] .rr-title,
+html[data-skin="pixel"] .fleet-h b,
+html[data-skin="pixel"] .load-head h3{
+  font-family:var(--pixel-title) !important;
+  font-size:10px !important;
+  line-height:1.6;
+  letter-spacing:0;
+  text-transform:uppercase;
+}
+html[data-skin="pixel"] .chip,
+html[data-skin="pixel"] .icon-btn,
+html[data-skin="pixel"] .mini-btn,
+html[data-skin="pixel"] .nav-item,
+html[data-skin="pixel"] .topic-btn,
+html[data-skin="pixel"] .avatar,
+html[data-skin="pixel"] .searchbox,
+html[data-skin="pixel"] input,
+html[data-skin="pixel"] select,
+html[data-skin="pixel"] textarea,
+html[data-skin="pixel"] button{
+  border-radius:0 !important;
+  box-shadow:none !important;
+  image-rendering:pixelated;
+  font-family:var(--pixel) !important;
+}
+html[data-skin="pixel"] .chip,
+html[data-skin="pixel"] .icon-btn,
+html[data-skin="pixel"] .mini-btn{
+  border-width:2px;
+  border-style:solid;
+  border-color:var(--line-strong);
+  background:var(--surface-2);
+  color:var(--text);
+  text-transform:uppercase;
+  letter-spacing:0;
+  font-size:10px;
+  line-height:1.4;
+}
+/* 狀態 chip：深底 + 亮字／亮邊，不鋪淡色底 */
+html[data-skin="pixel"] .chip.amber,
+html[data-skin="pixel"] .chip.green,
+html[data-skin="pixel"] .chip.cyan,
+html[data-skin="pixel"] .chip.red,
+html[data-skin="pixel"] .chip.vi,
+html[data-skin="pixel"] .chip.or{
+  background:var(--sel-mute) !important;
+}
+html[data-skin="pixel"] .chip.amber{color:var(--amber) !important;border-color:var(--amber) !important}
+html[data-skin="pixel"] .chip.green{color:var(--green) !important;border-color:var(--green) !important}
+html[data-skin="pixel"] .chip.cyan{color:var(--cyan) !important;border-color:var(--cyan) !important}
+html[data-skin="pixel"] .chip.red{color:var(--red) !important;border-color:var(--red) !important}
+html[data-skin="pixel"] .chip.vi{color:var(--violet) !important;border-color:var(--violet) !important}
+html[data-skin="pixel"] .chip.or{color:var(--orange) !important;border-color:var(--orange) !important}
+
+/* 選中／主按鈕：亮底 + 深字，子元素一律繼承，蓋掉 index2 的琥珀色字 */
+html[data-skin="pixel"] .icon-btn.on,
+html[data-skin="pixel"] .mini-btn.primary,
+html[data-skin="pixel"] .mini-btn[aria-pressed="true"],
+html[data-skin="pixel"] .mini-btn.on,
+html[data-skin="pixel"] .nav-item.active,
+html[data-skin="pixel"] .topic-btn[aria-selected="true"],
+html[data-skin="pixel"] .tab.active,
+html[data-skin="pixel"] .tab-btn[aria-selected="true"],
+html[data-skin="pixel"] .range-btn[aria-pressed="true"],
+html[data-skin="pixel"] .load-btn.on{
+  background:var(--sel-bg) !important;
+  color:var(--sel-fg) !important;
+  border-color:var(--sel-edge) !important;
+}
+html[data-skin="pixel"] .icon-btn.on *,
+html[data-skin="pixel"] .mini-btn.primary *,
+html[data-skin="pixel"] .mini-btn[aria-pressed="true"] *,
+html[data-skin="pixel"] .mini-btn.on *,
+html[data-skin="pixel"] .nav-item.active,
+html[data-skin="pixel"] .nav-item.active .nm,
+html[data-skin="pixel"] .nav-item.active .bd,
+html[data-skin="pixel"] .nav-item.active .ic,
+html[data-skin="pixel"] .nav-item.active svg,
+html[data-skin="pixel"] .topic-btn[aria-selected="true"],
+html[data-skin="pixel"] .tab.active,
+html[data-skin="pixel"] .load-btn.on{
+  color:var(--sel-fg) !important;
+  fill:currentColor;
+}
+html[data-skin="pixel"] .nav-item.active .bd{
+  background:rgba(10,10,18,.12) !important;
+  border-color:rgba(10,10,18,.35) !important;
+}
+html[data-skin="pixel"] .nav-item.active{
+  box-shadow:inset 4px 0 0 var(--sel-fg) !important;
+  background-image:none !important;
+}
+html[data-skin="pixel"] .nav-item.active::before{
+  color:var(--sel-fg) !important;
+}
+
+/* 卡片選中：深底 + 亮邊，不用琥珀色字疊在琥珀底 */
+html[data-skin="pixel"] .oss-card.selected,
+html[data-skin="pixel"] .qcard.linked,
+html[data-skin="pixel"] .qcard.selected,
+html[data-skin="pixel"] .scard.selected,
+html[data-skin="pixel"] .role-card.selected,
+html[data-skin="pixel"] .par-lane.sel,
+html[data-skin="pixel"] .ccard.linked{
+  background:var(--sel-mute) !important;
+  border-color:var(--sel-bg) !important;
+  outline:2px solid var(--sel-bg) !important;
+  outline-offset:-2px;
+  color:var(--text) !important;
+  box-shadow:4px 4px 0 #000 !important;
+}
+
+html[data-skin="pixel"] .nav-item .nm,
+html[data-skin="pixel"] .rail-label,
+html[data-skin="pixel"] .kv,
+html[data-skin="pixel"] .note,
+html[data-skin="pixel"] .live,
+html[data-skin="pixel"] .clock,
+html[data-skin="pixel"] .statusbar{
+  font-family:var(--pixel) !important;
+  letter-spacing:0;
+}
+html[data-skin="pixel"] .live{
+  text-transform:uppercase;
+  color:var(--green);
+}
+html[data-skin="pixel"] .login-card{
+  border-width:2px;
+  box-shadow:6px 6px 0 #000 !important;
+}
+html[data-skin="pixel"] .login-card .mini-btn.primary{
+  background:var(--sel-bg) !important;
+  color:var(--sel-fg) !important;
+  border-color:var(--sel-edge) !important;
+}
+html[data-skin="pixel"] img,
+html[data-skin="pixel"] .pw-shot img,
+html[data-skin="pixel"] .lib-thumb img{
+  image-rendering:pixelated;
+  image-rendering:crisp-edges;
+}
+html[data-skin="pixel"] .statusbar{
+  border-top:2px solid var(--line-strong);
+  text-transform:uppercase;
+}
+/* 像素開關：青底深字，和其他選中態區隔 */
+html[data-skin="pixel"] #pixelBtn.on{
+  background:#66e0ff !important;
+  color:#0a0a12 !important;
+  border-color:#ffffff !important;
+}
+html[data-skin="pixel"] .tone-amber,
+html[data-skin="pixel"] .note b,
+html[data-skin="pixel"] .brand-name em,
+html[data-skin="pixel"] .search-count{
+  color:var(--amber) !important;
+}
+html[data-skin="pixel"] .avatar{
+  background:var(--sel-mute) !important;
+  color:var(--text) !important;
+  border-color:var(--line-strong) !important;
+}

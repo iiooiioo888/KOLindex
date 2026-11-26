@@ -1454,6 +1454,25 @@
   tickClock();
   every(1000, tickClock, {clock:true});
 
+  /* ================= 皮膚：像素風可立即切換 ================= */
+  var pixelBtn=$('#pixelBtn');
+  function applySkin(skin){
+    var next=skin==='pixel'?'pixel':'';
+    if (next) document.documentElement.setAttribute('data-skin',next);
+    else document.documentElement.removeAttribute('data-skin');
+    try{ localStorage.setItem('kol_skin', next||'default'); }catch(e){}
+    if (pixelBtn){
+      pixelBtn.classList.toggle('on', next==='pixel');
+      pixelBtn.setAttribute('aria-pressed', String(next==='pixel'));
+    }
+  }
+  applySkin(document.documentElement.getAttribute('data-skin')||'');
+  if (pixelBtn) pixelBtn.addEventListener('click', function(){
+    var on=document.documentElement.getAttribute('data-skin')==='pixel';
+    applySkin(on?'':'pixel');
+    toast(on?'已關閉像素風':'像素風已開啟','ok');
+  });
+
   /* ================= [P0-4] motion：CSS + SMIL 同步 ================= */
   var motionBtn=$('#motionBtn');
   function applyMotion(reduced){
@@ -1487,7 +1506,7 @@
     b.classList.toggle('on',store.paused);
     b.setAttribute('aria-pressed',String(store.paused));
     var lt=$('#liveTag');
-    lt.innerHTML=store.paused?'<span class="dot" style="background:var(--amber);animation:none"></span>PAUSED':'<span class="dot"></span>LIVE';
+    lt.textContent=store.paused?'暫停':'連線';
     lt.style.color=store.paused?'var(--amber)':'';
     toast(store.paused?('暫停渲染（訂閱保留）· 最後同步 '+fmtTime(store.lastSync)):'已恢復渲染','ok');
     pushEvent('#cfa04a', store.paused?'<b>system</b> 渲染暫停 · 訂閱保留':'<b>system</b> 渲染已恢復');
@@ -1501,7 +1520,7 @@
     b.textContent=store.autoClaim?'AUTO':'MANUAL';
     b.setAttribute('aria-pressed',String(store.autoClaim));
     var chip=$('#autoChip');
-    if (chip){ chip.textContent=store.autoClaim?'AUTO-CLAIM ON':'AUTO-CLAIM OFF'; chip.className='chip '+(store.autoClaim?'green':'red'); }
+    if (chip){ chip.textContent=store.autoClaim?'自動認領':'認領關'; chip.className='chip'; }
     pushEvent(store.autoClaim?'#63b880':'#dc5f57','<b>auto-claim</b> '+(store.autoClaim?'已啟用':'已停用'));
     toast(store.autoClaim?'自動認領已啟用':'自動認領已停用','ok');
     audit('切換自動認領 → '+(store.autoClaim?'ON':'OFF'));
@@ -1512,19 +1531,19 @@
   /* 順序對齊側欄分組：工作 → 內容 → 監控 → 工具 */
   var TOPICS=['collect','queue','seat','review','person','library','out','health','infra','oss','pipe','sense','studio'];
   var TOPIC_META={
-    collect:{label:'任務收集',group:'工作',hint:'待收項確認後才進隊列 · 這頁不拉取外部內容'},
-    queue:{label:'任務隊列',group:'工作',hint:'席位自動拉取任務 · 等 LLM 空檔才執行'},
-    seat:{label:'席位執行',group:'工作',hint:'8 個席位真的會跑工單 · worker pool 接真資料'},
-    review:{label:'審核台',group:'工作',hint:'AI 只產候選 · 人工裁決寫回 review_task 並留審計'},
-    person:{label:'人物檔案',group:'內容',hint:'人物主檔與公開帳號候選 · 只讀／掛候選'},
-    library:{label:'素材庫',group:'內容',hint:'抖音點讚／收藏，件數以後端為準'},
-    out:{label:'產出庫',group:'內容',hint:'另存新版 · 舊檔不覆蓋'},
-    health:{label:'元件健康',group:'監控',hint:'GET /__health/components · BFF 代問 · 不直連容器埠'},
-    infra:{label:'基礎設施',group:'監控',hint:'服務／席位／儲存／連接器／排程'},
-    oss:{label:'開源組件',group:'監控',hint:'GitHub 鎖定版本 · 候選不進主棧'},
-    pipe:{label:'統一管線',group:'監控',hint:'resolve_execution_path · 唯一判斷源'},
-    sense:{label:'感測上下文',group:'監控',hint:'壓縮與文本感知 · 8 槽各自回寫'},
-    studio:{label:'UI 生成',group:'工具',hint:'一句話需求 → 線框圖 · 只出結構不出像素'}
+    collect:{label:'任務收集',group:'工作',hint:'確認後才進隊列'},
+    queue:{label:'任務隊列',group:'工作',hint:'席位自動拉取；有空檔才執行'},
+    seat:{label:'席位 Agent',group:'工作',hint:'大任務 → 經理拆分 → 獨立席位'},
+    review:{label:'審核',group:'工作',hint:'候選由人裁決'},
+    person:{label:'人物',group:'內容',hint:'主檔與公開帳號候選'},
+    library:{label:'素材',group:'內容',hint:'本機媒體索引'},
+    out:{label:'產出',group:'內容',hint:'另存新版，不覆蓋舊檔'},
+    health:{label:'健康',group:'監控',hint:'元件探測'},
+    infra:{label:'基建',group:'監控',hint:'服務與儲存'},
+    oss:{label:'開源',group:'監控',hint:'鎖定版本；工具台可查用戶名'},
+    pipe:{label:'管線',group:'監控',hint:'執行路徑示意'},
+    sense:{label:'感測',group:'監控',hint:'示範壓縮與感知卡'},
+    studio:{label:'線框',group:'工具',hint:'需求轉線框草稿'}
   };
   var INFRA_PANES=['docker','ecs','bill','cost','conn','jobs'];
   var INFRA_LABEL={docker:'服務',ecs:'席位',bill:'儲存',cost:'磁碟',conn:'連接器',jobs:'排程工作'};
@@ -1654,7 +1673,7 @@
       bar.setAttribute('data-group', meta.group||'');
       bar.setAttribute('data-route',routePath(r));
     }
-    document.title='靈境·Linkin · '+meta.label+(t==='infra'&&r.pane?' / '+INFRA_LABEL[r.pane]:r.focus?' / '+r.focus:'');
+    document.title='KOL-Index · '+meta.label+(t==='infra'&&r.pane?' / '+INFRA_LABEL[r.pane]:r.focus?' / '+r.focus:'');
     document.body.setAttribute('data-topic', t);
   }
   function revealFocus(r,fromNav){
@@ -3420,11 +3439,30 @@
       return 'gen';
     }
     if (item.state==='queued') return 'queue';
-    if (item.state==='backoff'||item.state==='blocked') return 'wait';
-    if (item.state==='running') return 'proc';
+    if (item.state==='backoff'||item.state==='blocked'||item.state==='assigned'||item.state==='claimed') return 'wait';
+    if (item.state==='running'||item.state==='analyzing'||item.state==='splitting'||item.state==='dispatching') return 'proc';
     if (item.state==='failed'||item.state==='error') return 'split';
     if (item.state==='succeeded'||item.state==='done') return 'gen';
     return 'queue';
+  }
+  function seatAgentBoardItems(){
+    var api=window.KOLINDEX_SEATS;
+    if (!api) return [];
+    if (typeof api.boardItems==='function'){
+      try { return api.boardItems()||[]; } catch (e) { return []; }
+    }
+    return [];
+  }
+  function seatAgentSnapshot(){
+    var api=window.KOLINDEX_SEATS;
+    if (!api||typeof api.snapshot!=='function') return null;
+    try { return api.snapshot(); } catch (e) { return null; }
+  }
+  function mergeSeatAgentBoard(items){
+    var base=(items||[]).filter(function(it){
+      return it.board!=='seat'&&it.board!=='agent-job';
+    });
+    return base.concat(seatAgentBoardItems());
   }
   function tallyBoard(items){
     var lanes={queue:0,wait:0,proc:0,split:0,gen:0};
@@ -3452,15 +3490,20 @@
         detail:(mj.pages||0)+' 頁 · +'+(mj.added||0)+' 新', error:mj.error||''
       });
     }
-    ((seats&&seats.tasks)||[]).filter(function(t){
-      return t.status==='running'||t.status==='queued'||t.status==='failed';
-    }).slice(0,8).forEach(function(t){
-      out.push({
-        board:'seat', state:t.status, ref:'W-'+t.id,
-        title:(t.label||t.kind||'席位工單')+' · '+t.seat,
-        detail:t.status==='running'?'進行中':(t.status==='queued'?'排隊中':'失敗'), error:t.error||''
+    var agentItems=seatAgentBoardItems();
+    if (agentItems.length){
+      agentItems.forEach(function(it){ out.push(it); });
+    } else {
+      ((seats&&seats.tasks)||[]).filter(function(t){
+        return t.status==='running'||t.status==='queued'||t.status==='failed'||t.status==='done';
+      }).slice(0,12).forEach(function(t){
+        out.push({
+          board:'seat', state:t.status, ref:'W-'+t.id,
+          title:(t.label||t.kind||'席位工單')+' · '+t.seat,
+          detail:t.status==='running'?'進行中':(t.status==='queued'?'排隊中':(t.status==='done'?'完成':'失敗')), error:t.error||''
+        });
       });
-    });
+    }
     ((reviews&&reviews.items)||[]).forEach(function(x){
       var kind=x.kind||'identity';
       if (kind!=='identity') return;
@@ -3480,9 +3523,17 @@
     return out;
   }
   function liveJobCard(j){
-    var kind={classify:'人物分類',discover:'待查',mylike:'MyLike 同步',seat:'席位工單',download:'補檔',crawl:'資料爬蟲'}[j.board]||'資料爬蟲';
-    var foot={classify:'人工複核 · 不改歸戶',discover:'待查 · 手動',mylike:'MyLike · 只補索引',seat:'席位 · 規則掃描',download:'補檔 · 只下載圖片',crawl:'排程工作 · 只讀'}[j.board]||'只讀';
-    return '<article class="live-job">'+
+    var kind={
+      classify:'人物分類',discover:'待查',mylike:'MyLike 同步',
+      seat:'席位子任務', 'agent-job':'席位大任務',
+      download:'補檔',crawl:'資料爬蟲'
+    }[j.board]||'資料爬蟲';
+    var foot={
+      classify:'人工複核 · 不改歸戶',discover:'待查 · 手動',mylike:'MyLike · 只補索引',
+      seat:'席位 Agent · 獨立空間承接', 'agent-job':'用戶發起 · 任務經理拆分',
+      download:'補檔 · 只下載圖片',crawl:'排程工作 · 只讀'
+    }[j.board]||'只讀';
+    return '<article class="live-job'+(j.source==='seat-agent'?' is-seat-agent':'')+'">'+
       '<div class="lj-top"><b class="mono">'+esc(j.ref)+'</b><span>'+esc(kind)+'</span></div>'+
       '<div class="lj-sub">'+esc(j.title)+(j.detail?' · '+esc(j.detail):'')+'</div>'+
       '<div class="lj-sup">'+esc(foot)+'</div>'+
@@ -3490,7 +3541,11 @@
     '</article>';
   }
   function queueLaneName(lane){
-    return {review:'審核掃描',library:'素材索引',collect:'收集統計',queue:'排程工作',disk:'磁碟探測',audit:'審計彙總'}[lane]||(lane||'未指定');
+    return {
+      review:'複核審核', library:'素材索引', collect:'收集收件', queue:'佇列健康',
+      disk:'磁碟巡檢', audit:'審計掃描', discover:'帳號發現', oss:'OSS 探查',
+      contract:'契約校驗', analyze:'任務分析', split:'子任務拆分', assign:'技能派工'
+    }[lane]||(lane||'未指定');
   }
   function qAgo(v){
     if (!v) return '—';
@@ -3504,6 +3559,8 @@
     return Math.round(d/86400)+' 天前';
   }
   function paintQueueOps(seats,rail){
+    var snap=seatAgentSnapshot();
+    var agentSeats=snap&&snap.agents;
     var d=(rail&&rail.dispatcher)||null;
     function put(id,text,cls){
       var n=$('#'+id);
@@ -3511,29 +3568,42 @@
       n.textContent=text;
       if (cls) n.className=cls;
     }
-    put('qdAuto',seats?(seats.auto?'開啟':'關閉'):'—',seats&&seats.auto?'ok':'warn');
-    put('qdTick',seats&&seats.tickMs?(seats.tickMs+' ms'):'—');
-    put('qdEvery','20 秒');
-    put('qdClaims',d?(Number(d.claimsToday)||0)+' 次':'—');
+    var autoOn=snap?!!snap.auto:(seats&&seats.auto);
+    put('qdAuto',snap||seats?(autoOn?'開啟':'關閉'):'—',autoOn?'ok':'warn');
+    put('qdTick',snap&&snap.tickMs?(snap.tickMs+' ms'):(seats&&seats.tickMs?(seats.tickMs+' ms'):'—'));
+    put('qdEvery',snap?'經理節拍':'20 秒');
+    put('qdClaims',d?(Number(d.claimsToday)||0)+' 次':(snap?(snap.children||[]).filter(function(c){ return c.seat; }).length+' 派':'—'));
     put('qdReturns',d?(Number(d.returnsToday)||0)+' 次':'—');
-    put('qdLast',d?qAgo(d.lastAt):'—');
-    put('qdScan',d?((Number(d.scanned)||0)+' 工作 · '+(Number(d.accounts)||0)+' 帳號'):'—');
+    put('qdLast',snap&&snap.at?qAgo(snap.at):(d?qAgo(d.lastAt):'—'));
+    put('qdScan',snap
+      ?('大任務 '+(snap.jobs||[]).length+' · 子任務 '+(snap.children||[]).length)
+      :(d?((Number(d.scanned)||0)+' 工作 · '+(Number(d.accounts)||0)+' 帳號'):'—'));
     var note=$('#qdNote');
-    if (note) note.textContent=(rail?'來源 /api/rail · 每 15 秒更新':'連不到 /api/rail，顯示上次結果');
+    if (note){
+      note.textContent=snap
+        ?('席位 Agent 編排 · 大任務→經理拆分→席位 · '+(snap.manager&&snap.manager.log?snap.manager.log:''))
+        :(rail?'來源 /api/rail · 每 15 秒更新':'連不到 /api/rail，顯示上次結果');
+    }
     var box=$('#queueSeats');
-    if (box&&seats&&seats.seats){
-      box.innerHTML=seats.seats.map(function(s){
-        var busy=!!s.current||s.state==='busy';
-        var cls=busy?'is-busy':(s.state==='ready'?'is-ready':'');
-        var cur=s.current?(s.current.label||s.current.kind||'執行中'):(s.state==='ready'?'待派工':s.state);
-        var title=s.id+' · '+queueLaneName(s.lane)+' · '+(s.current?('工單 #'+s.current.id):'沒有工單');
-        return '<div class="qs-card '+cls+'" title="'+esc(title)+'">'+
-          '<div class="qs-top"><b>'+esc(s.id)+'</b><span class="qs-dot"></span></div>'+
-          '<div class="qs-lane">'+esc(queueLaneName(s.lane))+'</div>'+
-          '<div class="qs-cur">'+esc(cur)+'</div>'+
-          '<div class="qs-meta">完成 '+esc(Number(s.done||0).toLocaleString('en-US'))+(s.failed?(' · 失敗 '+esc(String(s.failed))):'')+'</div>'+
-        '</div>';
-      }).join('');
+    if (box){
+      var list=agentSeats||(seats&&seats.seats)||[];
+      if (!list.length){
+        box.innerHTML='<div class="live-empty">尚無席位 Agent</div>';
+      } else {
+        box.innerHTML=list.map(function(s){
+          var busy=!!s.current||s.state==='busy'||s.state==='running';
+          var cls=busy?'is-busy':(s.state==='ready'||s.state==='idle'?'is-ready':'');
+          var cur=s.current?(s.current.label||s.current.kind||'執行中'):(s.inbox?('收件 '+s.inbox):'空閒');
+          var lane=queueLaneName(s.lane||((s.skills&&s.skills[0])||''));
+          var title=(s.id||'')+' · '+(s.name||'')+' · '+lane+' · '+(s.current?('#'+s.current.id):'沒有工單');
+          return '<div class="qs-card '+cls+'" title="'+esc(title)+'">'+
+            '<div class="qs-top"><b>'+esc(s.id)+(s.name?(' '+s.name):'')+'</b><span class="qs-dot"></span></div>'+
+            '<div class="qs-lane">'+esc(lane)+'</div>'+
+            '<div class="qs-cur">'+esc(cur)+'</div>'+
+            '<div class="qs-meta">完成 '+esc(Number(s.done||0).toLocaleString('en-US'))+(s.failed?(' · 失敗 '+esc(String(s.failed))):'')+'</div>'+
+          '</div>';
+        }).join('');
+      }
     }
   }
   function paintLiveLanes(){
@@ -3556,11 +3626,11 @@
   }
   function markQueueLive(seats,rail){
     var src=$('#queueSrc');
-    if (src){ src.textContent='LIVE · 更新 '+fmtTime(new Date()); src.className='chip green'; }
+    if (src){ src.textContent='更新 '+fmtTime(new Date()); src.className='chip'; }
     var sup=$('#queueSupervisor');
     if (sup){
-      sup.textContent=queueLive.supervisorOn?('監督模型 · '+(queueLive.supervisor||'—')+' · 只標註'):'監督模型 · 未接線';
-      sup.className='chip '+(queueLive.supervisorOn?'cyan':'or');
+      sup.textContent=queueLive.supervisorOn?('監督 '+(queueLive.supervisor||'—')):'監督未接';
+      sup.className='chip';
     }
     var unit=$('#claimUnit');
     if (unit) unit.textContent='次';
@@ -3583,27 +3653,34 @@
     });
     var chip=$('#autoChip');
     if (chip&&seats){
-      chip.textContent=seats.auto?'席位自動派工 ON':'席位自動派工 OFF';
+      chip.textContent=seats.auto?'席位自動派席 ON':'席位自動派席 OFF';
       chip.className='chip '+(seats.auto?'green':'or');
     }
     var seatChip=$('#queueSeatChip');
-    if (seatChip&&seats&&seats.seats){
-      var busy=seats.seats.filter(function(s){ return !!s.current||s.state==='busy'; }).length;
-      seatChip.textContent='席位 '+busy+'/'+seats.seats.length;
+    var seatList=(seats&&seats.agents)||(seats&&seats.seats);
+    if (seatChip&&seatList){
+      var busy=seatList.filter(function(s){ return !!s.current||s.state==='busy'||s.state==='running'; }).length;
+      seatChip.textContent='席位 '+busy+'/'+seatList.length;
     }
     if (rail&&rail.dispatcher&&rail.dispatcher.lastAt) queueLive.lastAt=rail.dispatcher.lastAt;
   }
   function applyQueueLive(jobs,seats,rail,reviews,mylike,download,llm){
-    var list=(seats&&seats.seats)||[];
-    var busy=list.filter(function(s){ return s.current; }).length;
+    var snap=seatAgentSnapshot();
+    var list=(snap&&snap.agents)||(seats&&seats.seats)||[];
+    var busy=list.filter(function(s){ return s.current||s.state==='busy'||s.state==='running'; }).length;
     var avg=seats&&seats.avgMs;
     var claims=rail&&rail.dispatcher?Number(rail.dispatcher.claimsToday)||0:0;
-    var items=buildBoard(jobs,reviews,mylike,download,seats);
+    if (!claims&&snap&&snap.children){
+      claims=snap.children.filter(function(c){ return !!c.seat; }).length;
+    }
+    var items=mergeSeatAgentBoard(buildBoard(jobs,reviews,mylike,download,seats));
     var lanes=tallyBoard(items);
     var openClassify=items.filter(function(it){ return it.board==='classify'&&it.state==='open'; }).length;
+    var agentDone=items.filter(function(it){ return it.source==='seat-agent'&&(it.state==='done'||it.state==='succeeded'); }).length;
+    var agentFail=items.filter(function(it){ return it.source==='seat-agent'&&(it.state==='failed'||it.state==='error'); }).length;
     queueLive.ok=true;
     queueLive.at=new Date().toISOString();
-    queueLive.source='/api/jobs';
+    queueLive.source=snap?'seat-agent+/api/jobs':'/api/jobs';
     queueLive.items=items;
     queueLive.lanes=lanes;
     queueLive.supervisor=(llm&&llm.configured&&llm.model)?String(llm.model):'未接線';
@@ -3618,14 +3695,45 @@
       slotWait:avg==null?0:Math.round(avg/100)/10,
       split:lanes.split,
       thru:lanes.gen,
-      done:(jobs&&jobs.counts&&jobs.counts.succeeded!=null)?Number(jobs.counts.succeeded)||0:lanes.gen,
-      fail:(jobs&&jobs.counts&&jobs.counts.failed!=null)?Number(jobs.counts.failed)||0:lanes.split,
+      done:(jobs&&jobs.counts&&jobs.counts.succeeded!=null)?(Number(jobs.counts.succeeded)||0)+agentDone:lanes.gen,
+      fail:(jobs&&jobs.counts&&jobs.counts.failed!=null)?(Number(jobs.counts.failed)||0)+agentFail:lanes.split,
       guardPending:reviews&&reviews.counts&&reviews.counts.open!=null?Number(reviews.counts.open)||0:openClassify
     };
-    markQueueLive(seats,rail);
+    markQueueLive(snap||seats,rail);
     paintQueueOps(seats,rail);
     paintLiveLanes();
     renderNumbers();
+  }
+  function syncSeatAgentBoard(snap){
+    var shot=snap||seatAgentSnapshot();
+    if (!shot) return false;
+    var items=mergeSeatAgentBoard(queueLive.items||[]);
+    var lanes=tallyBoard(items);
+    queueLive.ok=true;
+    queueLive.at=new Date().toISOString();
+    queueLive.source='seat-agent';
+    queueLive.items=items;
+    queueLive.lanes=lanes;
+    if (!queueLive.metrics) queueLive.metrics={};
+    var list=shot.agents||[];
+    var busy=list.filter(function(s){ return s.current||s.state==='busy'||s.state==='running'; }).length;
+    queueLive.metrics.queueDepth=lanes.queue;
+    queueLive.metrics.claimedWait=lanes.wait;
+    queueLive.metrics.executing=lanes.proc;
+    queueLive.metrics.slotUsed=busy;
+    queueLive.metrics.slotMax=list.length||0;
+    queueLive.metrics.split=lanes.split;
+    queueLive.metrics.thru=lanes.gen;
+    queueLive.metrics.done=lanes.gen;
+    queueLive.metrics.fail=lanes.split;
+    queueLive.metrics.claimRate=(shot.children||[]).filter(function(c){ return !!c.seat; }).length;
+    markQueueLive(shot,null);
+    paintQueueOps(null,null);
+    paintLiveLanes();
+    renderNumbers();
+    var bd=$('#navQueueBd');
+    if (bd) bd.textContent=String(lanes.queue+lanes.wait+lanes.proc);
+    return true;
   }
   function syncQueueNumbers(){
     function grab(url){
@@ -3635,6 +3743,8 @@
         return r.json();
       });
     }
+    /* 後端掛了也先把席位 Agent 任務鋪上看板 */
+    if (seatAgentBoardItems().length) syncSeatAgentBoard();
     return Promise.allSettled([
       grab('/api/jobs?state=all&limit=80'),
       grab('/api/seats?tasks=40'),
@@ -3646,7 +3756,12 @@
     ]).then(function(res){
       var jobs=res[0].status==='fulfilled'?res[0].value:null;
       var reviews=res[3].status==='fulfilled'?res[3].value:null;
-      if (!(jobs&&jobs.counts)&&!(reviews&&Array.isArray(reviews.items))) return;
+      var hasApi=!!((jobs&&jobs.counts)||(reviews&&Array.isArray(reviews.items)));
+      if (!hasApi){
+        /* API 全掛：仍維持席位 Agent 看板 */
+        syncSeatAgentBoard();
+        return;
+      }
       var llm=res[6].status==='fulfilled'?res[6].value:null;
       applyQueueLive(
         jobs,
@@ -4155,7 +4270,11 @@
   });
   /* ---------- 對外接口：讓 js/api.js 用真資料覆蓋這頁的示範資料 ---------- */
   window.KOLINDEX_UI={
-    version:'2026-11-21',
+    version:'2026-11-26',
+    /* 席位 Agent 大任務／子任務即時反映到任務佇列看板 */
+    setSeatBoard:function(snap){
+      return syncSeatAgentBoard(snap||null);
+    },
     /* 用 kolindex-api 的收集清單換掉 COLLECT 並重繪 */
     setCollect:function(items, meta){
       if (!Array.isArray(items)) return false;

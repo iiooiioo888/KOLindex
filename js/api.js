@@ -18,7 +18,7 @@
     var c = chipEl();
     if (!c) return;
     c.textContent = text;
-    c.className = 'chip ' + (tone || 'or');
+    c.className = 'chip';
     if (title) c.title = title;
     c.setAttribute('data-api', tone === 'green' ? 'live' : 'offline');
     c.setAttribute('data-source', title || '');
@@ -137,7 +137,7 @@
       if (up) {
         failures = 0;
         var counts = bridge.counts ? bridge.counts() : hits;
-        paint('API · LIVE', 'green', '已連線 · /api/collect · /api/alerts · ' + new Date().toISOString());
+        paint('已連線', 'green', '已連線 · /api/collect · /api/alerts · ' + new Date().toISOString());
         emit(true, { hits: counts });
       } else {
         failures += 1;
@@ -160,7 +160,7 @@
   function boot() {
     if (demoOn()) { paint('示範', 'or', 'demo'); return; }
     if (!ui()) { setTimeout(boot, 400); return; }
-    paint('API · 連線中', 'or', '正在連後端');
+    paint('連線中', 'or', '正在連後端');
     sync().then(function () { setInterval(sync, POLL_MS); });
   }
 
