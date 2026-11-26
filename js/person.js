@@ -89,6 +89,15 @@ function loadSubjects(){
     if(tok!==A.tok) return false;
     A.loading=false;
     if(!res.ok){
+      var fb=window.KOL_demoFallback&&window.KOL_demoFallback('subjects');
+      if(fb&&fb.items&&fb.items.length){
+        A.ok=false; A.loaded=true; A.error='demo_fallback';
+        A.subjects=fb.items; A.total=fb.total||fb.items.length;
+        A.counts={source:fb.source||'demo.subjects'};
+        setStatus('示範人物 · 控制面未連線','or');
+        renderAll();
+        return true;
+      }
       A.ok=false;
       A.error=(res.data&&(res.data.error||res.data.message))||('HTTP '+res.status);
       A.subjects=[];
@@ -108,7 +117,15 @@ function loadSubjects(){
     return true;
   }).catch(function(err){
     if(tok!==A.tok) return false;
-    A.loading=false; A.ok=false; A.error=String(err&&err.message||err);
+    A.loading=false;
+    var fb=window.KOL_demoFallback&&window.KOL_demoFallback('subjects');
+    if(fb&&fb.items&&fb.items.length){
+      A.ok=false; A.loaded=true; A.error='demo_fallback';
+      A.subjects=fb.items; A.total=fb.total||fb.items.length;
+      A.counts={source:fb.source||'demo.subjects'};
+      setStatus('示範人物 · 控制面未連線','or'); renderAll(); return true;
+    }
+    A.ok=false; A.error=String(err&&err.message||err);
     setStatus('控制面未連線','or'); renderAll(); return false;
   });
 }
@@ -126,6 +143,17 @@ function load(reset){
     if(tok!==A.tok) return false;
     A.loading=false;
     if(!res.ok){
+      var afb=window.KOL_demoFallback&&window.KOL_demoFallback('authors');
+      if(afb&&afb.items&&afb.items.length){
+        A.ok=false; A.loaded=true; A.at=Date.now(); A.error='demo_fallback';
+        A.counts={source:afb.source||'demo.authors'};
+        A.total=afb.total||afb.items.length;
+        A.items=afb.items.map(function(a){
+          return Object.assign({ author:a.author, name:a.name, works:a.count||0, count:a.count||0 }, a);
+        });
+        A.offset=A.items.length;
+        setStatus('示範作者索引 · 後端未連線','or'); renderAll(); return true;
+      }
       A.ok=false; A.error=(res.data&&(res.data.error||res.data.message))||('HTTP '+res.status);
       setStatus('後端未連線','or'); renderError(); return false;
     }
@@ -140,7 +168,19 @@ function load(reset){
     return true;
   }).catch(function(err){
     if(tok!==A.tok) return false;
-    A.loading=false; A.ok=false; A.error=String(err&&err.message||err);
+    A.loading=false;
+    var afb=window.KOL_demoFallback&&window.KOL_demoFallback('authors');
+    if(afb&&afb.items&&afb.items.length){
+      A.ok=false; A.loaded=true; A.at=Date.now(); A.error='demo_fallback';
+      A.counts={source:afb.source||'demo.authors'};
+      A.total=afb.total||afb.items.length;
+      A.items=afb.items.map(function(a){
+        return Object.assign({ author:a.author, name:a.name, works:a.count||0, count:a.count||0 }, a);
+      });
+      A.offset=A.items.length;
+      setStatus('示範作者索引 · 後端未連線','or'); renderAll(); return true;
+    }
+    A.ok=false; A.error=String(err&&err.message||err);
     setStatus('後端未連線','or'); renderError(); return false;
   }).then(function(v){
     if(A.queued){ var again=A.queued; A.queued=false; load(again); }

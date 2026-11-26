@@ -794,13 +794,24 @@
     }).join('');
     renderOutputs();
   }
-  var OUTPUTS=[
-    {id:'ART-014',title:'巡檢摘要 v2',by:'Q-118',cite:'Q-120',from:'',folder:'巡檢',lang:'md',name:'巡檢摘要 v2.md',note:'Q-120 複核時引用。不改 v2，意見另記。',body:'# 巡檢摘要 v2\n\n- 編號：ART-014\n- 產出：Q-118\n- 引用：Q-120 只加意見，不改這一版\n\n## 窗口\n\n原文窗口仍在警戒帶。這一版只留最新一句，重複開場已丟。\n\n## 現場\n\n| 點位 | 讀數 | 判斷 |\n| --- | --- | --- |\n| TT-101 | 警戒帶內 | 繼續看 |\n| V-22 | 62% | 調整只是候選 |\n\n## 未完成\n\n- Q-120 門檻複核還沒關\n- Q-121 要等 guard 核可\n'},
-    {id:'ART-009',title:'門檻複核稿 v1',by:'Q-120',cite:'',from:'',folder:'門檻',lang:'md',name:'門檻複核稿 v1.md',note:'仍在執行。完成後才可被後續任務引用。',body:'# 門檻複核稿 v1\n\n- 編號：ART-009\n- 產出：Q-120\n- 狀態：仍在執行，完成前只供閱讀\n\n## 對照\n\n世界庫寫著溫度警戒 68–72，告警線大於 72。\n閥位正常帶 40–65%。超過 85% 只標成行動候選。\n\n## 尚未關閉\n\n複核結論還沒寫完。這份不能被當成已通過的標準。\n'},
-    {id:'ART-021',title:'閥位調整候選',by:'Q-121',cite:'',from:'',folder:'閥位',lang:'json',name:'閥位調整候選.json',note:'62% → 54%。guard 未核可前，其他任務只能看，不能當已執行結果。',body:'{\n  "id": "ART-021",\n  "by": "Q-121",\n  "point": "V-22",\n  "from": 62,\n  "to": 54,\n  "unit": "%",\n  "status": "candidate",\n  "guard": "pending",\n  "mayExecute": false,\n  "note": "未核可前只能看，不能當成已執行結果"\n}\n'},
-    {id:'ART-006',title:'報告版型 v3',by:'Q-116',cite:'Q-124',from:'ART-003',folder:'報告',lang:'html',name:'報告版型 v3.html',note:'改自 ART-003。Q-124 可再改進，舊版留著。',body:'<article data-art="ART-006">\n  <h1>巡檢報告</h1>\n  <p data-slot="summary">摘要由 ART-014 引用，不把 v2 改掉。</p>\n  <section data-slot="threshold">門檻仍以 ART-009 為準。</section>\n  <section data-slot="action">行動句維持候選，guard 未核可不渲染成已執行。</section>\n</article>\n'},
-    {id:'ART-003',title:'報告版型 v2',by:'Q-116',cite:'',from:'',folder:'報告',lang:'md',name:'報告版型 v2.md',note:'已被 v3 取代。保留以便對照，不再覆蓋。',body:'# 報告版型 v2\n\n已被 ART-006 取代。這一版留下對照，不再覆蓋。\n\n- 產出：Q-116\n- 後續：Q-124 若要改，另存新版\n'}
-  ];
+  var OUTPUTS=(function(){
+    var fromFix=window.KOL_demoFallback&&window.KOL_demoFallback('outputs');
+    if(fromFix&&fromFix.length){
+      var extra=[
+        {id:'ART-006',title:'報告版型 v3',by:'Q-116',cite:'Q-124',from:'ART-003',folder:'報告',lang:'html',name:'報告版型 v3.html',note:'示範',body:'<article data-art="ART-006"><h1>巡檢報告</h1><p>示範產物</p></article>\n'},
+        {id:'ART-003',title:'報告版型 v2',by:'Q-116',cite:'',from:'',folder:'報告',lang:'md',name:'報告版型 v2.md',note:'示範舊版',body:'# 報告版型 v2\n\n示範舊版。\n'}
+      ];
+      var seen={};
+      return fromFix.concat(extra).filter(function(f){ if(seen[f.id]) return false; seen[f.id]=1; return true; });
+    }
+    return [
+      {id:'ART-014',title:'巡檢摘要 v2',by:'Q-118',cite:'Q-120',from:'',folder:'巡檢',lang:'md',name:'巡檢摘要 v2.md',note:'示範',body:'# 巡檢摘要 v2\n\n示範資料。\n'},
+      {id:'ART-009',title:'門檻複核稿 v1',by:'Q-120',cite:'',from:'',folder:'門檻',lang:'md',name:'門檻複核稿 v1.md',note:'示範',body:'# 門檻複核稿 v1\n\n示範資料。\n'},
+      {id:'ART-021',title:'閥位調整候選',by:'Q-121',cite:'',from:'',folder:'閥位',lang:'json',name:'閥位調整候選.json',note:'示範',body:'{"id":"ART-021","status":"candidate","demo":true}\n'},
+      {id:'ART-006',title:'報告版型 v3',by:'Q-116',cite:'Q-124',from:'ART-003',folder:'報告',lang:'html',name:'報告版型 v3.html',note:'示範',body:'<article data-art="ART-006"><h1>巡檢報告</h1></article>\n'},
+      {id:'ART-003',title:'報告版型 v2',by:'Q-116',cite:'',from:'',folder:'報告',lang:'md',name:'報告版型 v2.md',note:'示範',body:'# 報告版型 v2\n'}
+    ];
+  })();
   var ide={open:[],active:'',side:'files',booted:false,folders:{},findAt:-1};
   function fileBy(id){ return OUTPUTS.filter(function(f){ return f.id===id; })[0]; }
   function textOf(f){ return f&&f.draft!=null?f.draft:f?f.body:''; }

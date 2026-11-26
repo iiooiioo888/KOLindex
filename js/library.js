@@ -104,6 +104,15 @@ function load(reset){
     if(tok!==L.tok) return false;
     L.loading=false;
     if(!res.ok){
+      var fb=window.KOL_demoFallback&&window.KOL_demoFallback('library');
+      if(fb&&fb.items&&fb.items.length){
+        L.ok=false; L.loaded=true; L.at=Date.now(); L.error='demo_fallback';
+        L.counts=fb.counts||null; L.sources=fb.sources||null;
+        L.total=fb.total||fb.items.length; L.items=fb.items.slice(); L.offset=L.items.length;
+        setStatus('示範素材 · 後端未連線','or');
+        renderAll();
+        return true;
+      }
       L.ok=false; L.error=(res.data&&(res.data.error||res.data.message))||('HTTP '+res.status);
       setStatus('後端未連線','or');
       renderError();
@@ -120,7 +129,17 @@ function load(reset){
     return true;
   }).catch(function(err){
     if(tok!==L.tok) return false;
-    L.loading=false; L.ok=false; L.error=String(err&&err.message||err);
+    L.loading=false;
+    var fb=window.KOL_demoFallback&&window.KOL_demoFallback('library');
+    if(fb&&fb.items&&fb.items.length){
+      L.ok=false; L.loaded=true; L.at=Date.now(); L.error='demo_fallback';
+      L.counts=fb.counts||null; L.sources=fb.sources||null;
+      L.total=fb.total||fb.items.length; L.items=fb.items.slice(); L.offset=L.items.length;
+      setStatus('示範素材 · 後端未連線','or');
+      renderAll();
+      return true;
+    }
+    L.ok=false; L.error=String(err&&err.message||err);
     setStatus('後端未連線','or');
     renderError();
     return false;
@@ -144,6 +163,18 @@ function loadAuthors(reset){
     if(tok!==L.atok) return false;
     L.authorLoading=false;
     if(!res.ok){
+      var afb=window.KOL_demoFallback&&window.KOL_demoFallback('authors');
+      if(afb&&afb.items&&afb.items.length){
+        L.ok=false; L.loaded=true; L.at=Date.now(); L.error='demo_fallback';
+        L.aCounts=afb.counts||null; L.authorTotal=afb.total||afb.items.length;
+        L.authors=afb.items.map(function(a){
+          return Object.assign({ works:a.count||0, files:a.count||0, bytes:0, lastCt:a.recentAt, gallery:0, video:0 }, a);
+        });
+        L.aOffset=L.authors.length;
+        setStatus('示範作者 · 後端未連線','or');
+        renderAuthors();
+        return true;
+      }
       L.ok=false; L.error=(res.data&&(res.data.error||res.data.message))||('HTTP '+res.status);
       setStatus('後端未連線','or');
       renderError();
@@ -160,7 +191,20 @@ function loadAuthors(reset){
     return true;
   }).catch(function(err){
     if(tok!==L.atok) return false;
-    L.authorLoading=false; L.ok=false; L.error=String(err&&err.message||err);
+    L.authorLoading=false;
+    var afb=window.KOL_demoFallback&&window.KOL_demoFallback('authors');
+    if(afb&&afb.items&&afb.items.length){
+      L.ok=false; L.loaded=true; L.at=Date.now(); L.error='demo_fallback';
+      L.aCounts=afb.counts||null; L.authorTotal=afb.total||afb.items.length;
+      L.authors=afb.items.map(function(a){
+        return Object.assign({ works:a.count||0, files:a.count||0, bytes:0, lastCt:a.recentAt, gallery:0, video:0 }, a);
+      });
+      L.aOffset=L.authors.length;
+      setStatus('示範作者 · 後端未連線','or');
+      renderAuthors();
+      return true;
+    }
+    L.ok=false; L.error=String(err&&err.message||err);
     setStatus('後端未連線','or');
     renderError();
     return false;

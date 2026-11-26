@@ -95,6 +95,19 @@ function load(force){
     R.loading=false;
     var q=res[0], e=res[1], a=res[2];
     if(!q.ok||!e.ok){
+      var rv=window.KOL_demoFallback&&window.KOL_demoFallback('review');
+      var ai=window.KOL_demoFallback&&window.KOL_demoFallback('aiEvents');
+      var au=window.KOL_demoFallback&&window.KOL_demoFallback('audit');
+      if(rv&&rv.items&&rv.items.length){
+        R.ok=false; R.loaded=true; R.at=Date.now(); R.error='demo_fallback';
+        R.items=rv.items; R.counts=rv.counts||R.counts;
+        R.events=(ai&&ai.items)||[];
+        R.audit=(au&&au.items)||[];
+        if(R.sel==null||!current()) R.sel=firstOpen();
+        setStatus('示範審核 · 後端不在','or');
+        render();
+        return true;
+      }
       R.ok=false;
       R.error='後端回應 '+(q.ok?e.status:q.status);
       setStatus('後端不在 · 顯示上次結果','red');
@@ -111,7 +124,21 @@ function load(force){
     render();
     return true;
   }).catch(function(err){
-    R.loading=false; R.ok=false;
+    R.loading=false;
+    var rv=window.KOL_demoFallback&&window.KOL_demoFallback('review');
+    var ai=window.KOL_demoFallback&&window.KOL_demoFallback('aiEvents');
+    var au=window.KOL_demoFallback&&window.KOL_demoFallback('audit');
+    if(rv&&rv.items&&rv.items.length){
+      R.ok=false; R.loaded=true; R.at=Date.now(); R.error='demo_fallback';
+      R.items=rv.items; R.counts=rv.counts||R.counts;
+      R.events=(ai&&ai.items)||[];
+      R.audit=(au&&au.items)||[];
+      if(R.sel==null||!current()) R.sel=firstOpen();
+      setStatus('示範審核 · 後端不在','or');
+      render();
+      return true;
+    }
+    R.ok=false;
     R.error=String((err&&err.message)||err);
     setStatus('後端不在 · 顯示上次結果','red');
     render();

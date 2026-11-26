@@ -1,0 +1,99 @@
+/* 簡易動效：階層／進場／忙碌節奏。尊重 reduce-motion。 */
+@keyframes kol-fade-up {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes kol-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes kol-soft-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .55; }
+}
+@keyframes kol-bar-shine {
+  0% { background-position: 100% 0; }
+  100% { background-position: -100% 0; }
+}
+
+/* 分頁開啟：主區輕進場 */
+.waterfall.on > .ide,
+.waterfall.on > .panel,
+.waterfall.on > .fleet,
+#topic-seat.on #fleet {
+  animation: kol-fade-up .38s cubic-bezier(.22, .8, .3, 1) both;
+}
+
+/* IDE 歡迎區 */
+.ide-welcome {
+  animation: kol-fade-up .45s cubic-bezier(.22, .8, .3, 1) both;
+}
+
+/* 側欄樹／清單列：交錯進場（只作用於剛插入的節點可另加 .is-enter） */
+.ide-tree > *,
+.pn-list > *,
+#outTree > * {
+  animation: kol-fade-in .28s ease both;
+}
+.ide-tree > *:nth-child(1), .pn-list > *:nth-child(1), #outTree > *:nth-child(1) { animation-delay: .02s; }
+.ide-tree > *:nth-child(2), .pn-list > *:nth-child(2), #outTree > *:nth-child(2) { animation-delay: .05s; }
+.ide-tree > *:nth-child(3), .pn-list > *:nth-child(3), #outTree > *:nth-child(3) { animation-delay: .08s; }
+.ide-tree > *:nth-child(4), .pn-list > *:nth-child(4), #outTree > *:nth-child(4) { animation-delay: .11s; }
+.ide-tree > *:nth-child(5), .pn-list > *:nth-child(5), #outTree > *:nth-child(5) { animation-delay: .14s; }
+.ide-tree > *:nth-child(n+6), .pn-list > *:nth-child(n+6), #outTree > *:nth-child(n+6) { animation-delay: .16s; }
+
+/* 席位：忙碌點呼吸、空間面板進場、子任務列淡入 */
+#fleet .fs-card.is-busy .fs-dot {
+  animation: kol-soft-pulse 1.4s ease-in-out infinite;
+}
+#fleet .fs-card.is-busy .fs-badge {
+  animation: kol-soft-pulse 1.6s ease-in-out infinite;
+}
+#fleet .fleet-space:not([hidden]) {
+  animation: kol-fade-up .32s cubic-bezier(.22, .8, .3, 1) both;
+}
+#fleet .fp-row {
+  animation: kol-fade-in .25s ease both;
+}
+#fleet .fs-card {
+  transition: background .2s ease, outline-color .2s ease, transform .18s ease;
+}
+#fleet .fs-card:hover {
+  transform: translateY(-1px);
+}
+#fleet .fleet-live.is-ok {
+  animation: kol-soft-pulse 2.4s ease-in-out infinite;
+}
+
+/* 素材／人物 KPI 列 */
+.pn-ide-kpis,
+.lib-ide-kpis,
+#pnKpis,
+#libKpis {
+  animation: kol-fade-in .3s ease both;
+}
+
+body.reduce-motion .waterfall.on > .ide,
+body.reduce-motion .waterfall.on > .panel,
+body.reduce-motion .waterfall.on > .fleet,
+body.reduce-motion #topic-seat.on #fleet,
+body.reduce-motion .ide-welcome,
+body.reduce-motion .ide-tree > *,
+body.reduce-motion .pn-list > *,
+body.reduce-motion #outTree > *,
+body.reduce-motion #fleet .fs-card.is-busy .fs-dot,
+body.reduce-motion #fleet .fs-card.is-busy .fs-badge,
+body.reduce-motion #fleet .fleet-space:not([hidden]),
+body.reduce-motion #fleet .fp-row,
+body.reduce-motion #fleet .fleet-live.is-ok,
+body.reduce-motion .pn-ide-kpis,
+body.reduce-motion .lib-ide-kpis,
+body.reduce-motion #pnKpis,
+body.reduce-motion #libKpis {
+  animation: none !important;
+  transition: none !important;
+  transform: none !important;
+}
+body.reduce-motion #fleet .fs-card:hover {
+  transform: none;
+}

@@ -770,7 +770,12 @@
     if (fresh) S.agents = blankAgents();
     ensureWorld();
     if (fresh && !S.jobs.length) {
-      createJob('示範：核對公開帳號候選與素材缺口', 'mixed');
+      var seeds = window.KOL_demoFallback && window.KOL_demoFallback('seatJobs');
+      if (seeds && seeds.length) {
+        seeds.forEach(function (j) { createJob(j.title, j.goal || 'mixed'); });
+      } else {
+        createJob('示範：核對公開帳號候選與素材缺口', 'mixed');
+      }
     }
     bind();
     paint();

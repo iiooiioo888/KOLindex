@@ -25,22 +25,28 @@
 <link rel="stylesheet" href="css/queue.css?v=20261124">
 <link rel="stylesheet" href="css/login.css?v=20261126b">
 <link rel="stylesheet" href="css/caps.css?v=20261124">
+<link rel="stylesheet" href="css/motion.css?v=20261126a">
 <style>
 #demoBanner{display:none}
-html[data-demo="1"] #demoBanner{display:block;position:sticky;top:0;z-index:50;padding:8px 12px;background:#7a3730;color:#fff;font:12px/1.4 sans-serif}
+html[data-demo="1"] #demoBanner{display:block!important;position:sticky;top:0;z-index:50;padding:8px 12px;background:#7a3730;color:#fff;font:12px/1.4 sans-serif}
 </style>
 </head>
 <body data-topic="queue">
 <script>
 (function(){
   var q=new URLSearchParams(location.search);
-  if (q.get('demo')==='1') document.documentElement.setAttribute('data-demo','1');
+  /* 預設開示範假資料；?demo=0 才關閉 */
+  if (q.get('demo')!=='0') document.documentElement.setAttribute('data-demo','1');
+  try{ if(q.get('demo')==='0') localStorage.setItem('kol_demo','0');
+       else if(q.get('demo')==='1') localStorage.setItem('kol_demo','1');
+       else if(localStorage.getItem('kol_demo')==='0') document.documentElement.removeAttribute('data-demo');
+  }catch(e){}
   var skin=q.get('skin')||'';
   try{ if(!skin) skin=localStorage.getItem('kol_skin')||''; }catch(e){}
   if(skin==='pixel') document.documentElement.setAttribute('data-skin','pixel');
 })();
 </script>
-<div id="demoBanner" hidden>示範資料。這一頁沒有接後端，數字來自 js/fixtures/demo.js。</div>
+<div id="demoBanner" hidden>全站示範假資料（js/fixtures/demo.js）。關閉：網址加 <code>?demo=0</code>。</div>
 
 <div class="login-gate" id="loginGate">
   <form class="login-card" id="loginForm" autocomplete="on">
@@ -1360,17 +1366,17 @@ html[data-demo="1"] #demoBanner{display:block;position:sticky;top:0;z-index:50;p
 <script defer src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js" integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r" crossorigin="anonymous"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/tippy.js@6.3.7/dist/tippy.umd.min.js" integrity="sha384-pjtv4LzKGI/lGxchW/wd/upB/HsGOP/Q2iPYyDU8qo2bp4JLbN34hQkdAArvidZX" crossorigin="anonymous"></script>
 <script defer src="js/login.js?v=20261126b"></script>
-<script defer src="js/fixtures/demo.js?v=20261124"></script>
+<script defer src="js/fixtures/demo.js?v=20261126b"></script>
 <script defer src="js/api.js?v=20261124"></script>
-<script defer src="js/index2.js?v=20261126h"></script>
+<script defer src="js/index2.js?v=20261126i"></script>
 <script defer src="js/wireframe.js?v=20261121"></script>
 <script defer src="js/studio.js?v=20261123c"></script>
-<script defer src="js/review.js?v=20261123d"></script>
+<script defer src="js/review.js?v=20261126a"></script>
 <script defer src="js/infra.js?v=20261121"></script>
 <script defer src="js/jobs.js?v=20261123b"></script>
-<script defer src="js/library.js?v=20261126h"></script>
-<script defer src="js/person.js?v=20261126h"></script>
-<script defer src="js/seats.js?v=20261126g"></script>
+<script defer src="js/library.js?v=20261126i"></script>
+<script defer src="js/person.js?v=20261126i"></script>
+<script defer src="js/seats.js?v=20261126h"></script>
 <script defer src="js/sense.js?v=20261126a"></script>
 <script defer src="js/rail.js?v=20261123b"></script>
 <script defer src="js/system.js?v=20261126a"></script>

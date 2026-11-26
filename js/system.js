@@ -1,5 +1,5 @@
 /* 系統摘要與基礎設施的服務／席位／儲存／磁碟。
-   只畫 /api/rail、/api/seats、/api/jobs 回來的數字。沒連上就留「—」，不回填舊的雲端示範值。 */
+   優先畫 /api/rail、/api/seats、/api/jobs；連不上且有 fixtures 時回填示範數字（標明 demo）。 */
 (function () {
   'use strict';
 
@@ -316,6 +316,54 @@
       '<div class="note">數字來自 /api/rail 的 storage。這裡沒有雲端帳單。</div>';
   }
 
+  function unwrap(res) {
+    if (res && res.data && res.status != null && typeof res.data === 'object') return res.data;
+    return res;
+  }
+  function demoRail() {
+    var r = window.KOL_demoFallback && window.KOL_demoFallback('rail');
+    if (!r) return null;
+    return {
+      storage: {
+        usedPct: r.diskUsedPct, freeGb: r.diskFreeGb, items: 6, galleries: 3, videos: 3,
+        authors: 4, files: 27, missing: 1, bytes: 12e9
+      },
+      queue: { depth: r.queueDepth },
+      slots: { active: r.seatsBusy, total: r.seatsTotal },
+      source: 'demo.rail'
+    };
+  }
+  function demoSeats() {
+    var snap = window.KOLINDEX_SEATS && typeof window.KOLINDEX_SEATS.snapshot === 'function'
+      ? window.KOLINDEX_SEATS.snapshot() : null;
+    if (snap && snap.seats && snap.seats.length) {
+      return { seats: snap.seats, auto: snap.auto, counts: { today: 3, failedToday: 0 }, source: 'demo.seats' };
+    }
+    var fix = window.KOL_demoFallback && window.KOL_demoFallback('seats');
+    if (!fix || !fix.length) return null;
+    return {
+      seats: fix.map(function (s) {
+        return { id: s.id, platform: 'demo', lane: s.role, done: 1, failed: 0, current: s.status === 'run' ? { id: s.task } : null };
+      }),
+      auto: true,
+      counts: { today: 3, failedToday: 0 },
+      source: 'demo.seats'
+    };
+  }
+  function demoStack() {
+    var h = window.KOL_demoFallback && window.KOL_demoFallback('health');
+    if (!h || !h.items) return null;
+    return {
+      source: 'demo.health',
+      duration_ms: 0,
+      items: h.items.map(function (x) {
+        return {
+          id: x.id, kind: 'probe', state: x.ok ? 'up' : 'down',
+          content: x.detail || x.label, label: x.label
+        };
+      })
+    };
+  }
   function load() {
     return Promise.allSettled([
       getJSON('/api/rail?range=1H'),
@@ -323,10 +371,13 @@
       getJSON('/api/jobs?state=all&limit=1'),
       getJSON('/__health/components')
     ]).then(function (res) {
-      var rail = res[0].status === 'fulfilled' ? res[0].value : null;
-      var seats = res[1].status === 'fulfilled' ? res[1].value : null;
-      var jobs = res[2].status === 'fulfilled' ? res[2].value : null;
-      var stack = res[3].status === 'fulfilled' ? res[3].value : null;
+      var rail = res[0].status === 'fulfilled' ? unwrap(res[0].value) : null;
+      var seats = res[1].status === 'fulfilled' ? unwrap(res[1].value) : null;
+      var jobs = res[2].status === 'fulfilled' ? unwrap(res[2].value) : null;
+      var stack = res[3].status === 'fulfilled' ? unwrap(res[3].value) : null;
+      if (!rail) rail = demoRail();
+      if (!seats) seats = demoSeats();
+      if (!stack) stack = demoStack();
       paintSummary(rail, seats, !!jobs);
       paintStack(stack);
       paintServices(rail, seats, jobs, stack);
