@@ -217,12 +217,53 @@ function updateChip(){
   var chip=$('libAuthorChip'), nm=$('libAuthorName');
   if(chip) chip.hidden=!L.author;
   if(nm) nm.textContent=L.author?displayAuthor(L.author):'—';
+  paintIdeChrome();
+}
+
+function paintIdeChrome(){
+  var welcome=$('libWelcome');
+  var sheet=document.querySelector('#topic-library .lib-ide-sheet');
+  var has=L.mode==='authors' ? L.authors.length>0 : L.items.length>0;
+  var showWelcome=!L.loaded && !L.loading && !has && !L.author;
+  if(welcome) welcome.hidden=!showWelcome;
+  if(sheet) sheet.hidden=!!showWelcome;
+  var tab=$('libTabLabel');
+  if(tab){
+    tab.textContent=L.author
+      ? ('作者 · '+displayAuthor(L.author))
+      : (L.mode==='authors'?'作者索引':'作品瀏覽');
+  }
+  var crumb=$('libCrumb');
+  if(crumb){
+    crumb.textContent='素材庫 · douyin_item'+(L.author?(' / '+displayAuthor(L.author)):'')+' · 與人物檔案共用檢視器';
+  }
+  var title=$('libSideTitle');
+  if(title && document.querySelector('#libIde .ide-act.on[data-lib-ide="search"]')){
+    /* 搜尋模式標題由 setIdeSide 管 */
+  } else if(title){
+    title.textContent=L.mode==='authors'?'作者索引':'素材庫';
+  }
 }
 
 function setAuthor(name){
   L.author=String(name||'');
   updateChip();
   setMode('items');
+}
+
+function openWithAuthor(name){
+  setAuthor(name);
+  if(window.KOLINDEX_UI&&window.KOLINDEX_UI.setTopic) window.KOLINDEX_UI.setTopic('library');
+}
+
+function openAuthorInPerson(){
+  var who=L.author;
+  if(!who) return;
+  if(window.KOLINDEX_PERSON&&typeof window.KOLINDEX_PERSON.openAuthor==='function'){
+    window.KOLINDEX_PERSON.openAuthor(who);
+  } else if(window.KOLINDEX_UI&&window.KOLINDEX_UI.setTopic){
+    window.KOLINDEX_UI.setTopic('person');
+  }
 }
 
 function clearAuthor(){
@@ -330,7 +371,17 @@ function renderFoot(){
   if(foot) foot.textContent=n?('顯示 '+nfmt(n)+' / '+nfmt(total)+' '+unit+(authors?'作者':'')+' · '+(authors?'點一位看他名下的作品':'點縮圖開檢視器')):'';
 }
 
-function renderAll(){ renderKpis(); renderGrid(); renderFoot(); updateDownloadUi(); updateOptUi(); updateDerivUi(); }
+function renderAll(){
+  renderKpis();
+  if(L.mode==='authors') renderAuthors();
+  else renderGrid();
+  renderFoot();
+  updateChip();
+  paintIdeChrome();
+  updateDownloadUi();
+  updateOptUi();
+  updateDerivUi();
+}
 
 function renderError(){
   var box=$('libGrid');
@@ -1005,6 +1056,36 @@ function debounce(fn,ms){
 
 function bind(){
   updateChip();
+  paintIdeChrome();
+
+  var ideSide='files';
+  function setIdeSide(next){
+    ideSide=next||'files';
+    var root=$('libIde');
+    if(root){
+      root.querySelectorAll('[data-lib-ide]').forEach(function(b){
+        b.classList.toggle('on', b.getAttribute('data-lib-ide')===ideSide);
+      });
+    }
+    var filter=$('libFilterWrap');
+    if(filter) filter.hidden=ideSide!=='search';
+    var title=$('libSideTitle');
+    if(title){
+      title.textContent=ideSide==='search'?'尋找素材':(L.mode==='authors'?'作者索引':'素材庫');
+    }
+    if(ideSide==='person'){
+      if(L.author) openAuthorInPerson();
+      else if(window.KOLINDEX_UI&&window.KOLINDEX_UI.setTopic) window.KOLINDEX_UI.setTopic('person');
+      setIdeSide('files');
+    }
+  }
+  on($('libIde'),'click',function(e){
+    var act=e.target.closest('[data-lib-ide]');
+    if(!act) return;
+    setIdeSide(act.getAttribute('data-lib-ide'));
+  });
+  setIdeSide('files');
+
   var grid=$('libGrid');
   on(grid,'click',function(e){
     var row=e.target.closest('.lib-author');
@@ -1023,6 +1104,7 @@ function bind(){
   });
 
   on($('libAuthorClear'),'click',clearAuthor);
+  on($('libOpenPerson'),'click',openAuthorInPerson);
 
   var more=$('libMore');
   on(more,'click',function(){ reload(false); });
@@ -1135,6 +1217,7 @@ if(document.readyState==='loading') document.addEventListener('DOMContentLoaded'
 else bind();
 
 window.KOLINDEX_LIBRARY={state:L,load:load,reload:reload,loadAuthors:loadAuthors,setMode:setMode,setAuthor:setAuthor,
+  openWithAuthor:openWithAuthor,openAuthorInPerson:openAuthorInPerson,
   clearAuthor:clearAuthor,displayAuthor:displayAuthor,authorRowHtml:authorRowHtml,renderAuthors:renderAuthors,
   openViewer:openViewer,closeViewer:closeViewer,mediaUrl:mediaUrl,esc:esc,bytes:bytes,day:day,trim:trim,nfmt:nfmt,
   download:{state:D,item:downloadItem,missing:downloadMissing,sync:syncDownload},

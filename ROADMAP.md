@@ -8,7 +8,7 @@
 |---|---|---|---|---|
 | 01 | 任務收集 | 真 | `GET /api/collect`、認領／退回寫 `collect_decision` + `audit_log` | 收集項目前只來自抖音作者索引（candidate 帳號），沒有其他平台。**邊界**：認領只做工作分派（assignee/state），不改 `identity_state`、不建 `person`；`confirmed` 只能由審核台的人類裁決產生 |
 | 02 | 任務隊列 | 真 | 五條車道吃 `/api/jobs`、`/api/review/queue`、`/api/mylike/job`、`/api/seats`、`/api/library/download/job`；下方派工與席位面板吃 `/api/rail`、`/api/seats` | 沒有自己的 queue 表，是各真資料源的聚合視圖；派工仍要去席位頁按，這一頁唯讀 |
-| 03 | 感測上下文 | 假 | `index2.js:1846` 的 `sensors` 記憶體資料、`renderKnowledge()` | 沒有採集器、沒有特徵庫，卡片上的數字是寫死的 |
+| 03 | 感測上下文 | 假 | `js/sense.js` 示範樣本（平台熱度／關鍵詞／情緒／事件候選） | UI 已重構；仍無真實採集特徵庫，數字標示範，不得當測量事實 |
 | 04 | 產出庫 | 假 | `index2.js:825` 的 `OUTPUTS` 陣列、假編輯器 | 沒有產出物表／檔案儲存，存檔只改記憶體 |
 | 05 | 席位執行 | 半 | 上方 fleet 八席真的跑（`GET/POST /api/seats`，`seat`／`seat_task` 表）；下方 80 席、角色目錄、里程碑仍是示範 | 席位是規則型掃描器（rule-v1），不是 LLM agent；80 席 STANDARD_ROLES 沒有後端 |
 | 06 | 統一管線 | 假 | `FIXTURES.slots`（8 槽位、配額、lock TTL）+ 假事件流 | 沒有實際的管線執行器；`slot` 相關都是前端動畫 |

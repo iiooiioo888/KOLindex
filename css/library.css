@@ -1,8 +1,47 @@
 /* ============================================================================
    library.css · 「素材庫」分頁
-   只作用在 #topic-library；工程藍圖風：髮絲線、直角、等寬數字。
+   殼層與產出庫／人物相同（#libIde · .ide）。
    ============================================================================ */
 
+#topic-library .lib-ide-mode{
+  margin:0 10px 8px;
+  display:flex;
+  border:1px solid #39424c;
+  overflow:hidden;
+}
+#topic-library .lib-ide-mode button{
+  flex:1; appearance:none; border:0; border-right:1px solid #39424c;
+  background:#151515; color:#8a97a3; height:28px;
+  font:500 11px/1 var(--mono); cursor:pointer;
+}
+#topic-library .lib-ide-mode button:last-child{ border-right:0; }
+#topic-library .lib-ide-mode button[aria-pressed="true"]{
+  background:rgba(207,160,74,.12); color:#f3efe6;
+}
+#topic-library .lib-ide-filters{
+  display:grid; gap:8px; padding:0 10px 10px;
+}
+#topic-library .lib-ide-acts{
+  display:flex; flex-wrap:wrap; gap:6px;
+}
+#topic-library .lib-ide-foot{
+  display:flex; align-items:center; gap:8px;
+  margin-top:auto; padding:8px 10px; border-top:1px solid #262d35;
+  font:400 10px/1 var(--mono); color:#6d7782;
+}
+#topic-library .lib-ide-kpis{
+  display:grid;
+  grid-template-columns:repeat(6,minmax(0,1fr));
+  gap:1px;
+  background:#262d35;
+  border-bottom:1px solid #262d35;
+}
+#topic-library .lib-ide-sheet{
+  flex:1 1 auto; min-height:0; overflow:auto;
+  padding:10px 12px 14px;
+}
+#topic-library .ide-welcome[hidden],
+#topic-library .lib-ide-sheet[hidden]{ display:none !important; }
 #topic-library .lib-kpis{
   display:grid;
   grid-template-columns:repeat(6,minmax(0,1fr));
@@ -11,6 +50,14 @@
   border:1px solid var(--line);
   margin-bottom:12px;
 }
+#topic-library .lib-ide-kpis .lib-kpi{
+  background:#1b2027;
+  border:0;
+  margin:0;
+  padding:8px 10px;
+}
+#topic-library .lib-ide-kpis .lib-kpi span{ color:#6d7782; }
+#topic-library .lib-ide-kpis .lib-kpi b{ color:#e6edf2; font-size:14px; }
 #topic-library .lib-kpi{
   background:var(--surface);
   padding:9px 11px 10px;
@@ -41,13 +88,35 @@
   gap:8px;
   margin-bottom:12px;
 }
-/* 篩選靠左、動作靠右；寬度不夠時動作整組落到第二行右側，不會散在中間 */
 #topic-library .lib-acts{
   display:flex;
   align-items:center;
   gap:8px;
   margin-left:auto;
 }
+#topic-library .lib-ide-filters .lib-seg{
+  display:flex; border:1px solid #39424c; overflow:hidden;
+}
+#topic-library .lib-ide-filters .lib-seg button{
+  flex:1; appearance:none; border:0; border-right:1px solid #39424c;
+  background:#151515; color:#8a97a3; height:26px;
+  font:500 10px/1 var(--mono); cursor:pointer;
+}
+#topic-library .lib-ide-filters .lib-seg button:last-child{ border-right:0; }
+#topic-library .lib-ide-filters .lib-seg button[aria-pressed="true"]{
+  background:rgba(207,160,74,.12); color:#f3efe6;
+}
+#topic-library .lib-ide-filters .lib-select{
+  width:100%; height:28px; background:#111; color:#e6edf2;
+  border:1px solid #39424c; border-radius:2px; font:500 11px/1 var(--mono);
+}
+#topic-library .lib-chipbar{
+  display:flex; align-items:center; gap:8px;
+  padding:6px 12px; border-bottom:1px solid #262d35;
+  background:#161b21; font:400 11px/1 var(--mono); color:#a9b6c1;
+}
+#topic-library .lib-chipbar[hidden]{ display:none !important; }
+#topic-library .lib-chipbar b{ color:#f3efe6; }
 #topic-library .lib-input{
   flex:1 1 220px;
   min-width:160px;
@@ -469,9 +538,12 @@
   text-overflow:ellipsis;
   white-space:nowrap;
 }
+#topic-library #libOpenPerson{
+  margin-left:auto;
+}
 #topic-library #libAuthorClear{
   appearance:none;
-  margin-left:auto;
+  margin-left:0;
   width:20px;
   height:20px;
   display:inline-flex;

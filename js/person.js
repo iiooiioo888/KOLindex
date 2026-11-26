@@ -277,9 +277,13 @@ function syncModeChrome(){
   var sort=$('pnSort');
   var more=$('pnMore');
   var cap=$('pnCap');
-  if(form) form.hidden=A.mode!=='subjects';
+  var title=$('pnSideTitle');
+  var crumb=$('pnTitleEn');
+  /* 建立表單只在「新建」工具列開啟時顯示；模式切回時預設藏起 */
   if(sort) sort.hidden=A.mode==='subjects';
   if(more) more.hidden=A.mode==='subjects';
+  if(title) title.textContent=A.mode==='subjects'?'人物主檔':'抖音索引';
+  if(crumb) crumb.textContent=A.mode==='subjects'?'subjects':'douyin authors';
   if(cap){
     cap.innerHTML=A.mode==='subjects'
       ? '<b>人物主檔</b>是一個人對多個已確認平台帳號。覆蓋缺口沒有測量數字時顯示「—」。抖音、小紅書發現若未開放，只會列在略過清單。'
@@ -289,6 +293,8 @@ function syncModeChrome(){
   if(mode) mode.querySelectorAll('[data-pn-mode]').forEach(function(btn){
     btn.setAttribute('aria-pressed', String(btn.getAttribute('data-pn-mode')===A.mode));
   });
+  /* 非 subjects 時強制關閉建立表單 */
+  if(form && A.mode!=='subjects') form.hidden=true;
 }
 
 /* ---------- 畫面 ---------- */
@@ -550,13 +556,24 @@ function renderSide(){
   box.innerHTML=head+platformHtml()+monthsHtml()+grid+more;
 }
 
-/* 兩個檢視：index＝人物清單（全寬卡片grid）、profile＝作者檔案（全寬作品牆）。
-   只換 #topic-person 上的 data-pn-view，版面由 CSS 決定。 */
+/* 兩個檢視：index＝歡迎頁、profile＝右側人物空間。殼層與產出庫相同。 */
 function applyView(){
   var box=$('topic-person');
   if(box&&box.setAttribute) box.setAttribute('data-pn-view',A.view);
+  var label=$('pnTabLabel');
+  var name='未選人物';
+  if(A.view==='profile'){
+    if(A.mode==='subjects'&&A.subjectSel) name=A.subjectSel.display_name||A.subjectSel.id;
+    else if(A.sel) name=displayAuthor(A.sel);
+  }
+  if(label) label.textContent=name;
+  var crumb=$('pnCrumb');
+  if(crumb){
+    var src=A.mode==='subjects'?'subjects':'douyin authors';
+    crumb.innerHTML='人物檔案 · <span id="pnTitleEn">'+esc(src)+'</span>'+(A.view==='profile'?' / '+esc(name):'');
+  }
 }
-function renderAll(){ renderKpis(); renderList(); renderSide(); applyView(); }
+function renderAll(){ renderKpis(); renderList(); renderSide(); applyView(); syncModeChrome(); }
 
 function renderError(){
   var box=$('pnList');
@@ -587,8 +604,19 @@ function backToList(){
 
 function openInLibrary(){
   var who=A.sel; if(!who) return;
+  if(window.KOLINDEX_LIBRARY&&window.KOLINDEX_LIBRARY.openWithAuthor){
+    window.KOLINDEX_LIBRARY.openWithAuthor(who);
+    return;
+  }
   if(window.KOLINDEX_LIBRARY&&window.KOLINDEX_LIBRARY.setAuthor) window.KOLINDEX_LIBRARY.setAuthor(who);
   if(window.KOLINDEX_UI&&window.KOLINDEX_UI.setTopic) window.KOLINDEX_UI.setTopic('library');
+}
+
+function openAuthor(name){
+  A.mode='douyin';
+  syncModeChrome();
+  if(window.KOLINDEX_UI&&window.KOLINDEX_UI.setTopic) window.KOLINDEX_UI.setTopic('person');
+  selectAuthor(name);
 }
 
 function openWork(id){
@@ -610,6 +638,32 @@ function bind(){
   renderSide();
   applyView();
   syncModeChrome();
+
+  var ideSide='files';
+  function setIdeSide(next){
+    ideSide=next||'files';
+    var root=$('pnIde');
+    if(root){
+      root.querySelectorAll('[data-pn-ide]').forEach(function(b){
+        b.classList.toggle('on', b.getAttribute('data-pn-ide')===ideSide);
+      });
+    }
+    var filter=$('pnFilterWrap');
+    var form=$('pnSubjectForm');
+    if(filter) filter.hidden=ideSide!=='search';
+    if(form) form.hidden=!(ideSide==='new' && A.mode==='subjects');
+    var title=$('pnSideTitle');
+    if(title){
+      title.textContent=ideSide==='search'?'尋找人物':(ideSide==='new'?'建立人物':(A.mode==='subjects'?'人物主檔':'抖音索引'));
+    }
+  }
+  var ide=$('pnIde');
+  on(ide,'click',function(e){
+    var act=e.target.closest('[data-pn-ide]');
+    if(!act) return;
+    setIdeSide(act.getAttribute('data-pn-ide'));
+  });
+  setIdeSide('files');
 
   function selectSubject(id){
     A.subjectSel=null;
@@ -733,6 +787,7 @@ function bind(){
     if(next===A.mode) return;
     A.mode=next;
     A.loaded=false; A.ok=false; A.subjects=[]; A.items=[]; A.subjectSel=null; A.sel=''; A.view='index';
+    setIdeSide(ideSide==='new'&&next!=='subjects'?'files':ideSide);
     load(true);
   });
 
@@ -831,6 +886,11 @@ function bind(){
 if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',bind);
 else bind();
 
-window.KOLINDEX_PERSON={state:A,load:load,loadWorks:loadWorks,loadMonths:loadMonths,loadPlatform:loadPlatform,platformHtml:platformHtml,monthsHtml:monthsHtml,selectAuthor:selectAuthor,backToList:backToList,openInLibrary:openInLibrary,
-  displayAuthor:displayAuthor,rowHtml:rowHtml,authorRows:function(){ return A.items; },esc:esc,bytes:bytes,day:day,nfmt:nfmt};
+window.KOLINDEX_PERSON={
+  version:'2.1.0',
+  state:A,load:load,loadWorks:loadWorks,loadMonths:loadMonths,loadPlatform:loadPlatform,
+  platformHtml:platformHtml,monthsHtml:monthsHtml,selectAuthor:selectAuthor,backToList:backToList,
+  openInLibrary:openInLibrary,openAuthor:openAuthor,displayAuthor:displayAuthor,rowHtml:rowHtml,
+  authorRows:function(){ return A.items; },esc:esc,bytes:bytes,day:day,nfmt:nfmt
+};
 })();

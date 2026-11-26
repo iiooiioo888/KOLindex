@@ -7,7 +7,7 @@
 <title>KOL-Index</title>
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tippy.js@6.3.7/dist/tippy.css" integrity="sha384-IBgYl+I5X6ZDZXI5zv1vsSE3VopDomz4BxSu/GlxaPHfFtcrJ3uj70z1w6srO9zU" crossorigin="anonymous">
-<link rel="stylesheet" href="css/index2.css?v=20261120">
+<link rel="stylesheet" href="css/index2.css?v=20261126h">
 <!-- design system：權杖 → 基礎 → 元件 → 版面，之後才是各頁覆寫 -->
 <link rel="stylesheet" href="css/ds/tokens.css?v=20261126c">
 <link rel="stylesheet" href="css/ds/base.css?v=20261121">
@@ -18,9 +18,10 @@
 <link rel="stylesheet" href="css/review.css?v=20261121">
 <link rel="stylesheet" href="css/connectors.css?v=20261121">
 <link rel="stylesheet" href="css/jobs.css?v=20261121">
-<link rel="stylesheet" href="css/library.css?v=20261125b">
-<link rel="stylesheet" href="css/person.css?v=20261122">
+<link rel="stylesheet" href="css/library.css?v=20261126h">
+<link rel="stylesheet" href="css/person.css?v=20261126h">
 <link rel="stylesheet" href="css/seats.css?v=20261126f">
+<link rel="stylesheet" href="css/sense.css?v=20261126a">
 <link rel="stylesheet" href="css/queue.css?v=20261124">
 <link rel="stylesheet" href="css/login.css?v=20261126b">
 <link rel="stylesheet" href="css/caps.css?v=20261124">
@@ -331,136 +332,56 @@ html[data-demo="1"] #demoBanner{display:block;position:sticky;top:0;z-index:50;p
         <div class="panel-head">
           <div class="panel-title">感測上下文</div>
           <div class="panel-tools">
-            <span class="chip cyan">窗口 16K</span>
-            <span class="chip">原文→壓縮→感知</span>
-            <span class="chip amber">8 份獨立壓縮</span>
-            <span class="chip red">行動句→guard.py</span>
-            <button type="button" class="mini-btn" data-topic="out">產出庫</button>
-            <button class="mini-btn" id="clearSensorFilter" style="display:none">✕ 清除篩選</button>
+            <span class="chip" id="senseToolChip">示範樣本 · 非採集真相</span>
+            <button type="button" class="mini-btn" data-topic="queue">任務看板</button>
+            <button type="button" class="mini-btn" data-topic="seat">席位 Agent</button>
+            <button type="button" class="mini-btn" id="senseRefresh">重整</button>
           </div>
         </div>
         <div class="panel-body sense-body">
-          <div class="sense-grid">
-
-            <article class="scard" data-state="warn" data-sensor="CTX-WIN" data-search>
-              <div class="sc-top">
-                <div style="min-width:0"><div class="sc-id">窗口</div><h3 class="sc-name">原文窗口</h3></div>
-                <div class="sc-state"><span class="sig warn"></span>警戒</div>
-              </div>
-              <div class="sc-val"><span data-sensor-val="CTX-WIN">76</span><u>%</u><span class="delta up" data-sensor-delta="CTX-WIN">▲ +1</span></div>
-              <div class="sc-stats">
-                <div><div class="l">MIN</div><div class="v" data-stat="CTX-WIN:min">61</div></div>
-                <div><div class="l">AVG</div><div class="v" data-stat="CTX-WIN:avg">70</div></div>
-                <div><div class="l">MAX</div><div class="v" data-stat="CTX-WIN:max">76</div></div>
-                <div><div class="l">P95</div><div class="v" data-stat="CTX-WIN:p95">75</div></div>
-              </div>
-              <div class="thr" role="img" aria-label="窗口占用：小於72充裕，72到88偏滿，大於88將截斷"><div class="marker" data-thr-marker="CTX-WIN" style="left:74%"></div></div>
-              <div class="thr-legend"><span>&lt; 72 充裕</span><span>72–88 偏滿</span><span>&gt; 88 截斷</span></div>
-              <svg class="sc-spark" data-spark="61,64,66,68,70,71,73,74,75,76,76" data-color="#cfa04a" data-threshold="72" role="img" aria-label="原文窗口占用走勢"></svg>
-              <div class="sc-cons">
-                <div class="cw">壓縮後注入</div>
-                <div class="cons-row"><button class="cref" data-jump="Q-118">Q-118</button><span class="cwhat">趨勢分析吃的是壓縮窗</span></div>
-                <div class="cons-row"><button class="cref" data-jump="T-2841">T-2841</button><span class="cwhat">總任務目標附在窗首</span></div>
-              </div>
-              <div class="sc-foot"><span class="fresh" data-fresh><i></i>0.4s</span><span>12.4K → 待壓 · 唯讀</span></div>
-              <div class="sc-actions">
-                <button class="mini-btn primary" data-filter-sensor="CTX-WIN">篩選關聯項目</button>
-                <button class="mini-btn" data-alarm-log="CTX-WIN">記錄異常</button>
-              </div>
-            </article>
-
-            <article class="scard" data-state="ok" data-sensor="CTX-CMP" data-search>
-              <div class="sc-top">
-                <div style="min-width:0"><div class="sc-id">壓縮</div><h3 class="sc-name">上下文壓縮</h3></div>
-                <div class="sc-state"><span class="sig ok"></span>正常</div>
-              </div>
-              <div class="sc-val"><span data-sensor-val="CTX-CMP">34</span><u>% 留</u><span class="delta down" data-sensor-delta="CTX-CMP">▼ -1</span></div>
-              <div class="sc-stats">
-                <div><div class="l">MIN</div><div class="v" data-stat="CTX-CMP:min">28</div></div>
-                <div><div class="l">AVG</div><div class="v" data-stat="CTX-CMP:avg">33</div></div>
-                <div><div class="l">MAX</div><div class="v" data-stat="CTX-CMP:max">41</div></div>
-                <div><div class="l">P95</div><div class="v" data-stat="CTX-CMP:p95">39</div></div>
-              </div>
-              <div class="thr" role="img" aria-label="保留率：小於48夠瘦，48到62偏肥，大於62幾乎沒壓"><div class="marker" data-thr-marker="CTX-CMP" style="left:38%"></div></div>
-              <div class="thr-legend"><span>&lt; 48 夠瘦</span><span>48–62 偏肥</span><span>&gt; 62 沒壓</span></div>
-              <svg class="sc-spark" data-spark="41,39,38,36,35,34,33,34,32,33,34" data-color="#7fb2c9" data-threshold="48" role="img" aria-label="壓縮保留率走勢"></svg>
-              <div class="sc-cons">
-                <div class="cw">摘要注入對象</div>
-                <div class="cons-row"><button class="cref" data-jump="Q-120">Q-120</button><span class="cwhat">複核吃壓縮摘要</span></div>
-                <div class="cons-row"><button class="cref" data-jump="Q-117">Q-117</button><span class="cwhat">再分拆沿用同一摘要</span></div>
-              </div>
-              <div class="sc-foot"><span class="fresh" data-fresh><i></i>0.6s</span><span>保留目標 · 最新證據 · 未完成步</span></div>
-              <div class="sc-actions">
-                <button class="mini-btn primary" data-filter-sensor="CTX-CMP">篩選關聯項目</button>
-                <button class="mini-btn" data-alarm-log="CTX-CMP">記錄異常</button>
-              </div>
-            </article>
-
-            <article class="scard" data-state="warn" data-sensor="TXT-SEE" data-search>
-              <div class="sc-top">
-                <div style="min-width:0"><div class="sc-id">感知</div><h3 class="sc-name">文本感知</h3></div>
-                <div class="sc-state"><span class="sig warn"></span>警戒</div>
-              </div>
-              <div class="sc-val"><span data-sensor-val="TXT-SEE">0.74</span><u>置信</u><span class="delta up" data-sensor-delta="TXT-SEE">▲ +0.02</span></div>
-              <div class="sc-stats">
-                <div><div class="l">MIN</div><div class="v" data-stat="TXT-SEE:min">0.41</div></div>
-                <div><div class="l">AVG</div><div class="v" data-stat="TXT-SEE:avg">0.63</div></div>
-                <div><div class="l">MAX</div><div class="v" data-stat="TXT-SEE:max">0.74</div></div>
-                <div><div class="l">P95</div><div class="v" data-stat="TXT-SEE:p95">0.72</div></div>
-              </div>
-              <div class="thr" role="img" aria-label="感知置信：小於0.62僅參考，0.62到0.85為候選，大於0.85必須守門"><div class="marker" data-thr-marker="TXT-SEE" style="left:68%"></div></div>
-              <div class="thr-legend"><span>&lt; .62 參考</span><span>.62–.85 候選</span><span>&gt; .85 守門</span></div>
-              <svg class="sc-spark" data-spark="0.41,0.48,0.52,0.58,0.61,0.66,0.69,0.71,0.72,0.73,0.74" data-color="#9a93c9" data-threshold="0.62" role="img" aria-label="文本感知置信走勢"></svg>
-              <div class="sc-write" id="writeBox">
-                <div class="swt"><span class="sig lock" style="vertical-align:-1px"></span> 感知行動句 · guard.py 審核中</div>
-                <div class="swd">看出一句行動：閥位 <b>62% → 54%</b> · 只是候選 · 觸發 <b>Q-121</b> · 未核可不得執行</div>
-                <div class="sc-actions" style="margin-top:7px">
-                  <button class="mini-btn warn" id="guardApprove">核准候選</button>
-                  <button class="mini-btn" data-jump="Q-121">檢視 Q-121</button>
-                </div>
-              </div>
-              <div class="sc-foot"><span class="fresh" data-fresh><i></i>0.3s</span><span id="guardState">guard: <span data-num="guardPending">—</span> 待審</span></div>
-            </article>
-          </div>
-
-          <section class="cmp-board" aria-label="壓縮上下文">
-            <div class="angle-head">
-              <div class="ah">壓縮上下文 <b>八槽各一份，不共讀</b></div>
-              <div class="ah">留下目標、最新證據、未完成步 · 丟掉重複與過期</div>
+          <div class="sense" id="sense" aria-label="感測上下文">
+            <div class="sense-top">
+              <div class="sense-h"><b>公開訊號</b><span class="sense-live" id="senseLive">示範</span></div>
+              <div class="sense-note" id="senseNote">平台熱度 · 關鍵詞 · 情緒分佈 · 只產候選不觸發動作</div>
             </div>
-            <div class="cmp-grid" id="compressBoard"></div>
-          </section>
-          <div class="kb-duo">
-            <section class="kb-panel task" aria-label="任務知識庫">
-              <div class="kb-head">
-                <div>
-                  <div class="kb-k">TASK KB</div>
-                  <h3 class="kb-name">任務知識庫</h3>
-                </div>
-                <div class="kb-meta" id="taskKbMeta">同步中</div>
-              </div>
-              <div class="kb-list" id="taskKbList"></div>
-              <div class="kb-foot">只收本槽增量。A1–B2、B4 各自回寫自己的條目，空檔釋放後這條增量從槽上卸下，條目留在任務庫。</div>
-            </section>
-            <section class="kb-panel world" aria-label="世界知識庫">
-              <div class="kb-head">
-                <div>
-                  <div class="kb-k">WORLD KB</div>
-                  <h3 class="kb-name">世界知識庫</h3>
-                </div>
-                <div class="kb-meta" id="worldKbMeta">只讀</div>
-              </div>
-              <div class="kb-list" id="worldKbList"></div>
-              <div class="kb-foot">八槽共讀這一庫，不把它抄進各自的壓縮稿。佔用槽掛上閱讀鎖，空檔釋放後只還閱讀鎖，不改世界庫。產物另存於產出庫。</div>
-            </section>
-          </div>
+            <div class="sense-kpis" id="senseKpis"></div>
 
-          <div class="sync-board">
-            <div class="angle-head">
-              <div class="ah">八個執行位各自保留一份摘要</div>
-              <div class="ah">只讀；不觸發寫入或採集</div>
+            <div class="sense-pipe">
+              <section class="sn-col" aria-label="平台熱度">
+                <div class="sn-h"><b>平台熱度</b><span class="sn-sub">相對活躍（示範）</span></div>
+                <ul class="sn-list" id="sensePlatforms"></ul>
+              </section>
+              <section class="sn-col" aria-label="關鍵詞">
+                <div class="sn-h"><b>關鍵詞</b><span class="sn-sub">公開文本抽樣</span></div>
+                <ul class="sn-list" id="senseKeywords"></ul>
+              </section>
+              <section class="sn-col" aria-label="情緒分佈">
+                <div class="sn-h"><b>情緒分佈</b><span class="sn-sub">粗分三桶 · 非身份推斷</span></div>
+                <div class="sn-mood" id="senseMood"></div>
+                <div class="sn-h sn-h-sub"><b>樣本窗</b><span class="sn-sub" id="senseWindowMeta">—</span></div>
+                <ul class="sn-list sn-samples" id="senseSamples"></ul>
+              </section>
             </div>
-            <div class="sync-grid" id="senseSlots" aria-label="八個執行位的上下文"></div>
+
+            <div class="sense-bottom">
+              <section class="sn-block" aria-label="事件候選">
+                <div class="sn-h">
+                  <b>事件候選</b>
+                  <span class="sn-sub">模型／規則只建候選 · 不派工</span>
+                  <button type="button" class="mini-btn" id="senseToQueue" data-cap="write">送入任務看板</button>
+                </div>
+                <ol class="sn-list sn-cands" id="senseCandidates"></ol>
+              </section>
+              <section class="sn-block" aria-label="邊界說明">
+                <div class="sn-h"><b>邊界</b><span class="sn-sub">規格對齊</span></div>
+                <ul class="sn-rules">
+                  <li>外部內容一律 <code>untrusted</code>，不拼進系統指令。</li>
+                  <li>分析輸出只建候選；審核前不觸發採集、寫庫或刪除。</li>
+                  <li>不做人物臉部身份識別，不推斷性別／族群／健康／政治。</li>
+                  <li>目前無真實採集特徵庫；數字標「示範」前不得當測量事實。</li>
+                </ul>
+              </section>
+            </div>
           </div>
         </div>
       </div>
@@ -1037,47 +958,56 @@ html[data-demo="1"] #demoBanner{display:block;position:sticky;top:0;z-index:50;p
       </div>
     </section>
 
-    <section class="waterfall" id="topic-person" role="tabpanel" aria-labelledby="tab-person" aria-hidden="true">
-      <div class="panel">
-        <div class="panel-head">
-          <div class="panel-title">人物檔案<span class="en" id="pnTitleEn" hidden>subjects</span></div>
-          <div class="panel-tools">
-            <span class="chip or" id="pnStatus">待連線</span>
-            <span class="chip cyan" id="pnCount">—</span>
-          </div>
+    <section class="waterfall" id="topic-person" role="tabpanel" aria-labelledby="tab-person" aria-hidden="true" data-pn-view="index">
+      <div class="ide" id="pnIde">
+        <div class="ide-bar" role="toolbar" aria-label="人物檔案工具">
+          <button type="button" class="ide-act on" data-pn-ide="files" title="人物清單" aria-label="人物清單"><svg class="ic" viewBox="0 0 16 16"><path d="M2 3.2h3.4l1.2 1.4H14v8.2H2z"/></svg></button>
+          <button type="button" class="ide-act" data-pn-ide="search" title="搜尋人物" aria-label="搜尋人物"><svg class="ic"><use href="#i-search"/></svg></button>
+          <button type="button" class="ide-act" data-pn-ide="new" title="建立人物" aria-label="建立人物" data-cap="operate"><svg class="ic" viewBox="0 0 16 16"><path d="M8 2.5v11M2.5 8h11" stroke="currentColor" fill="none" stroke-width="1.6"/></svg></button>
         </div>
-        <div class="panel-body">
-          <div class="pn-seg" id="pnMode" role="group" aria-label="人物資料來源">
-            <button type="button" data-pn-mode="subjects" aria-pressed="true">人物主檔</button>
-            <button type="button" data-pn-mode="douyin" aria-pressed="false">抖音作者索引</button>
+        <aside class="ide-side">
+          <div class="ide-side-h"><span id="pnSideTitle">人物檔案</span><span id="pnCount">—</span></div>
+          <div class="pn-seg pn-ide-mode" id="pnMode" role="group" aria-label="人物資料來源">
+            <button type="button" data-pn-mode="subjects" aria-pressed="true">主檔</button>
+            <button type="button" data-pn-mode="douyin" aria-pressed="false">抖音索引</button>
           </div>
-          <form class="pn-bar" id="pnSubjectForm" data-cap="operate">
-            <input type="text" id="pnSubjectName" class="pn-input" maxlength="80" placeholder="新建人物顯示名" autocomplete="off">
-            <button type="submit" class="mini-btn primary" id="pnSubjectAdd">建立人物</button>
-            <span class="note" id="pnSubjectOut">人物主檔走控制面 <code>/subjects</code>。確認的平台帳號才算掛上。</span>
+          <label class="ide-filter" id="pnFilterWrap" hidden>搜尋人物
+            <input type="search" id="pnSearch" placeholder="人物名／顯示名" aria-label="搜尋人物">
+          </label>
+          <form class="pn-ide-create" id="pnSubjectForm" data-cap="operate" hidden>
+            <input type="text" id="pnSubjectName" maxlength="80" placeholder="新建顯示名" autocomplete="off">
+            <button type="submit" class="mini-btn primary" id="pnSubjectAdd">建立</button>
+            <span class="note" id="pnSubjectOut">走控制面 /subjects</span>
           </form>
-          <div class="pn-kpis" id="pnKpis"></div>
-          <div class="pn-bar">
-            <input type="search" id="pnSearch" class="pn-input" placeholder="搜尋人物名…" aria-label="搜尋人物">
-            <div class="pn-seg" id="pnSort" role="group" aria-label="人物排序">
-              <button type="button" data-sort="count" aria-pressed="true">作品最多</button>
-              <button type="button" data-sort="recent" aria-pressed="false">最近有作品</button>
-              <button type="button" data-sort="name" aria-pressed="false">名稱</button>
-            </div>
+          <div class="pn-ide-sort" id="pnSort" role="group" aria-label="人物排序" hidden>
+            <button type="button" data-sort="count" aria-pressed="true">作品</button>
+            <button type="button" data-sort="recent" aria-pressed="false">最近</button>
+            <button type="button" data-sort="name" aria-pressed="false">名稱</button>
             <button type="button" class="mini-btn" id="pnReset">重置</button>
           </div>
-          <div class="pn-split">
-            <div class="pn-col">
-              <div class="pn-list" id="pnList"></div>
-              <div class="pn-more">
-                <button type="button" class="mini-btn primary" id="pnMore">載入更多</button>
-                <span class="pn-foot-text" id="pnFoot">—</span>
-              </div>
-            </div>
-            <aside class="pn-side" id="pnSide"></aside>
+          <div class="ide-tree pn-list" id="pnList" role="tree" aria-label="人物清單"></div>
+          <div class="pn-ide-foot">
+            <button type="button" class="mini-btn" id="pnMore">載入更多</button>
+            <span id="pnFoot">—</span>
           </div>
-          <div class="p-cap" id="pnCap">
-            <b>人物主檔</b>是一個人對多個已確認平台帳號。抖音作者索引仍可切換查看，那是素材庫來源，不是歸戶結果。覆蓋缺口沒有測量數字時顯示「—」。
+        </aside>
+        <div class="ide-main">
+          <div class="ide-tabs" id="pnTabs" role="tablist">
+            <div class="ide-tab on" id="pnTab"><button type="button"><span id="pnTabLabel">未選人物</span></button></div>
+          </div>
+          <div class="ide-crumb" id="pnCrumb">人物檔案 · <span id="pnTitleEn">subjects</span></div>
+          <div class="pn-ide-kpis" id="pnKpis"></div>
+          <div class="ide-welcome" id="pnWelcome">
+            <div class="ide-welcome-k">SUBJECTS</div>
+            <h2>人物檔案</h2>
+            <p>左側選人物主檔或抖音作者索引。主檔一個人可掛多個已確認公開帳號；覆蓋缺口沒測量前顯示「—」。</p>
+          </div>
+          <div class="pn-ide-sheet" id="pnSheet">
+            <div class="pn-side" id="pnSide"></div>
+          </div>
+          <div class="ide-status" id="pnStatusBar">
+            <span class="chip or" id="pnStatus">待連線</span>
+            <span class="note" id="pnCap">人物主檔走控制面 <code>/subjects</code>。</span>
           </div>
         </div>
       </div>
@@ -1114,33 +1044,33 @@ html[data-demo="1"] #demoBanner{display:block;position:sticky;top:0;z-index:50;p
       </div>
     </section>
 
-    <!-- ═══ 素材庫 ═══ -->
+    <!-- ═══ 素材庫（與產出庫／人物同一套 IDE 殼，並可與人物互跳） ═══ -->
     <section class="waterfall" id="topic-library" role="tabpanel" aria-labelledby="tab-library" aria-hidden="true">
-      <div class="panel">
-        <div class="panel-head">
-          <div class="panel-title">素材庫</div>
-          <div class="panel-tools">
-            <span class="chip or" id="libStatus">待連線</span>
-            <span class="chip cyan" id="libCount">—</span>
-          </div>
+      <div class="ide" id="libIde">
+        <div class="ide-bar" role="toolbar" aria-label="素材庫工具">
+          <button type="button" class="ide-act on" data-lib-ide="files" title="瀏覽素材" aria-label="瀏覽素材"><svg class="ic" viewBox="0 0 16 16"><path d="M2 3.2h3.4l1.2 1.4H14v8.2H2z"/></svg></button>
+          <button type="button" class="ide-act" data-lib-ide="search" title="搜尋素材" aria-label="搜尋素材"><svg class="ic"><use href="#i-search"/></svg></button>
+          <button type="button" class="ide-act" data-lib-ide="person" title="回人物檔案" aria-label="回人物檔案"><svg class="ic"><use href="#i-pulse"/></svg></button>
         </div>
-        <div class="panel-body">
-          <div class="lib-kpis" id="libKpis"></div>
-          <div class="lib-bar">
-            <input type="search" id="libSearch" class="lib-input" placeholder="搜尋作者、標題或作品 id…" aria-label="搜尋素材">
-            <div class="lib-seg" id="libMode" role="group" aria-label="檢視">
-              <button type="button" data-mode="items" aria-pressed="true">作品</button>
-              <button type="button" data-mode="authors" aria-pressed="false">作者</button>
-            </div>
+        <aside class="ide-side">
+          <div class="ide-side-h"><span id="libSideTitle">素材庫</span><span id="libCount">—</span></div>
+          <div class="lib-ide-mode" id="libMode" role="group" aria-label="檢視">
+            <button type="button" data-mode="items" aria-pressed="true">作品</button>
+            <button type="button" data-mode="authors" aria-pressed="false">作者</button>
+          </div>
+          <label class="ide-filter" id="libFilterWrap" hidden>搜尋素材
+            <input type="search" id="libSearch" placeholder="作者、標題或作品 id" aria-label="搜尋素材">
+          </label>
+          <div class="lib-ide-filters">
             <div class="lib-seg" id="libKind" role="group" aria-label="類型">
               <button type="button" data-kind="all" aria-pressed="true">全部</button>
               <button type="button" data-kind="gallery" aria-pressed="false">圖集</button>
               <button type="button" data-kind="video" aria-pressed="false">影片</button>
             </div>
             <div class="lib-seg" id="libSource" role="group" aria-label="來源">
-              <button type="button" data-source="all" aria-pressed="true">全部來源</button>
-              <button type="button" data-source="likes" aria-pressed="false">點讚</button>
-              <button type="button" data-source="favorites" aria-pressed="false">收藏</button>
+              <button type="button" data-source="all" aria-pressed="true">全部</button>
+              <button type="button" data-source="likes" aria-pressed="false">讚</button>
+              <button type="button" data-source="favorites" aria-pressed="false">藏</button>
             </div>
             <select id="libSort" class="lib-select" aria-label="排序">
               <option value="recent">最新發佈</option>
@@ -1152,79 +1082,88 @@ html[data-demo="1"] #demoBanner{display:block;position:sticky;top:0;z-index:50;p
               <option value="recent">最近有作品</option>
               <option value="name">名稱</option>
             </select>
-            <span class="lib-acts">
+            <div class="lib-ide-acts">
               <button type="button" class="mini-btn" id="libReset">重置</button>
               <button type="button" class="mini-btn mylike-btn" id="libMyLike" aria-expanded="false" aria-controls="libMyLikePanel" data-cap="write">
-                <span class="ml-dot" id="libMyLikeDot" aria-hidden="true"></span>MyLike 同步
+                <span class="ml-dot" id="libMyLikeDot" aria-hidden="true"></span>MyLike
               </button>
-              <button type="button" class="mini-btn" id="libOptimize" data-cap="write" title="剝掉 ICC／EXIF／XMP 等中介資料，像素完全不變">無損壓縮</button>
-              <button type="button" class="mini-btn" id="libDeriv" data-cap="write" title="產生 q50 衍生檔（原檔保留，不改寫證據與 sha256；容量不會因此變小）">衍生層</button>
-              <button type="button" class="mini-btn" id="libDownloadMissing" data-cap="write" title="把只有索引、還沒有本機檔案的抓下來">下載缺檔</button>
-            </span>
+              <button type="button" class="mini-btn" id="libOptimize" data-cap="write" title="剝掉 ICC／EXIF／XMP 等中介資料，像素完全不變">無損</button>
+              <button type="button" class="mini-btn" id="libDeriv" data-cap="write" title="產生 q50 衍生檔（原檔保留）">衍生</button>
+              <button type="button" class="mini-btn" id="libDownloadMissing" data-cap="write" title="下載缺檔">缺檔</button>
+            </div>
           </div>
+          <div class="lib-ide-foot">
+            <button type="button" class="mini-btn primary" id="libMore">載入更多</button>
+            <span id="libFoot">—</span>
+          </div>
+        </aside>
+        <div class="ide-main">
+          <div class="ide-tabs" id="libTabs" role="tablist">
+            <div class="ide-tab on" id="libTab"><button type="button"><span id="libTabLabel">素材瀏覽</span></button></div>
+          </div>
+          <div class="ide-crumb" id="libCrumb">素材庫 · douyin_item · 與人物檔案共用檢視器</div>
+          <div class="lib-ide-kpis" id="libKpis"></div>
           <div class="lib-chipbar" id="libAuthorChip" hidden>
             <span class="lcb-label">作者</span>
             <b id="libAuthorName">—</b>
+            <button type="button" class="mini-btn" id="libOpenPerson" title="在人物檔案開啟">人物</button>
             <button type="button" id="libAuthorClear" aria-label="清除作者篩選">×</button>
           </div>
-          <div class="lib-grid" id="libGrid"></div>
-          <div class="lib-foot">
-            <button type="button" class="mini-btn primary" id="libMore">載入更多</button>
-            <span class="lib-foot-text" id="libFoot">—</span>
+          <div class="ide-welcome" id="libWelcome">
+            <div class="ide-welcome-k">LIBRARY</div>
+            <h2>素材庫</h2>
+            <p>本機抖音索引與人物檔案共用同一套 IDE 殼與檢視器。左側切作品／作者；人物頁可一鍵跳來篩作者。</p>
           </div>
-          <div class="p-cap">
-            <b>本機抖音素材。</b>索引由 <code>sync-library.mjs</code> 把 <code>gallery/index.json</code> 灌進 API 的 <code>douyin_item</code>；縮圖與影片由 5400 的靜態站直接給。要回抖音補新點讚、新收藏或收藏夾，按右上的「MyLike 同步」。
+          <div class="lib-ide-sheet">
+            <div class="lib-grid" id="libGrid"></div>
           </div>
-
-          <aside class="mylike-panel" id="libMyLikePanel" role="dialog" aria-label="MyLike 同步" hidden>
-            <div class="ml-head">
-              <div class="ml-title">MyLike 同步</div>
-              <div class="ml-head-right">
-                <span class="chip or" id="mlConn">未連線</span>
-                <button type="button" class="ml-x" id="mlClose" aria-label="關閉面板">×</button>
-              </div>
-            </div>
-            <div class="ml-body">
-              <div class="ml-cards" id="mlCards"></div>
-
-              <div class="ml-row">
-                <button type="button" class="mini-btn" id="mlWake" data-cap="write">喚醒抖音頁</button>
-                <button type="button" class="mini-btn primary" data-ml-sync="likes" data-cap="write">同步點讚</button>
-                <button type="button" class="mini-btn primary" data-ml-sync="favorites" data-cap="write">同步收藏</button>
-                <select id="mlPages" class="lib-select" aria-label="每輪抓幾頁">
-                  <option value="5">每輪 5 頁</option>
-                  <option value="15">每輪 15 頁</option>
-                  <option value="60">每輪 60 頁</option>
-                  <option value="2">每輪 2 頁（試跑）</option>
-                </select>
-              </div>
-
-              <div class="ml-prog" id="mlProg" hidden>
-                <div class="ml-track"><span class="ml-bar" id="mlBar"></span></div>
-                <div class="ml-prog-text" id="mlProgText">—</div>
-              </div>
-
-              <div class="ml-sec">
-                <div class="ml-sec-head">
-                  <span>收藏夾<span class="ml-dim" id="mlFolderCount"></span></span>
-                  <button type="button" class="mini-btn" id="mlRefresh" data-cap="write">重新抓收藏夾</button>
-                </div>
-                <div class="ml-folders" id="mlFolders"></div>
-              </div>
-
-              <div class="ml-sec">
-                <div class="ml-sec-head"><span>最近同步</span></div>
-                <div class="ml-runs" id="mlRuns"></div>
-              </div>
-
-              <div class="ml-note">
-                同步只把索引（作者、標題、封面、播放網址）寫進 <code>douyin_item</code>，不下載媒體；<code>files / bytes</code> 保留本機原本的數字，由 <code>download.mjs</code> 事後補。抖音播放網址幾小時就過期，之後用 <code>refill.mjs</code> 重取。
-              </div>
-            </div>
-          </aside>
+          <div class="ide-status" id="libStatusBar">
+            <span class="chip or" id="libStatus">待連線</span>
+            <span class="note">索引來自 <code>douyin_item</code>；媒體由同源 <code>/media</code> 提供。</span>
+          </div>
         </div>
+        <aside class="mylike-panel" id="libMyLikePanel" role="dialog" aria-label="MyLike 同步" hidden>
+          <div class="ml-head">
+            <div class="ml-title">MyLike 同步</div>
+            <div class="ml-head-right">
+              <span class="chip or" id="mlConn">未連線</span>
+              <button type="button" class="ml-x" id="mlClose" aria-label="關閉面板">×</button>
+            </div>
+          </div>
+          <div class="ml-body">
+            <div class="ml-cards" id="mlCards"></div>
+            <div class="ml-row">
+              <button type="button" class="mini-btn" id="mlWake" data-cap="write">喚醒抖音頁</button>
+              <button type="button" class="mini-btn primary" data-ml-sync="likes" data-cap="write">同步點讚</button>
+              <button type="button" class="mini-btn primary" data-ml-sync="favorites" data-cap="write">同步收藏</button>
+              <select id="mlPages" class="lib-select" aria-label="每輪抓幾頁">
+                <option value="5">每輪 5 頁</option>
+                <option value="15">每輪 15 頁</option>
+                <option value="60">每輪 60 頁</option>
+                <option value="2">每輪 2 頁（試跑）</option>
+              </select>
+            </div>
+            <div class="ml-prog" id="mlProg" hidden>
+              <div class="ml-track"><span class="ml-bar" id="mlBar"></span></div>
+              <div class="ml-prog-text" id="mlProgText">—</div>
+            </div>
+            <div class="ml-sec">
+              <div class="ml-sec-head">
+                <span>收藏夾<span class="ml-dim" id="mlFolderCount"></span></span>
+                <button type="button" class="mini-btn" id="mlRefresh" data-cap="write">重新抓收藏夾</button>
+              </div>
+              <div class="ml-folders" id="mlFolders"></div>
+            </div>
+            <div class="ml-sec">
+              <div class="ml-sec-head"><span>最近同步</span></div>
+              <div class="ml-runs" id="mlRuns"></div>
+            </div>
+            <div class="ml-note">
+              同步只寫索引到 <code>douyin_item</code>，不下載媒體；缺檔另按「缺檔」。與人物檔案互跳不改寫歸戶。
+            </div>
+          </div>
+        </aside>
       </div>
-
     </section>
   </main>
 
@@ -1423,15 +1362,16 @@ html[data-demo="1"] #demoBanner{display:block;position:sticky;top:0;z-index:50;p
 <script defer src="js/login.js?v=20261126b"></script>
 <script defer src="js/fixtures/demo.js?v=20261124"></script>
 <script defer src="js/api.js?v=20261124"></script>
-<script defer src="js/index2.js?v=20261126f"></script>
+<script defer src="js/index2.js?v=20261126h"></script>
 <script defer src="js/wireframe.js?v=20261121"></script>
 <script defer src="js/studio.js?v=20261123c"></script>
 <script defer src="js/review.js?v=20261123d"></script>
 <script defer src="js/infra.js?v=20261121"></script>
 <script defer src="js/jobs.js?v=20261123b"></script>
-<script defer src="js/library.js?v=20261124a"></script>
-<script defer src="js/person.js?v=20261126b"></script>
+<script defer src="js/library.js?v=20261126h"></script>
+<script defer src="js/person.js?v=20261126h"></script>
 <script defer src="js/seats.js?v=20261126g"></script>
+<script defer src="js/sense.js?v=20261126a"></script>
 <script defer src="js/rail.js?v=20261123b"></script>
 <script defer src="js/system.js?v=20261126a"></script>
 </body>

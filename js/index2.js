@@ -1535,14 +1535,14 @@
     queue:{label:'任務隊列',group:'工作',hint:'席位自動拉取；有空檔才執行'},
     seat:{label:'席位 Agent',group:'工作',hint:'大任務 → 經理拆分 → 獨立席位'},
     review:{label:'審核',group:'工作',hint:'候選由人裁決'},
-    person:{label:'人物',group:'內容',hint:'主檔與公開帳號候選'},
-    library:{label:'素材',group:'內容',hint:'本機媒體索引'},
+    person:{label:'人物',group:'內容',hint:'IDE 殼 · 主檔／抖音索引 · 可跳素材'},
+    library:{label:'素材',group:'內容',hint:'IDE 殼 · 與人物共用檢視器'},
     out:{label:'產出',group:'內容',hint:'另存新版，不覆蓋舊檔'},
     health:{label:'健康',group:'監控',hint:'元件探測'},
     infra:{label:'基建',group:'監控',hint:'服務與儲存'},
     oss:{label:'開源',group:'監控',hint:'鎖定版本；工具台可查用戶名'},
     pipe:{label:'管線',group:'監控',hint:'執行路徑示意'},
-    sense:{label:'感測',group:'監控',hint:'示範壓縮與感知卡'},
+    sense:{label:'感測',group:'監控',hint:'平台熱度 · 關鍵詞 · 情緒（示範）'},
     studio:{label:'線框',group:'工具',hint:'需求轉線框草稿'}
   };
   var INFRA_PANES=['docker','ecs','bill','cost','conn','jobs'];
@@ -1864,6 +1864,7 @@
   }
   every(2200, function(){
     if (store.paused||document.hidden) return;
+    if (!document.querySelector('.scard[data-sensor]')) return;
     Object.keys(sensors).forEach(function(id){
       var cfg=sensors[id];
       cfg.val=Math.round((cfg.val+(Math.random()-0.5)*cfg.drift*2)*1000)/1000;
@@ -1871,9 +1872,10 @@
       renderSensor(id); });
   });
 
-  /* 感測過濾 */
+  /* 感測過濾（舊 scard UI 已移除；保留函式以免其他呼叫炸掉） */
   var filterBtn=$('#clearSensorFilter');
   function applySensorFilter(sid,card,quiet){
+    if (!document.querySelector('.scard[data-sensor]')) return;
     $$('.scard').forEach(function(c){ c.classList.toggle('selected',c===card); });
     var related=[];
     $$('.qcard').forEach(function(q){
@@ -1884,8 +1886,10 @@
     $$('#seatRoster tbody tr').forEach(function(r){
       var hit=related.some(function(id){ return r.textContent.indexOf(id)>-1; });
       r.classList.toggle('linked',hit); r.classList.toggle('dimmed',!hit); });
-    filterBtn.style.display='inline-block';
-    filterBtn.textContent='✕ '+sid+'（'+related.length+'）';
+    if (filterBtn){
+      filterBtn.style.display='inline-block';
+      filterBtn.textContent='✕ '+sid+'（'+related.length+'）';
+    }
     if (!quiet){
       pushEvent('#7fb2c9','<b>filter</b> '+esc(sid)+' 命中 '+(related.join('/')||'無'));
       toast('已依 '+sid+' 過濾關聯項目','ok');
@@ -1895,9 +1899,9 @@
     $$('.scard').forEach(function(c){ c.classList.remove('selected'); });
     $$('.qcard').forEach(function(q){ q.classList.remove('linked','dimmed'); });
     $$('#seatRoster tbody tr').forEach(function(r){ r.classList.remove('linked','dimmed'); });
-    filterBtn.style.display='none';
+    if (filterBtn) filterBtn.style.display='none';
   }
-  filterBtn.addEventListener('click',clearSensorFilter);
+  if (filterBtn) filterBtn.addEventListener('click',clearSensorFilter);
 
   document.addEventListener('click',function(e){
     var fb=e.target.closest('[data-filter-sensor]');
