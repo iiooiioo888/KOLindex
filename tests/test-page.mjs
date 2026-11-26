@@ -2,7 +2,7 @@ import assert from 'node:assert';
 (async () => {
   const base = 'http://127.0.0.1:5200';
   const html = await (await fetch(base + '/')).text();
-  const files = ['/js/index2.js', '/js/api.js', '/js/wireframe.js', '/js/studio.js', '/js/person.js', '/js/review.js', '/js/infra.js', '/js/jobs.js', '/js/library.js', '/css/index2.css', '/css/studio.css', '/css/person.css', '/css/review.css', '/css/connectors.css', '/css/jobs.css', '/css/library.css',
+  const files = ['/js/index2.js', '/js/api.js', '/js/wireframe.js', '/js/studio.js', '/js/person.js', '/js/review.js', '/js/infra.js', '/js/jobs.js', '/js/library.js', '/js/cmdk.js', '/css/ux.css', '/css/index2.css', '/css/studio.css', '/css/person.css', '/css/review.css', '/css/connectors.css', '/css/jobs.css', '/css/library.css',
     '/css/ds/tokens.css', '/css/ds/base.css', '/css/ds/components.css', '/css/ds/pages.css'];
   for (const f of files) {
     const r = await fetch(base + f);
@@ -72,6 +72,21 @@ import assert from 'node:assert';
   const apiJs = await (await fetch(base + '/js/api.js')).text();
   assert(apiJs.includes("'kolindex:api'"), 'api event');
   console.log('person wiring: ok');
+
+  // 本機 UX 層：⌘K、離線列、API 延遲
+  const uxNeed = ['cmdkOpen', 'netBar', 'netText', 'netRetry', 'netClose', 'cmdk', 'cmdkInput', 'cmdkList', 'cmdkEmpty', 'cmdkFoot', 'apiLatency'];
+  const uxMissing = uxNeed.filter(id => !ids.has(id));
+  console.log('ux ids missing:', uxMissing.length ? uxMissing : 'none');
+  assert(!uxMissing.length);
+  assert(html.indexOf('css/ux.css') > html.indexOf('css/motion.css'), 'ux.css order');
+  assert(html.indexOf('js/cmdk.js') > html.indexOf('js/system.js'), 'cmdk.js order');
+  const cmdSrc = await (await fetch(base + '/js/cmdk.js')).text();
+  assert(cmdSrc.includes("RECENT_KEY='kolindex.cmd.recent.v1'") && cmdSrc.includes('KOLINDEX_CMDK'), 'cmdk wiring');
+  assert(cmdSrc.includes('/api/library/authors?q=') && cmdSrc.includes('/api/library?q='), 'cmdk endpoints');
+  const uxCss = await (await fetch(base + '/css/ux.css')).text();
+  assert(uxCss.includes('.cmdk') && uxCss.includes('.netbar') && !uxCss.includes('!important'), 'ux css scope');
+  assert(apiJs.includes("CACHE_KEY = 'kolindex.cache.v1'") && apiJs.includes('lastOkAt = c.at'), 'api cache');
+  console.log('ux wiring: ok');
 
   // 審核台分頁（第一條寫入路徑）
   const revNeed = ['topic-review', 'tab-review', 'reviewStatus', 'reviewCounts', 'reviewModes',

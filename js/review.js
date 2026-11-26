@@ -442,6 +442,11 @@ function onTopic(topic){
 on(window,'kolindex:api',function(e){
   var d=(e&&e.detail)||{};
   if(!d.ok&&d.reason){
+    if(d.reason==='offline'){
+      R.ok=false;
+      setStatus('後端離線 · 顯示上次結果','or');
+      return;
+    }
     R.items=[]; R.events=[]; R.audit=[]; R.counts=null; R.loaded=false; R.ok=false;
     render();
     return;

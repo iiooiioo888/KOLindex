@@ -18,7 +18,7 @@
 <link rel="stylesheet" href="css/review.css?v=20261121">
 <link rel="stylesheet" href="css/connectors.css?v=20261121">
 <link rel="stylesheet" href="css/jobs.css?v=20261121">
-<link rel="stylesheet" href="css/library.css?v=20261127a">
+<link rel="stylesheet" href="css/library.css?v=20261127b">
 <link rel="stylesheet" href="css/person.css?v=20261126h">
 <link rel="stylesheet" href="css/seats.css?v=20261126g">
 <link rel="stylesheet" href="css/sense.css?v=20261126a">
@@ -26,6 +26,7 @@
 <link rel="stylesheet" href="css/login.css?v=20261126b">
 <link rel="stylesheet" href="css/caps.css?v=20261124">
 <link rel="stylesheet" href="css/motion.css?v=20261126a">
+<link rel="stylesheet" href="css/ux.css?v=20261127b">
 </head>
 <body data-topic="queue">
 <script>
@@ -89,6 +90,7 @@
     <svg class="ic" aria-hidden="true"><use href="#i-search"/></svg>
     <input type="search" id="globalSearch" placeholder="搜尋本頁…" aria-label="搜尋本頁">
     <span class="search-count" id="searchCount" aria-live="polite"></span>
+    <button type="button" class="search-kbd" id="cmdkOpen" aria-label="快速切換（Ctrl 或 Command + K）" title="快速切換分頁、作者、作品">⌘K</button>
   </label>
   <div class="top-right">
     <button class="icon-btn" id="searchOpen" aria-label="開啟搜尋"><svg class="ic"><use href="#i-search"/></svg></button>
@@ -101,6 +103,13 @@
     <button type="button" class="avatar" id="opAvatar" title="登出">AD</button>
   </div>
 </header>
+
+<div class="netbar" id="netBar" hidden role="status" aria-live="polite">
+  <span class="nb-dot" aria-hidden="true"></span>
+  <span class="nb-text" id="netText">後端離線 · 顯示上次資料</span>
+  <button type="button" class="nb-btn" id="netRetry">重試</button>
+  <button type="button" class="nb-x" id="netClose" aria-label="收起">×</button>
+</div>
 
 <div class="shell">
 
@@ -1152,6 +1161,7 @@
   <div class="sb-item">暫停＝停畫面更新</div>
   <div class="sb-item">埠 <b id="sysFootPorts">—</b></div>
   <div class="sb-item">資料 <b id="sysFootData">未連線</b></div>
+  <div class="sb-item">API <b id="apiLatency">—</b></div>
   <div class="sb-item">元件 <b id="sysFootStack">—</b></div>
   <div class="sb-spacer"></div>
   <div class="sb-item sb-cmd" title="本機啟動指令">compose · control · next</div>
@@ -1220,21 +1230,37 @@
   </div>
 </div>
 
+<div class="cmdk" id="cmdk" hidden>
+  <div class="cmdk-panel" role="dialog" aria-modal="true" aria-label="快速切換">
+    <div class="cmdk-search">
+      <svg class="ic" aria-hidden="true"><use href="#i-search"/></svg>
+      <input type="text" id="cmdkInput" placeholder="跳到分頁、找作者或作品…" aria-label="搜尋分頁、作者、作品" autocomplete="off" spellcheck="false">
+      <kbd>ESC</kbd>
+    </div>
+    <div class="cmdk-body">
+      <div id="cmdkList" role="listbox" aria-label="結果"></div>
+      <div class="cmdk-empty" id="cmdkEmpty" hidden>沒有符合的結果</div>
+    </div>
+    <div class="cmdk-foot"><span>↑↓ 選擇 · ↵ 開啟</span><span id="cmdkFoot">分頁 · 作者 · 作品</span></div>
+  </div>
+</div>
+
 <script defer src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js" integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r" crossorigin="anonymous"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/tippy.js@6.3.7/dist/tippy.umd.min.js" integrity="sha384-pjtv4LzKGI/lGxchW/wd/upB/HsGOP/Q2iPYyDU8qo2bp4JLbN34hQkdAArvidZX" crossorigin="anonymous"></script>
 <script defer src="js/login.js?v=20261126b"></script>
-<script defer src="js/api.js?v=20261126a"></script>
-<script defer src="js/index2.js?v=20261126m"></script>
+<script defer src="js/api.js?v=20261127c"></script>
+<script defer src="js/index2.js?v=20261127a"></script>
 <script defer src="js/wireframe.js?v=20261121"></script>
 <script defer src="js/studio.js?v=20261126a"></script>
-<script defer src="js/review.js?v=20261126b"></script>
+<script defer src="js/review.js?v=20261126c"></script>
 <script defer src="js/infra.js?v=20261121"></script>
-<script defer src="js/jobs.js?v=20261123b"></script>
-<script defer src="js/library.js?v=20261127b"></script>
-<script defer src="js/person.js?v=20261127a"></script>
+<script defer src="js/jobs.js?v=20261123c"></script>
+<script defer src="js/library.js?v=20261127c"></script>
+<script defer src="js/person.js?v=20261127b"></script>
 <script defer src="js/seats.js?v=20261126j"></script>
 <script defer src="js/sense.js?v=20261126b"></script>
 <script defer src="js/rail.js?v=20261123b"></script>
 <script defer src="js/system.js?v=20261126b"></script>
+<script defer src="js/cmdk.js?v=20261127b"></script>
 </body>
 </html>

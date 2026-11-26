@@ -4321,7 +4321,16 @@
     toast:function(msg,tone){ toast(msg,tone); },
     topic:function(){ return routeState.topic; },
     setTopic:function(t){ if (TOPICS.indexOf(t)>=0) setTopic(t); },
-    invalidate:function(){
+    /* 給快速切換用：目前註冊的分頁與說明，避免前端另抄一份清單 */
+    topics:function(){
+      return TOPICS.map(function(t){
+        var m=TOPIC_META[t]||{};
+        return {key:t,label:m.label||t,group:m.group||'',hint:m.hint||''};
+      });
+    },
+    /* offline 時保留上一次資料；只有 401／500 這種真的不能顯示的狀態才清空 */
+    invalidate:function(reason){
+      if (reason==='offline') return false;
       collectLive=false;
       COLLECT=[];
       store.alerts=[];

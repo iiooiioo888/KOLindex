@@ -17,7 +17,7 @@
 
 過渡期對帳：`python scripts/reconcile_sqlite_postgres.py --sqlite <path>`（比對筆數與 `content_hash`／`checksum`）。結果在 PG 的 `data_reconcile_*` 與 `GET /__control/truth/status`。
 
-哪些頁面接真資料、哪些還是示範、規格書（v2.2）還缺哪些表與端點，都列在 **[ROADMAP.md](ROADMAP.md)**（2026-11-26）。
+哪些頁面接真資料、哪些還是示範、規格書（v2.2）還缺哪些表與端點，都列在 **[ROADMAP.md](ROADMAP.md)**（2026-11-27）。
 
 ![素材庫與右欄監控面板](screenshots/screenshot-library.jpg)
 
@@ -39,6 +39,8 @@
 | 12 | 素材庫 | 本機抖音作品索引（圖集／影片）、480px 縮圖牆、作者檢視、下載缺檔、無損清理、衍生層 | 真（`/api/library`、`/api/mylike`、`/api/library/optimize`、`/api/library/derivative`） |
 
 右欄監控面板（佇列深度、連接器槽位、Dispatcher、事件流、審計、儲存）也接真資料：`GET /api/rail`，15 秒輪詢。
+
+本機操作層：`⌘K`／`Ctrl+K` 開快速切換，可跳分頁、查作者與作品、執行七個本機動作；後端離線時不再清空畫面，左下顯示「後端離線 · 顯示 HH:MM 的資料 · 每 8 秒重試」，收集與告警會從 sessionStorage 快取（6 小時）先畫一次；狀態列顯示上次成功的 API 延遲。實作在 `js/cmdk.js`、`css/ux.css`、`js/api.js`。
 
 ![任務收集](screenshots/screenshot-collect.jpg)
 
@@ -100,7 +102,7 @@ node tests/test-caps.mjs       # 前端依 caps 收起按鈕：靜態與動態�
 node tests/test-api-auth.mjs   # API 認證閘：無 Cookie 401、登入後可過
 ```
 
-前四支只打 `127.0.0.1:5200`；`test-authz` 自己起 5390–5393 四個實例（最後一個是沒設通行碼的本機模式），`test-caps` 只讀檔，`test-api-auth` 自起上游與閘，都不需要後端。`check` job 在每次 `push`／`PR` 跑這七支。更完整的二十支（含寫入端點、離線、瀏覽器截圖）在私有開發資料夾 `KOLindex-dev`，不在這個 repo。
+前四支只打 `127.0.0.1:5200`；`test-authz` 自己起 5390–5393 四個實例（最後一個是沒設通行碼的本機模式），`test-caps` 只讀檔，`test-api-auth` 自起上游與閘，都不需要後端。`check` job 在每次 `push`／`PR` 跑這七支。更完整的二十二支（含寫入端點、離線、瀏覽器截圖）在私有開發資料夾 `KOLindex-dev`，不在這個 repo。
 
 版本標記：目前可引用的標籤是 `v0.1.1`（`v0.1.0` 也在遠端）。推送 `v*` tag 會觸發 `.github/workflows/release.yml` 建 prerelease；若 Actions 在「Set up job」就失敗，要到倉庫 Settings → Actions 核對是否啟用，或在 GitHub 上手動 New release 貼上 `CHANGELOG.md` 對應段落。說明見 `CHANGELOG.md`。
 
@@ -132,7 +134,7 @@ node tests/test-api-auth.mjs   # API 認證閘：無 Cookie 401、登入後可�
 | 只處理已公開內容。檔案裡的位置欄預設不入庫 | `media_original` 拒絕 `file_place`。貼文時間可當事實，檔案拍攝時間只能是候選 |
 | 不建人臉向量，不推斷親屬、伴侶、健康、宗教 | 標籤只允許文字、物件、標誌、場景、內容安全。`body` 不得帶 `face`、`kinship`、`partner`、`health`、`religion`。同框與關係分析還沒做，這條尚未在畫面上落地 |
 | 關係只記提及、合集、引用、同台，而且要人確認 | schema 有這四個值。確認必須是 `human`。功能本身未做 |
-| 401 或連不上時，不得把示範資料留在畫面上當成真資料 | 已移除 `js/fixtures/demo.js` 與所有 fallback；離線顯示空狀態 |
+| 401 或連不上時，不得把示範資料留在畫面上當成真資料 | 已移除 `js/fixtures/demo.js` 與所有 fallback；401／500 清畫面，連不上保留上次真資料並在左下標示「後端離線」與時間 |
 | 全鏈刪除要清掉資料庫、搜尋索引、NAS 檔案、衍生檔和收件匣 | **未完成**。現在沒有這條流程 |
 | 日誌不記通行碼、Cookie、token、私鑰或未去敏的全文 | 這是需求。這個 README 沒有逐條掃過現有日誌 |
 
@@ -200,7 +202,7 @@ node tests/dev-server.mjs . 5200
 
 容器開關的允許名單是 web、postgres、meilisearch、sherlock、maigret、xhs-downloader、douyin-tiktok-api，而且只有操作者能動。Redis 和 MinIO 不在第一版，也不在這份名單。
 
-預設頁面聽 `127.0.0.1:5200`。網頁容器裡面聽 `0.0.0.0`，所以必須在 `.env` 設 `KOL_GATE`，否則行程拒絕啟動。角色用 `KOL_ROLE`（預設 `viewer`），名字用 `KOL_OPERATOR`；表單不能自選角色。前面再加你自己的反向代理。容器內 `KOL_PROD=1`：沒有自動重整、不列出目錄、預設不轉發 `/__llm`。沒有設定 `KOL_API` 時，收集與告警顯示未連線並清掉示範卡片，不把假資料留在畫面上。收集輪詢 60 秒，右欄 `rail.js` 是 15 秒。收集頁的 Sherlock 查詢仍要這個宿主行程，並在開源組件頁拉起映像或設 `KOL_SHERLOCK=1`。閒置中的 Sherlock 容器不會自己查用戶名。
+預設頁面聽 `127.0.0.1:5200`。網頁容器裡面聽 `0.0.0.0`，所以必須在 `.env` 設 `KOL_GATE`，否則行程拒絕啟動。角色用 `KOL_ROLE`（預設 `viewer`），名字用 `KOL_OPERATOR`；表單不能自選角色。前面再加你自己的反向代理。容器內 `KOL_PROD=1`：沒有自動重整、不列出目錄、預設不轉發 `/__llm`。沒有設定 `KOL_API` 時，收集與告警顯示未連線；已載入過就保留上次結果並標示時間，不把假資料留在畫面上。收集輪詢 60 秒，右欄 `rail.js` 是 15 秒。收集頁的 Sherlock 查詢仍要這個宿主行程，並在開源組件頁拉起映像或設 `KOL_SHERLOCK=1`。閒置中的 Sherlock 容器不會自己查用戶名。
 
 有固定映像的開源組件跟主 Compose 一起啟動，專案名仍是 `kolindex`。它們使用 `oss` 網路，不加入 `data`，也不掛 Docker socket。埠只綁 `127.0.0.1`。工作目錄在 `KOL_NAS_ROOT/oss/`，不掛媒體庫，也不讀 `.env` 裡的資料庫密碼。Sherlock 和 Maigret 的行程是 `sleep infinity`，等系統以後下指令。XHS-Downloader 與 Douyin API 用官方預設行程聽著，開機不送出抓取；行程自己失敗兩次後不再自動重啟。
 

@@ -168,6 +168,11 @@ function maybeLoad(){
 function onApi(detail){
   var d=detail||{};
   if(!d.ok&&d.reason){
+    if(d.reason==='offline'){
+      J.ok=false; J.error='offline';
+      if(J.loaded) render();
+      return;
+    }
     J.items=[]; J.counts={}; J.total=0; J.ok=false; J.loaded=false; J.error=d.reason;
     render();
     return;

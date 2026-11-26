@@ -128,6 +128,9 @@ function load(reset){
     A.loading=false;
     if(!res.ok){
       A.ok=false; A.error=(res.data&&(res.data.error||res.data.message))||('HTTP '+res.status);
+      if(A.loaded&&A.items.length){
+        setStatus('後端離線 · 顯示上次結果','or'); renderAll(); return false;
+      }
       setStatus('後端未連線','or'); renderError(); return false;
     }
     var d=res.data||{};
@@ -143,6 +146,9 @@ function load(reset){
     if(tok!==A.tok) return false;
     A.loading=false;
     A.ok=false; A.error=String(err&&err.message||err);
+    if(A.loaded&&A.items.length){
+      setStatus('後端離線 · 顯示上次結果','or'); renderAll(); return false;
+    }
     setStatus('後端未連線','or'); renderError(); return false;
   }).then(function(v){
     if(A.queued){ var again=A.queued; A.queued=false; load(again); }
@@ -866,6 +872,12 @@ function bind(){
   window.addEventListener('kolindex:api',function(e){
     var d=(e&&e.detail)||{};
     if(!d.ok&&d.reason){
+      if(d.reason==='offline'){
+        A.ok=false;
+        renderAll();
+        setStatus('後端離線 · 顯示上次結果','or');
+        return;
+      }
       A.items=[]; A.subjects=[]; A.works=[]; A.months=[]; A.counts=null; A.total=0; A.ok=false; A.loaded=false;
       renderAll();
       setStatus(d.reason==='401'?'需要登入':'來源錯誤','or');

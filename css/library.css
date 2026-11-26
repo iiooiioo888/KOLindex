@@ -606,6 +606,9 @@
 
 @media (max-width:1100px){
   #topic-library .lib-kpis{ grid-template-columns:repeat(3,minmax(0,1fr)); }
+  /* 1024 時 IDE 殼的中欄只有 250px 左右，三欄各 79px；縮一點才不會把 85.97 GB 截掉 */
+  #topic-library .lib-ide-kpis .lib-kpi{ padding:7px 6px; }
+  #topic-library .lib-ide-kpis .lib-kpi b{ font-size:13px; }
   .lib-viewer{ grid-template-columns:minmax(0,1fr); grid-template-rows:minmax(0,1fr) auto; }
   .lv-side{ max-height:34vh; }
   .lv-body{ max-height:16vh; }

@@ -117,6 +117,11 @@ function load(reset){
     L.loading=false;
     if(!res.ok){
       L.ok=false; L.error=(res.data&&(res.data.error||res.data.message))||('HTTP '+res.status);
+      if(L.loaded&&L.items.length){
+        setStatus('後端離線 · 顯示上次結果','or');
+        renderAll();
+        return false;
+      }
       setStatus('後端未連線','or');
       renderError();
       return false;
@@ -134,6 +139,11 @@ function load(reset){
     if(tok!==L.tok) return false;
     L.loading=false;
     L.ok=false; L.error=String(err&&err.message||err);
+    if(L.loaded&&L.items.length){
+      setStatus('後端離線 · 顯示上次結果','or');
+      renderAll();
+      return false;
+    }
     setStatus('後端未連線','or');
     renderError();
     return false;
@@ -158,6 +168,11 @@ function loadAuthors(reset){
     L.authorLoading=false;
     if(!res.ok){
       L.ok=false; L.error=(res.data&&(res.data.error||res.data.message))||('HTTP '+res.status);
+      if(L.loaded&&L.items.length){
+        setStatus('後端離線 · 顯示上次結果','or');
+        renderAll();
+        return false;
+      }
       setStatus('後端未連線','or');
       renderError();
       return false;
@@ -1203,6 +1218,12 @@ function bind(){
   window.addEventListener('kolindex:api',function(e){
     var d=(e&&e.detail)||{};
     if(!d.ok&&d.reason){
+      if(d.reason==='offline'){
+        L.ok=false;
+        renderAll();
+        setStatus('後端離線 · 顯示上次結果','or');
+        return;
+      }
       L.items=[]; L.authors=[]; L.counts=null; L.total=0; L.ok=false; L.loaded=false;
       renderAll();
       return;
