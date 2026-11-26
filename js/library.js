@@ -55,6 +55,18 @@ function mediaUrl(p){
   if(/\/media$/.test(base) && rel.indexOf('media/')===0) rel=rel.slice(6);
   return base+'/'+rel;
 }
+
+function thumbUrl(it){
+  var c=it&&it.cover?String(it.cover):'';
+  if(!c) return '';
+  // 有本機檔就只認本機圖檔（走 _thumbs）；沒有本機檔才用遠端封面。
+  if(it.hasLocal){
+    if(c.indexOf('media/')!==0) return '';
+    if(!/\.(webp|jpe?g|png)$/i.test(c)) return '';
+    return mediaUrl('media/_thumbs/'+c.slice(6));
+  }
+  return mediaUrl(c);
+}
 function on(el,ev,fn){ if(el&&el.addEventListener) el.addEventListener(ev,fn); }
 
 function setStatus(text,tone){
@@ -310,14 +322,18 @@ function compactCount(n){
 }
 
 function cardHtml(it){
-  var cover=it.cover?mediaUrl(it.cover):'';
+  // 只有索引、沒有本機檔的圖集不載遠端原圖：那些簽名網址是 2160px 起跳，
+  // 一次 48 張會把主執行緒與網路吃滿，而且過期就 403。
+  var remoteOnly=(it.kind==='gallery'&&!it.hasLocal);
+  var cover=remoteOnly?'':thumbUrl(it);
+  var full=it.cover?mediaUrl(it.cover):'';
   var badges='<span class="lc-badge">'+esc(KIND_LABEL[it.kind]||it.kind)+'</span>';
   if(it.kind==='gallery') badges+='<span class="lc-shot-n">'+(it.images||0)+'</span>';
   var srcs=(it.sources||[]).map(function(s){ return SRC_LABEL[s]||s; }).join('·');
   var play=it.kind==='video'?'<span class="lc-play" aria-hidden="true">▶</span>':'';
   var img=cover
-    ? '<img src="'+esc(cover)+'" alt="" loading="lazy" decoding="async" onerror="this.parentNode.classList.add(\'no-img\');this.remove()">'
-    : '<span class="lc-noimg">無縮圖</span>';
+    ? '<img src="'+esc(cover)+'" data-full="'+esc(full)+'" alt="" loading="lazy" decoding="async" onerror="var f=this.getAttribute(\'data-full\');if(f){this.removeAttribute(\'data-full\');this.src=f;}else{this.parentNode.classList.add(\'no-img\');this.remove();}">'
+    : '<span class="lc-noimg">'+(remoteOnly?'只有索引':'無縮圖')+'</span>';
   return '<button type="button" class="lib-card" data-id="'+esc(it.id)+'" title="'+esc(trim(it.caption,80)||it.id)+'">'+
     '<span class="lc-shot">'+img+play+badges+(srcs?'<span class="lc-src">'+esc(srcs)+'</span>':'')+'</span>'+
     '<span class="lc-meta">'+
@@ -1191,8 +1207,8 @@ function bind(){
       renderAll();
       return;
     }
-    if(d.ok&&!L.loaded) reload(true);
-    else if(d.ok&&L.active&&Date.now()-L.at>POLL_MS) reload(true);
+    // 不在素材庫分頁時不預抓 48 張卡片；等切過去再由 MutationObserver 載入。
+    if(d.ok&&L.active&&(!L.loaded||Date.now()-L.at>POLL_MS)) reload(true);
   });
 
   if(typeof MutationObserver==='function'){
@@ -1221,7 +1237,7 @@ else bind();
 window.KOLINDEX_LIBRARY={state:L,load:load,reload:reload,loadAuthors:loadAuthors,setMode:setMode,setAuthor:setAuthor,
   openWithAuthor:openWithAuthor,openAuthorInPerson:openAuthorInPerson,
   clearAuthor:clearAuthor,displayAuthor:displayAuthor,authorRowHtml:authorRowHtml,renderAuthors:renderAuthors,
-  openViewer:openViewer,closeViewer:closeViewer,mediaUrl:mediaUrl,esc:esc,bytes:bytes,day:day,trim:trim,nfmt:nfmt,
+  openViewer:openViewer,closeViewer:closeViewer,mediaUrl:mediaUrl,thumbUrl:thumbUrl,esc:esc,bytes:bytes,day:day,trim:trim,nfmt:nfmt,
   download:{state:D,item:downloadItem,missing:downloadMissing,sync:syncDownload},
   optimize:{state:O,run:optimizeImages,sync:syncOptimize,tick:optTick,mb:mb},
   derivative:{state:DV,run:derivativeImages,sync:syncDeriv,tick:derivTick},

@@ -426,9 +426,14 @@ function renderFoot(){
 }
 
 function workHtml(it){
-  var cover=it.cover?mediaUrl(it.cover):'';
+  var cover='';
+  if(it.cover&&!(it.kind==='gallery'&&!it.hasLocal)){
+    var lib=window.KOLINDEX_LIBRARY;
+    cover=(lib&&lib.thumbUrl)?lib.thumbUrl(it):mediaUrl(it.cover);
+  }
+  var full=it.cover?mediaUrl(it.cover):'';
   return '<button type="button" class="pw-work" data-id="'+esc(it.id)+'" title="'+esc(trim(it.caption,80)||it.id)+'">'+
-    '<span class="pw-shot">'+(cover?'<img src="'+esc(cover)+'" alt="" loading="lazy" decoding="async">':'<span class="pw-noimg">無縮圖</span>')+
+    '<span class="pw-shot">'+(cover?'<img src="'+esc(cover)+'" data-full="'+esc(full)+'" alt="" loading="lazy" decoding="async" onerror="var f=this.getAttribute(\'data-full\');if(f){this.removeAttribute(\'data-full\');this.src=f;}else{this.remove();}">':'<span class="pw-noimg">無縮圖</span>')+
       '<span class="pw-badge">'+esc(KIND_LABEL[it.kind]||it.kind)+'</span></span>'+
     '<span class="pw-meta">'+esc(day(it.ct))+' · '+esc(bytes(it.bytes))+'</span>'+
   '</button>';
@@ -867,8 +872,8 @@ function bind(){
       return;
     }
     if(A.mode==='subjects') return;
-    if(d.ok&&!A.loaded) load(true);
-    else if(d.ok&&A.active&&Date.now()-A.at>POLL_MS) load(true);
+    // 不在人物分頁時不預抓 100 位作者；切過去再載入。
+    if(d.ok&&A.active&&(!A.loaded||Date.now()-A.at>POLL_MS)) load(true);
   });
 
   if(typeof MutationObserver==='function'){

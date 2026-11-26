@@ -1,6 +1,6 @@
 # 功能現況與未實作清單
 
-更新：2026-11-26。圖例：**真**＝打後端真實資料；**半**＝部分接真；**空**＝沒有後端列表，顯示空狀態；**示意**＝只畫結構、沒有測量。
+更新：2026-11-27。圖例：**真**＝打後端真實資料；**半**＝部分接真；**空**＝沒有後端列表，顯示空狀態；**示意**＝只畫結構、沒有測量。
 
 ## 一、十三個分頁
 
@@ -18,7 +18,7 @@
 | 09 | UI 生成 | 真 | `POST /__llm` 本地代理 → OpenAI 相容 API（需 `.env` 的 `LLM_API_KEY`） | 產物是線框圖 JSON，不是可執行頁面；沒金鑰時只提示，不生成 |
 | 10 | 人物檔案 | 真 | 抖音索引：`/api/library/authors`、`/api/library/author`、`/api/library/months`；主檔另走 `/__control/subjects` | 主檔未連線時顯示空狀態；覆蓋缺口仍無測量；小紅書發現仍是 `not_enabled` |
 | 11 | 審核台 | 真 | `review_task`、`POST /api/review/:id/verdict`、`GET /api/audit` | 佇列只有 6 筆人工造的候選；沒有真正的 F2 產生的 review_task |
-| 12 | 素材庫 | 真 | `GET /api/library`、`/api/library/authors`、`/api/library/:id`、MyLike 同步、無損清理、衍生層 | 1,361 件只有索引沒有本機檔；14 個收藏夾未索引；影片未處理。**衍生層不改原檔**（新增 `<原檔>.q50.webp` + `media_derivative` 血緣），所以不省空間 |
+| 12 | 素材庫 | 真 | `GET /api/library`、`/api/library/authors`、`/api/library/:id`、MyLike 同步、無損清理、衍生層；封面走 480px 縮圖 `_thumbs` | 1,357 件只有索引沒有本機檔；14 個收藏夾未索引；影片未處理。**衍生層不改原檔**（新增 `<原檔>.q50.webp` + `media_derivative` 血緣），所以不省空間 |
 
 右欄監控（`/api/rail`）是真的：佇列深度、槽位、dispatcher、`audit_log`、儲存。但 **告警面板 0 筆**——`alert` 表在清掉示範資料後沒有產生器。
 

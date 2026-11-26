@@ -185,6 +185,8 @@
   cursor:pointer;
   overflow:hidden;
   transition:border-color var(--dur-1) var(--ease);
+  content-visibility:auto;
+  contain-intrinsic-size:auto 286px;
 }
 #topic-library .lib-card:hover{ border-color:var(--line-strong); }
 #topic-library .lib-card:focus-visible{ outline:1px solid var(--focus); outline-offset:1px; }
