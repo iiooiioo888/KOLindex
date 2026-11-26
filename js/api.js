@@ -219,13 +219,12 @@
       if (bridge.setAlerts(items) && items.length) hits.alerts = items.length;
     });
     return Promise.allSettled([collect, alerts]).then(function (res) {
+      // 401／500 已經在 request() 裡清過畫面；這裡只回報失敗，不再重複清一次。
       var denied = res.some(function (r) { return r.status === 'rejected' && r.reason && (r.reason.status === 401 || r.reason.status === 500); });
-      if (denied) {
-        if (bridge.invalidate) bridge.invalidate('401');
-        return { ok: false, hits: hits };
-      }
+      if (denied) return { ok: false, hits: hits };
       var up = res.some(function (r) { return r.status === 'fulfilled'; });
-      if (up) {
+      var allUp = res.every(function (r) { return r.status === 'fulfilled'; });
+      if (allUp) {
         failures = 0;
         lastOkAt = Date.now();
         lastError = '';
@@ -235,6 +234,21 @@
         paint('已連線', 'green', '已連線 · /api/collect · /api/alerts · ' + new Date().toISOString());
         showNetUp();
         emit(true, { hits: counts });
+      } else if (up) {
+        // 只有一邊成功：保留畫面與上一份快取，不要把部分結果寫進快取蓋掉完整資料。
+        failures += 1;
+        var partWhy = '';
+        for (var j = 0; j < res.length; j++) {
+          if (res[j].status === 'rejected' && res[j].reason) {
+            partWhy = String(res[j].reason.message || res[j].reason.status || res[j].reason);
+            break;
+          }
+        }
+        lastError = partWhy;
+        paint('部分連線', 'or', '收集與告警只有一邊成功。' + (partWhy ? '原因：' + partWhy + '。' : ''));
+        showNet('部分資料 · 每 ' + Math.round(RETRY_MS / 1000) + ' 秒重試');
+        emit(false, { hits: hits, reason: 'offline' });
+        scheduleRetry();
       } else {
         failures += 1;
         var why = '';
@@ -252,7 +266,7 @@
         scheduleRetry();
       }
       firstPaint = false;
-      return { ok: up, hits: hits };
+      return { ok: allUp, hits: hits };
     });
   }
 
