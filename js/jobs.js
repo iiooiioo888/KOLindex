@@ -113,7 +113,8 @@ function render(){
   }
 
   if(foot){
-    if(J.error){ foot.textContent='後端離線 · 連不到 /api/jobs'+(J.at?' · 顯示 '+rel(new Date(J.at).toISOString())+' 的結果':''); foot.className='chip red'; }
+    if(J.error==='source'){ foot.textContent='來源錯誤 · 顯示上次結果'; foot.className='chip or'; }
+    else if(J.error){ foot.textContent='後端離線 · 連不到 /api/jobs'+(J.at?' · 顯示 '+rel(new Date(J.at).toISOString())+' 的結果':''); foot.className='chip red'; }
     else if(!J.loaded){ foot.textContent='只讀 · 正在連後端'; foot.className='chip or'; }
     else { foot.textContent='只讀 · GET /api/jobs · '+filterLabel()+' '+J.items.length+' 列 · 更新 '+rel(new Date(J.at).toISOString()); foot.className='chip green'; }
   }
@@ -168,8 +169,8 @@ function maybeLoad(){
 function onApi(detail){
   var d=detail||{};
   if(!d.ok&&d.reason){
-    if(d.reason==='offline'){
-      J.ok=false; J.error='offline';
+    if(d.reason==='offline' || d.reason==='source'){
+      J.ok=false; J.error=d.reason;
       if(J.loaded) render();
       return;
     }

@@ -1002,10 +1002,10 @@ function bind(){
   window.addEventListener('kolindex:api',function(e){
     var d=(e&&e.detail)||{};
     if(!d.ok&&d.reason){
-      if(d.reason==='offline'){
+      if(d.reason==='offline' || d.reason==='source'){
         A.ok=false;
         renderAll();
-        setStatus('後端離線 · 顯示上次結果','or');
+        setStatus(d.reason==='source'?'來源錯誤 · 顯示上次結果':'後端離線 · 顯示上次結果','or');
         return;
       }
       A.items=[]; A.subjects=[]; A.works=[]; A.months=[]; A.counts=null; A.total=0; A.ok=false; A.loaded=false;

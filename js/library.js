@@ -1313,10 +1313,10 @@ function bind(){
   window.addEventListener('kolindex:api',function(e){
     var d=(e&&e.detail)||{};
     if(!d.ok&&d.reason){
-      if(d.reason==='offline'){
+      if(d.reason==='offline' || d.reason==='source'){
         L.ok=false;
         renderAll();
-        setStatus('後端離線 · 顯示上次結果','or');
+        setStatus(d.reason==='source'?'來源錯誤 · 顯示上次結果':'後端離線 · 顯示上次結果','or');
         return;
       }
       L.items=[]; L.authors=[]; L.counts=null; L.total=0; L.ok=false; L.loaded=false;

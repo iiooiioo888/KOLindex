@@ -1,5 +1,6 @@
 import hashlib
 import os
+import sqlite3
 import tempfile
 import unittest
 from pathlib import Path
@@ -11,7 +12,7 @@ os.environ["KOL_TOKEN_REVIEWER"] = "reviewer-token"
 os.environ["KOL_TOKEN_OPERATOR"] = "operator-token"
 os.environ.pop("KOL_PROD", None)
 
-from app import create_app, deliver  # noqa: E402
+from app import backoff_seconds, create_app, deliver  # noqa: E402
 from evaluate import load_policy  # noqa: E402
 
 POLICY = load_policy(Path(__file__).resolve().parents[2] / "packages" / "policy" / "policy.yaml")
@@ -23,12 +24,14 @@ class ControlTest(unittest.TestCase):
         root = Path(self.tmp.name)
         os.environ["KOL_NAS_ROOT"] = str(root)
         os.environ["KOL_DATABASE_URL"] = "sqlite:///" + str(root / "buffer" / "control.sqlite")
-        self.client = TestClient(create_app())
+        self.client_ctx = TestClient(create_app())
+        self.client = self.client_ctx.__enter__()
         self.op = {"Authorization": "Bearer operator-token"}
         self.viewer = {"Authorization": "Bearer viewer-token"}
         self.reviewer = {"Authorization": "Bearer reviewer-token"}
 
     def tearDown(self):
+        self.client_ctx.__exit__(None, None, None)
         self.tmp.cleanup()
 
     def test_roles_and_dedup(self):
@@ -259,6 +262,34 @@ class ControlTest(unittest.TestCase):
         kinds = {item["kind"] for item in body["items"]}
         self.assertIn("copy_suspect", kinds)
 
+    def test_media_index_path_stays_inside_nas(self):
+        ok = self.client.post(
+            "/media-index",
+            json={"checksum": "c" * 64, "storage_path": "media/demo.jpg"},
+            headers=self.op,
+        )
+        self.assertEqual(ok.status_code, 200)
+        db_path = os.environ["KOL_DATABASE_URL"][len("sqlite:///") :]
+        con = sqlite3.connect(db_path)
+        stored = con.execute("SELECT storage_path FROM media_index WHERE checksum=?", ("c" * 64,)).fetchone()
+        con.close()
+        self.assertEqual(stored[0], "media/demo.jpg")
+        escaped = self.client.post(
+            "/media-index",
+            json={"checksum": "d" * 64, "storage_path": "../outside.jpg"},
+            headers=self.op,
+        )
+        self.assertEqual(escaped.status_code, 400)
+        self.assertEqual(escaped.json()["detail"], "path")
+        outside = Path(self.tmp.name).resolve().parent / "outside.jpg"
+        absolute = self.client.post(
+            "/media-index",
+            json={"checksum": "e" * 64, "storage_path": str(outside)},
+            headers=self.op,
+        )
+        self.assertEqual(absolute.status_code, 400)
+        self.assertEqual(absolute.json()["detail"], "path")
+
     def test_two_failures_stop_and_keep_file(self):
         inbox = Path(os.environ["KOL_NAS_ROOT"]) / "inbox"
         inbox.mkdir(parents=True, exist_ok=True)
@@ -268,10 +299,39 @@ class ControlTest(unittest.TestCase):
         def fail(_payload):
             raise RuntimeError("down")
 
-        got = deliver(fail, {"source_id": "collector", "storage_path": str(target)}, POLICY)
+        slept = []
+
+        def sleeper(seconds):
+            slept.append(seconds)
+
+        def rng():
+            return 0.0
+
+        got = deliver(
+            fail,
+            {"source_id": "collector", "storage_path": str(target)},
+            POLICY,
+            sleep=sleeper,
+            rng=rng,
+        )
         self.assertEqual(got["state"], "stopped")
         self.assertEqual(got["failures"], 2)
         self.assertTrue(target.is_file())
+        self.assertEqual(slept, [backoff_seconds(1, rng)])
+        self.assertGreater(backoff_seconds(2, rng), slept[0])
+        db_path = os.environ["KOL_DATABASE_URL"][len("sqlite:///") :]
+        con = sqlite3.connect(db_path)
+        con.row_factory = sqlite3.Row
+        row = con.execute(
+            "SELECT state, source_id, before_ref, diff_fields, policy_version FROM change_event"
+        ).fetchone()
+        con.close()
+        self.assertIsNotNone(row)
+        self.assertEqual(row["state"], "stopped")
+        self.assertEqual(row["source_id"], "collector")
+        self.assertEqual(row["before_ref"], str(target))
+        self.assertIn("deliver", row["diff_fields"])
+        self.assertEqual(row["policy_version"], POLICY["version"])
 
 
 if __name__ == "__main__":

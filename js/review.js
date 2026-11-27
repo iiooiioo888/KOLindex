@@ -442,9 +442,9 @@ function onTopic(topic){
 on(window,'kolindex:api',function(e){
   var d=(e&&e.detail)||{};
   if(!d.ok&&d.reason){
-    if(d.reason==='offline'){
+    if(d.reason==='offline' || d.reason==='source'){
       R.ok=false;
-      setStatus('後端離線 · 顯示上次結果','or');
+      setStatus(d.reason==='source'?'來源錯誤 · 顯示上次結果':'後端離線 · 顯示上次結果','or');
       return;
     }
     R.items=[]; R.events=[]; R.audit=[]; R.counts=null; R.loaded=false; R.ok=false;

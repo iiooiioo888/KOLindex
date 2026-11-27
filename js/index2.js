@@ -1764,12 +1764,12 @@
     ensureTopicScripts(next.topic);
   }
   var PAGE_SCRIPTS={
-    library:['js/mylike-intel.js?v=20261127a','js/library.js?v=20261127p'],
-    person:['js/person.js?v=20261127p'],
+    library:['js/mylike-intel.js?v=20261127a','js/library.js?v=20261127q'],
+    person:['js/person.js?v=20261127q'],
     seat:['js/seats.js?v=20261127p'],
     sense:['js/sense.js?v=20261126b'],
-    review:['js/review.js?v=20261126c'],
-    infra:['js/infra.js?v=20261121','js/jobs.js?v=20261123c'],
+    review:['js/review.js?v=20261127q'],
+    infra:['js/infra.js?v=20261121','js/jobs.js?v=20261127q'],
     studio:['js/wireframe.js?v=20261121','js/studio.js?v=20261126a']
   };
   var pageWait={};
@@ -4393,9 +4393,9 @@
         return {key:t,label:m.label||t,group:m.group||'',hint:m.hint||''};
       });
     },
-    /* offline 時保留上一次資料；只有 401／500 這種真的不能顯示的狀態才清空 */
+    /* offline 或來源錯誤時保留上一次資料；只有 401 才清空 */
     invalidate:function(reason){
-      if (reason==='offline') return false;
+      if (reason==='offline' || reason==='source') return false;
       collectLive=false;
       COLLECT=[];
       store.alerts=[];

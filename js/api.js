@@ -1,5 +1,5 @@
 /* KOLindex · 唯一的資料請求層。各分頁不准再自己 fetch 業務資料。
- * 401 與 500 會清掉畫面上的資料；一般離線會保留上次結果，並在右下角提示重試。
+ * 401 會清掉畫面並登出。500 與一般離線都保留上次真資料，只改狀態文字。
  * 沒有後端就顯示未連線，不回退示範資料。
  */
 (function () {
@@ -145,12 +145,19 @@
         stale.status = r.status;
         throw stale;
       }
-      if (r.status === 401 || r.status === 500) {
-        clearScreen(String(r.status));
-        paint(r.status === 401 ? '需要登入' : '來源錯誤', 'or', path + ' · HTTP ' + r.status);
-        var err = new Error('HTTP ' + r.status + ' ' + path);
-        err.status = r.status;
-        throw err;
+      if (r.status === 401) {
+        clearScreen('401');
+        paint('需要登入', 'or', path + ' · HTTP ' + r.status);
+        var deniedErr = new Error('HTTP 401 ' + path);
+        deniedErr.status = 401;
+        throw deniedErr;
+      }
+      if (r.status === 500) {
+        paint('來源錯誤', 'or', path + ' · HTTP ' + r.status);
+        emit(false, { reason: 'source' });
+        var sourceErr = new Error('HTTP 500 ' + path);
+        sourceErr.status = 500;
+        throw sourceErr;
       }
       if (!r.ok) {
         var bad = new Error('HTTP ' + r.status + ' ' + path);
@@ -219,9 +226,13 @@
       if (bridge.setAlerts(items) && items.length) hits.alerts = items.length;
     });
     return Promise.allSettled([collect, alerts]).then(function (res) {
-      // 401／500 已經在 request() 裡清過畫面；這裡只回報失敗，不再重複清一次。
-      var denied = res.some(function (r) { return r.status === 'rejected' && r.reason && (r.reason.status === 401 || r.reason.status === 500); });
-      if (denied) return { ok: false, hits: hits };
+      // 401 已清畫面；500 已標來源錯誤並保留資料。這裡不再改成離線。
+      var denied = res.some(function (r) { return r.status === 'rejected' && r.reason && r.reason.status === 401; });
+      var sourceDown = res.some(function (r) { return r.status === 'rejected' && r.reason && r.reason.status === 500; });
+      if (denied || sourceDown) {
+        firstPaint = false;
+        return { ok: false, hits: hits };
+      }
       var up = res.some(function (r) { return r.status === 'fulfilled'; });
       var allUp = res.every(function (r) { return r.status === 'fulfilled'; });
       if (allUp) {
@@ -276,6 +287,20 @@
     return inflight;
   }
 
+  var pollTimer = 0;
+  function stopPoll() {
+    if (pollTimer) { clearTimeout(pollTimer); pollTimer = 0; }
+  }
+  function armPoll() {
+    stopPoll();
+    if (typeof document !== 'undefined' && document.hidden) return;
+    pollTimer = setTimeout(function () {
+      pollTimer = 0;
+      if (typeof document !== 'undefined' && document.hidden) return;
+      sync().then(armPoll, armPoll);
+    }, POLL_MS);
+  }
+
   function bindNet() {
     var r = $('netRetry');
     if (r) r.addEventListener('click', function () { retry(); });
@@ -285,7 +310,8 @@
       window.addEventListener('online', function () { retry(); });
       window.addEventListener('offline', function () { showNet('瀏覽器離線 · 顯示上次資料'); });
       document.addEventListener('visibilitychange', function () {
-        if (!document.hidden && failures > 0) retry();
+        if (document.hidden) { stopPoll(); return; }
+        sync().then(armPoll, armPoll);
       });
     }
   }
@@ -294,7 +320,7 @@
     if (!ui()) { setTimeout(boot, 400); return; }
     bindNet();
     if (!restoreCache(ui())) paint('連線中', 'dim', '正在連後端');
-    sync().then(function () { setInterval(sync, POLL_MS); });
+    sync().then(armPoll, armPoll);
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);

@@ -6,6 +6,9 @@ import hashlib
 import hmac
 import json
 import os
+import random
+import time
+from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -199,6 +202,22 @@ def inside_inbox(path: Path) -> Path:
     return target
 
 
+def inside_nas(path: Path) -> None:
+    """resolve 後必須落在 nas_root 內（含根目錄）。通過時不改寫呼叫端傳來的路徑字串。"""
+    root = nas_root().resolve()
+    target = path if path.is_absolute() else root / path
+    resolved = target.resolve()
+    if resolved != root and root not in resolved.parents:
+        raise HTTPException(status_code=400, detail="path")
+
+
+def backoff_seconds(attempt: int, rng=None) -> float:
+    """第 attempt 次失敗後的等待（從 1 起）。指數底 0.25s，上限 8s，再加 0–20% jitter。"""
+    roll = (rng or random.random)()
+    delay = min(8.0, 0.25 * (2 ** (attempt - 1)))
+    return delay + delay * 0.2 * float(roll)
+
+
 class IntakeIn(BaseModel):
     source_id: str = Field(min_length=1, max_length=80)
     captured_at: str
@@ -350,28 +369,28 @@ def subject_row(conn: sqlite3.Connection, subject_id: str) -> dict | None:
 
 
 def create_app() -> FastAPI:
-    app = FastAPI()
     started = datetime.now(timezone.utc)
 
-    @app.middleware("http")
-    async def time_request(request, call_next):
-        import time
-
-        t0 = time.perf_counter()
-        response = await call_next(request)
-        response.headers["X-Duration-Ms"] = str(int((time.perf_counter() - t0) * 1000))
-        return response
-
-    @app.on_event("startup")
-    def startup() -> None:
+    @asynccontextmanager
+    async def lifespan(_app: FastAPI):
         production_blocks_sqlite()
         if is_postgres():
             # 結構由 infra/compose/postgres/init 負責；這裡只確認可連。
             with connect() as conn:
                 conn.execute("SELECT 1")
-            return
-        with connect() as conn:
-            init_db(conn)
+        else:
+            with connect() as conn:
+                init_db(conn)
+        yield
+
+    app = FastAPI(lifespan=lifespan)
+
+    @app.middleware("http")
+    async def time_request(request, call_next):
+        t0 = time.perf_counter()
+        response = await call_next(request)
+        response.headers["X-Duration-Ms"] = str(int((time.perf_counter() - t0) * 1000))
+        return response
 
     @app.get("/__health/components")
     def health(authorization: str | None = Header(default=None)):
@@ -403,7 +422,6 @@ def create_app() -> FastAPI:
         if digest != body.content_hash:
             raise HTTPException(status_code=400, detail="hash")
         with connect() as conn:
-            init_db(conn)
             found = conn.execute("SELECT seq, recorded_at FROM intake WHERE content_hash=?", (body.content_hash,)).fetchone()
             if found:
                 return {"seq": found["seq"], "deduped": True, "recorded_at": found["recorded_at"]}
@@ -421,7 +439,6 @@ def create_app() -> FastAPI:
         if body.kind not in {"thumb", "keyframe", "ocr", "vision"}:
             raise HTTPException(status_code=400, detail="kind")
         with connect() as conn:
-            init_db(conn)
             params_val = body.params if is_postgres() else json.dumps(body.params, ensure_ascii=False)
             cur = conn.execute(
                 "INSERT INTO artifact (recorded_at, source_id, original_id, kind, tool_name, tool_version, params) VALUES (?,?,?,?,?,?,?) RETURNING seq",
@@ -439,7 +456,6 @@ def create_app() -> FastAPI:
         if state not in STATES:
             raise HTTPException(status_code=400, detail="state")
         with connect() as conn:
-            init_db(conn)
             diff_val = body.diff_fields if is_postgres() else json.dumps(body.diff_fields)
             cur = conn.execute(
                 "INSERT INTO change_event (recorded_at, source_id, before_ref, after_ref, diff_fields, state, policy_version) VALUES (?,?,?,?,?,?,?) RETURNING seq",
@@ -455,7 +471,6 @@ def create_app() -> FastAPI:
         if body.action not in {"confirm", "reject", "defer"}:
             raise HTTPException(status_code=400, detail="action")
         with connect() as conn:
-            init_db(conn)
             cur = conn.execute(
                 "INSERT INTO decision (recorded_at, source_id, target_id, action, reason, reviewer, decided_at) VALUES (?,?,?,?,?,?,?) RETURNING seq",
                 (now(), body.source_id, body.target_id, body.action, body.reason, body.reviewer, body.decided_at),
@@ -469,7 +484,6 @@ def create_app() -> FastAPI:
         role_of(authorization)
         needle = q.strip().lower()
         with connect() as conn:
-            init_db(conn)
             rows = conn.execute("SELECT id FROM subjects ORDER BY updated_at DESC").fetchall()
             items = []
             for row in rows:
@@ -490,7 +504,6 @@ def create_app() -> FastAPI:
         sid = new_id("sub")
         stamp = now()
         with connect() as conn:
-            init_db(conn)
             conn.execute(
                 "INSERT INTO subjects (id, display_name, created_at, updated_at, note) VALUES (?,?,?,?,?)",
                 (sid, name, stamp, stamp, body.note.strip()),
@@ -502,7 +515,6 @@ def create_app() -> FastAPI:
     def get_subject(subject_id: str, authorization: str | None = Header(default=None)):
         role_of(authorization)
         with connect() as conn:
-            init_db(conn)
             item = subject_row(conn, subject_id)
             if not item:
                 raise HTTPException(status_code=404, detail="not_found")
@@ -526,7 +538,6 @@ def create_app() -> FastAPI:
             raise HTTPException(status_code=400, detail="account")
         stamp = now()
         with connect() as conn:
-            init_db(conn)
             subject = conn.execute("SELECT id FROM subjects WHERE id=?", (subject_id,)).fetchone()
             if not subject:
                 raise HTTPException(status_code=404, detail="not_found")
@@ -569,7 +580,6 @@ def create_app() -> FastAPI:
             raise HTTPException(status_code=400, detail="platform")
         stamp = now()
         with connect() as conn:
-            init_db(conn)
             account = conn.execute(
                 "SELECT id FROM platform_accounts WHERE platform=? AND external_account_id=?",
                 (platform, body.external_account_id.strip()),
@@ -649,16 +659,9 @@ def create_app() -> FastAPI:
             raise HTTPException(status_code=400, detail="time_rule")
         if body.time_source == "file_time" and body.time_status != "candidate":
             raise HTTPException(status_code=400, detail="time_rule")
-        path = Path(body.storage_path)
-        if path.is_absolute():
-            root = nas_root()
-            try:
-                path.resolve().relative_to(root)
-            except ValueError as exc:
-                raise HTTPException(status_code=400, detail="path") from exc
+        inside_nas(Path(body.storage_path))
         stamp = now()
         with connect() as conn:
-            init_db(conn)
             existing = conn.execute(
                 "SELECT id, subject_id FROM media_index WHERE checksum=?",
                 (body.checksum.lower(),),
@@ -728,7 +731,6 @@ def create_app() -> FastAPI:
     def list_subject_media(subject_id: str, authorization: str | None = Header(default=None)):
         role_of(authorization)
         with connect() as conn:
-            init_db(conn)
             if not conn.execute("SELECT id FROM subjects WHERE id=?", (subject_id,)).fetchone():
                 raise HTTPException(status_code=404, detail="not_found")
             posts = conn.execute(
@@ -780,7 +782,6 @@ def create_app() -> FastAPI:
         if left_id > right_id:
             left_id, right_id = right_id, left_id
         with connect() as conn:
-            init_db(conn)
             left = conn.execute("SELECT * FROM media_index WHERE id=?", (left_id,)).fetchone()
             right = conn.execute("SELECT * FROM media_index WHERE id=?", (right_id,)).fetchone()
             if not left or not right:
@@ -864,7 +865,6 @@ def create_app() -> FastAPI:
     ):
         role_of(authorization)
         with connect() as conn:
-            init_db(conn)
             clauses = []
             args: list = []
             if status:
@@ -899,7 +899,6 @@ def create_app() -> FastAPI:
         """聚合待審訊號。只列候選，不自動合併、不觸發採集。"""
         role_of(authorization)
         with connect() as conn:
-            init_db(conn)
             items: list[dict] = []
             links = conn.execute(
                 """
@@ -1001,7 +1000,6 @@ def create_app() -> FastAPI:
         truth = truth_label()
         counts: dict[str, int | None] = {}
         with connect() as conn:
-            init_db(conn)
             for table in (
                 "intake",
                 "artifact",
@@ -1062,26 +1060,47 @@ def create_app() -> FastAPI:
     return app
 
 
-def deliver(post, payload: dict, policy: dict) -> dict:
-    """採集器只打控制面。失敗累計到 max_failures 就停止，檔案留在 inbox。"""
+def deliver(post, payload: dict, policy: dict, sleep=None, rng=None) -> dict:
+    """採集器只打控制面。兩次失敗之間指數退避；停下來寫一筆 stopped，檔案留在 inbox。"""
+    sleeper = time.sleep if sleep is None else sleep
     failures = 0
     last = None
-    while failures < int(policy["max_failures"]):
+    waits: list[float] = []
+    limit = int(policy["max_failures"])
+    while failures < limit:
         try:
             return post(payload)
         except Exception as exc:  # 網路或 5xx
             failures += 1
             last = exc
+            if failures < limit:
+                delay = backoff_seconds(failures, rng)
+                waits.append(delay)
+                sleeper(delay)
     stopped = evaluate(policy, {"state": "running", "failures": failures})
+    source_id = str(payload.get("source_id") or "producer")
+    before_ref = payload.get("storage_path")
+    diff_fields = ["deliver"]
+    state = stopped["state"]
+    with connect() as conn:
+        init_db(conn)
+        diff_val = diff_fields if is_postgres() else json.dumps(diff_fields)
+        cur = conn.execute(
+            "INSERT INTO change_event (recorded_at, source_id, before_ref, after_ref, diff_fields, state, policy_version) VALUES (?,?,?,?,?,?,?) RETURNING seq",
+            (now(), source_id, before_ref, None, diff_val, state, policy["version"]),
+        )
+        conn.commit()
+        seq = cur.lastrowid if cur.lastrowid is not None else (cur.fetchone() or {}).get("seq")
     event = {
-        "source_id": payload.get("source_id", "producer"),
-        "before_ref": payload.get("storage_path"),
+        "seq": seq,
+        "source_id": source_id,
+        "before_ref": before_ref,
         "after_ref": None,
-        "diff_fields": ["deliver"],
-        "state": "failed",
+        "diff_fields": diff_fields,
+        "state": state,
         "failures": failures,
     }
-    return {"state": stopped["state"], "failures": failures, "event": event, "error": str(last)}
+    return {"state": state, "failures": failures, "event": event, "error": str(last), "waits": waits}
 
 
 def source_status(kind: str, source: str) -> str:
