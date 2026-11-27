@@ -31,12 +31,15 @@
 | 04 | 產出庫 | 已交付的內容與檢視器 | 空（控制面沒有 `GET /artifacts`） |
 | 05 | 席位執行 | 8 個席位的 worker pool：搶工單、掃資料庫／磁碟、寫回結果與耗時 | 真（`GET /api/seats`、`POST /api/seats/run\|auto`） |
 | 06 | 統一管線 | 採集 → 清洗 → 入庫的流程圖 | 示意（沒有耗時測量） |
-| 07 | 基礎設施 | 服務、磁碟、連接器、排程工作；Docker／ECS 控制面沒接就顯示未設定 | 前四個真 |
-| 08 | 開源組件 | 第三方依賴清單 | 靜態（repo 依賴） |
+| 07 | 基礎設施 | 探測服務、NAS 容器、席位池、儲存指標改為圖卡（`css/viz.css`）；表格式明細收在 `<details>` | 半（圖形＋表同源 `/__health/components`、`/__docker`、`/api/rail`、`/api/seats`） |
+| 07b | 元件健康 | Docker／探測總覽圖板（`css/health.css`、`#healthBoard`） | 半（BFF 代問；`KOL_DOCKER=1` 才有真實 `compose ps`） |
+| 08 | 開源組件 | 第三方依賴清單、清單／明細兩欄、OSS 跑 Sherlock／Maigret | 半（靜態目錄＋可呼叫容器） |
 | 09 | UI 生成 | 一句話畫線框圖，走 OpenAI 相容 API | 需要代理（見下） |
 | 10 | 人物檔案 | 抖音作者索引，清單與檔案兩個檢視、作品時間軸、平台互動數 | 真（`/api/library/authors` 等） |
 | 11 | 審核台 | F2 歸戶佇列，人工裁決寫回 `review_task` 並留 `audit_log` | 真（含兩支寫入） |
-| 12 | 素材庫 | 本機抖音作品索引（圖集／影片）、480px 縮圖牆、作者檢視、下載缺檔、無損清理、衍生層 | 真（`/api/library`、`/api/mylike`、`/api/library/optimize`、`/api/library/derivative`） |
+| 12 | 素材庫 | 本機抖音作品索引（圖集／影片）、480px 縮圖牆、作者檢視、下載缺檔、無損清理、衍生層、MyLike 面板 | 真（`/api/library`、`/api/mylike`、`/api/library/optimize`、`/api/library/derivative`） |
+
+**MyLike 深入分析（`js/mylike-intel.js`）**：依 `/api/mylike` 與素材庫摘要做**確定性規則**洞察（連線、缺口集中、同步失敗、磁碟等）。只產候選與建議，不寫庫、不自己開採集；勾選「自動派席」時最多建兩張席位 Agent 大任務候選。高優先洞察也會反映到任務看板（`board: mylike-intel`）。分析模型無工具。
 
 右欄監控面板（佇列深度、連接器槽位、Dispatcher、事件流、審計、儲存）也接真資料：`GET /api/rail`，15 秒輪詢。
 
@@ -124,7 +127,7 @@ node tests/test-api-auth.mjs   # API 認證閘：無 Cookie 401、登入後可�
 | 網頁容器不持有 Docker 控制權 | 容器內 `KOL_DOCKER`、`KOL_SHERLOCK`、`KOL_LLM` 固定為 `0`。不掛載 Docker socket，不用 privileged、host network、host PID，映像不用 `latest` |
 | 容器開關只允許名單內的服務，而且只有 `operator` | 名單是 `web`、`postgres`、`meilisearch`、`sherlock`、`maigret`、`xhs-downloader`、`douyin-tiktok-api`。Redis 與 MinIO 仍在 `docker-compose.later.yml`，不在這份名單 |
 | 開源容器不進資料網路，開機不自己抓取 | 它們使用 `oss` 網路，不加入 `data`，不讀資料庫密碼。Sherlock 與 Maigret 的行程是 `sleep`，不查用戶名。XHS 與 Douyin API 失敗兩次就不再自動重啟。douyin-dl 與麦田沒有可啟動的映像 |
-| 開源容器的埠綁在宿主的 loopback，並有資源上限 | `5556` 和 `8000` 發佈到宿主的 `127.0.0.1`，不是只留在容器內部。同一台機器上的行程，包含尚未自帶認證的 `kolindex-api`，都能連到這兩個埠。`oss` 網路不是 internal，容器可以對外連線；對外 DNS 與 HTTP 審計還沒做。記憶體、CPU、pids 上限寫在 `docker-compose.oss.yml` |
+| 開源容器的埠綁在宿主的 loopback，並有資源上限 | `5556` 和 `8000` 發佈到宿主的 `127.0.0.1`，不是只留在容器內部。同一台機器上的行程，包含尚未自帶認證的 `kolindex-api`，都能連到這兩個埠。`oss` 網路不是 internal，容器可以對外連線；對外 DNS 與 HTTP 審計還沒做。記憶體、CPU、pids 上限寫在主檔 `docker-compose.yml` 的 OSS 服務（`docker-compose.oss.yml` 只清 profiles 做舊指令相容） |
 | Sherlock 查詢要限制用戶名，並留下查詢紀錄 | 用戶名只接受 `^[A-Za-z0-9._-]{2,32}$`。容器 512MB、90 秒逾時、`--cap-drop ALL`。每次查詢追加到 `KOL_NAS_ROOT/audit/sherlock.jsonl`，沒設時用倉庫下的 `data/nas/audit/`。這個檔被 gitignore，不進倉庫 |
 | 改基礎設施、秘密、schema 或登入的人或代理，要有批准紀錄 | **未完成**。聊天裡的同意不是批准令牌。這個倉庫還沒有 `approval_token` 和 `agent_action_log` |
 | 採集程式不直連 PostgreSQL、SQLite、Redis、MinIO、Meilisearch | **未完成**。新控制面的四個寫入端點不寫 SQLite。舊的 `kolindex-api` 仍可寫它自己的 SQLite |
@@ -168,10 +171,23 @@ node scripts/nas/backup.mjs
 
 ```
 copy infra\compose\.env.example infra\compose\.env
-docker compose -f infra/compose/docker-compose.yml -f infra/compose/docker-compose.oss.yml up -d --build
+
+# 建議：智慧啟動（多架構核對 → config → up）
+node scripts/nas/compose-smart.mjs
+node scripts/nas/compose-smart.mjs --profiles oss
+node scripts/nas/compose-smart.mjs --profiles oss,backup
+
+# 或手動 profiles（單一 docker-compose.yml）
+cd infra/compose
+docker compose -p kolindex up -d --build
+docker compose -p kolindex --profile oss up -d
+docker compose -p kolindex --profile oss --profile backup up -d
+
+# 舊寫法仍可用（-f oss 會清掉 OSS 的 profile 閘門，行為同以前）
+docker compose -f docker-compose.yml -f docker-compose.oss.yml up -d --build
 ```
 
-`.env` 只留在 NAS 上。Compose 的網頁服務用 `infra/compose/Dockerfile` 提供現用的 `index2.html`，映像標籤是 `kolindex-site:2026.11.24`。`apps/web` 的 Next.js 映像不在這組服務裡。第一版這條指令會拉起網頁、PostgreSQL 16.16（pgvector 0.8.7）、Meilisearch v1.57.0，以及四個有固定摘要的開源容器。畫面數字目前仍以 `kolindex-api` 的 SQLite 為準；PostgreSQL 承接控制面的四個寫入端點。Meilisearch 是衍生索引，重建用 `node scripts/rebuild-meilisearch.mjs`。Redis 與 MinIO 不在這個指令裡，定義留在 `docker-compose.later.yml`。媒體放 `KOL_NAS_ROOT`。初始化 SQL 是 `infra/compose/postgres/init/001-schema.sql`，只在空資料目錄第一次啟動時執行。MongoDB 不在這組服務裡。
+`.env` 只留在 NAS 上。三份 Compose 已收斂：`docker-compose.yml` 是單一真相（core／oss／backup／later profiles）；`docker-compose.oss.yml`、`docker-compose.later.yml` 只做相容覆寫。網頁映像標籤仍是 `kolindex-site:2026.11.24`。第一版預設只拉 web、PostgreSQL 16.16（pgvector 0.8.7）、Meilisearch v1.57.0；加 `--profile oss` 才開開源容器。Redis 與 MinIO 在 profile `later`，智慧腳本預設拒絕開啟。媒體放 `KOL_NAS_ROOT`。初始化 SQL 在 `postgres/init/`，只在空資料目錄第一次啟動時執行。
 
 可在 `.env` 調整的項目：時區 `TZ`、業務 API 位址 `KOL_API`（留空則容器經 `host.docker.internal:5210` 找宿主機上的 API）、各服務的監聽位址（`WEB_BIND` 等，預設 `127.0.0.1`）、記憶體與 CPU 上限。上限是容器配額，不是這台機器的測量結果。日誌每個容器最多 3 個 10MB 檔。網頁容器把 `KOL_DOCKER`、`KOL_SHERLOCK`、`KOL_LLM` 固定為 `0`，也不掛 Docker socket。PostgreSQL 的資料目錄要讓容器內的 postgres 使用者可寫。慢查詢日誌由 `PG_LOG_MIN_DURATION_MS` 打開，預設 `0` 是為了開始記錄，不是已測量的門檻。兩週數據出來之前，不依這個日誌加索引。
 
@@ -204,19 +220,32 @@ node tests/dev-server.mjs . 5200
 
 預設頁面聽 `127.0.0.1:5200`。網頁容器裡面聽 `0.0.0.0`，所以必須在 `.env` 設 `KOL_GATE`，否則行程拒絕啟動。角色用 `KOL_ROLE`（預設 `viewer`），名字用 `KOL_OPERATOR`；表單不能自選角色。前面再加你自己的反向代理。容器內 `KOL_PROD=1`：沒有自動重整、不列出目錄、預設不轉發 `/__llm`。沒有設定 `KOL_API` 時，收集與告警顯示未連線；已載入過就保留上次結果並標示時間，不把假資料留在畫面上。收集輪詢 60 秒，右欄 `rail.js` 是 15 秒。收集頁的 Sherlock 查詢仍要這個宿主行程，並在開源組件頁拉起映像或設 `KOL_SHERLOCK=1`。閒置中的 Sherlock 容器不會自己查用戶名。
 
-有固定映像的開源組件跟主 Compose 一起啟動，專案名仍是 `kolindex`。它們使用 `oss` 網路，不加入 `data`，也不掛 Docker socket。埠只綁 `127.0.0.1`。工作目錄在 `KOL_NAS_ROOT/oss/`，不掛媒體庫，也不讀 `.env` 裡的資料庫密碼。Sherlock 和 Maigret 的行程是 `sleep infinity`，等系統以後下指令。XHS-Downloader 與 Douyin API 用官方預設行程聽著，開機不送出抓取；行程自己失敗兩次後不再自動重啟。
+開源組件用 profile `oss`（Maigret 另用 `backup`），專案名仍是 `kolindex`。它們使用 `oss` 網路，不加入 `data`，也不掛 Docker socket。埠只綁 `127.0.0.1`。工作目錄在 `KOL_NAS_ROOT/oss/`，不掛媒體庫，也不讀 `.env` 裡的資料庫密碼。Sherlock 和 Maigret 的行程是 `sleep infinity`，等系統以後下指令。XHS-Downloader 與 Douyin API 用官方預設行程聽著，開機不送出抓取；行程自己失敗兩次後不再自動重啟。
 
-| 服務 | 映像 | 起來之後做什麼 |
-|---|---|---|
-| `sherlock` | `sherlock/sherlock` 0.16.0 的固定摘要 | 閒置。收集頁查詢仍另開一次性容器 |
-| `maigret` | `soxoj/maigret` 標籤 `327c2bc` 的固定摘要 | 閒置備援。不開 Web UI，收集頁不呼叫它 |
-| `xhs-downloader` | `joeanamier/xhs-downloader` 2.8 的固定摘要 | 官方預設行程，只聽 `127.0.0.1:5556`。不在開機時抓取 |
-| `douyin-tiktok-api` | `evil0ctal/douyin_tiktok_download_api` 5.1.13 的固定摘要 | 只有 API，只聽 `127.0.0.1:8000`。不含 browser、downloader、transcriber，不接 PostgreSQL |
+| 服務 | profile | 映像 | 起來之後做什麼 |
+|---|---|---|---|
+| `web`／`postgres`／`meilisearch` | （預設 core） | 見主 compose | 第一版常駐 |
+| `sherlock` | `oss` | `sherlock/sherlock` 0.16.0 的固定摘要 | 閒置。收集頁查詢仍另開一次性容器 |
+| `xhs-downloader` | `oss` | `joeanamier/xhs-downloader` 2.8 的固定摘要 | 官方預設行程，只聽 `127.0.0.1:5556`。不在開機時抓取 |
+| `douyin-tiktok-api` | `oss` | `evil0ctal/douyin_tiktok_download_api` 5.1.13 的固定摘要 | 只有 API，只聽 `127.0.0.1:8000`。不含 browser、downloader、transcriber，不接 PostgreSQL |
+| `maigret` | `backup` | `soxoj/maigret` 標籤 `327c2bc` 的固定摘要 | 閒置備援。不開 Web UI，收集頁不呼叫它 |
+| `redis`／MinIO 候選 | `later` | 見主 compose | 第一版勿開；`compose-smart` 預設拒絕，需 `--allow-later` |
 
-douyin-dl 沒有可釘住的 Docker Hub 映像，麦田沒有官方映像，兩份 Compose 都沒有它們。摘要是 2026-11-24 向 Docker Hub 讀到的 manifest list。這台開發機沒有 Docker，所以這些服務還沒有在這裡啟動過。
+douyin-dl 沒有可釘住的 Docker Hub 映像，麦田沒有官方映像，主 compose 沒有它們。摘要是 2026-11-24 向 Docker Hub 讀到的 manifest list。是否已在目標 NAS 實際拉起，以該機 `compose ps`／多架構腳本輸出為準，不得手填。
+
+**Compose 檔案角色**
+
+| 檔案 | 角色 |
+|---|---|
+| `infra/compose/docker-compose.yml` | 單一真相：core／oss／backup／later |
+| `infra/compose/docker-compose.oss.yml` | 相容覆寫：`-f` 疊加時清掉 OSS／backup 的 profile 閘門（行為同舊「全開」） |
+| `infra/compose/docker-compose.later.yml` | 相容覆寫：後期服務定義已併入主檔 |
+| `scripts/nas/compose-smart.mjs` | 受控智慧啟動：解析 profiles → 多架構核對 → `config` → `up` → `ps`（非自治 Agent） |
 
 ```
-docker compose --env-file infra/compose/.env -f infra/compose/docker-compose.yml -f infra/compose/docker-compose.oss.yml up -d
+docker compose --env-file infra/compose/.env -f infra/compose/docker-compose.yml --profile oss --profile backup up -d
+# 等同舊寫法：
+# docker compose --env-file infra/compose/.env -f infra/compose/docker-compose.yml -f infra/compose/docker-compose.oss.yml up -d
 ```
 
 角色規則、cookie 和尚未完成的項目見上面的「安全需求」。一台行程同時只有一種 `KOL_ROLE`。要同時給三種人用，就開三個實例，再用反向代理分流。
@@ -224,23 +253,31 @@ docker compose --env-file infra/compose/.env -f infra/compose/docker-compose.yml
 ## 目錄
 
 ```
-index2.html            12 個分頁的版面（單檔）
+index2.html            監控台版面（單檔）
 css/index2.css         原版樣式
-css/ds/                設計系統四層：tokens → base → components → pages
-css/*.css              各分頁樣式（studio／person／review／connectors／jobs／library／seats／queue）
-js/index2.js           分頁切換、任務隊列的資料橋、圖表、對話框
+css/ds/                設計系統：tokens → base → components → pages → unify／pixel
+css/health.css         元件健康圖板
+css/viz.css            基礎設施圖卡網格
+css/*.css              各分頁樣式（studio／person／review／library／seats／queue／…）
+js/index2.js           分頁切換、任務隊列資料橋、圖表、對話框
 js/api.js              後端橋接（收集、告警）
 js/rail.js             右欄監控面板 → /api/rail
-js/seats.js            席位編隊 → /api/seats（派工、自動派工、工人狀態）
-js/*.js                各分頁邏輯（studio／person／review／infra／jobs／library／wireframe）
+js/seats.js            席位 Agent 編隊（大任務 → 經理拆分 → 席位）
+js/mylike-intel.js     MyLike 規則洞察（候選／可選自動派席）
+js/system.js           基礎設施／健康／Docker 控制繪製
+js/*.js                各分頁邏輯（person／review／library／jobs／…）
+scripts/nas/           NAS 部署：compose-smart、backup、verify-multiarch
+infra/compose/         單一真相 compose＋oss／later 相容覆寫
 fonts/                 自架 woff2（Chakra Petch、IBM Plex Mono）
-tests/                 六支檢查（含角色與 caps）+ 零依賴 dev-server
+tests/                 檢查腳本 + 零依賴 dev-server
 screenshots/           README 用的截圖
 ```
 
 ## 已知限制
 
-- 產出庫沒有後端列表（控制面缺 `GET /artifacts`），開起來是空狀態；統一管線只畫流程、不冒充耗時；開源組件是靜態依賴清單。任務隊列與席位執行的 8 席 worker pool 都接真資料。
+- 產出庫沒有後端列表（控制面缺 `GET /artifacts`），開起來是空狀態；統一管線只畫流程、不冒充耗時。任務隊列與席位編隊接真／本機編排資料。
+- MyLike 深入分析是規則引擎，不是 LLM；「自動派席」只建立席位大任務候選，不會繞過 Policy／L3，也不直連 Vault／資料庫寫入。
+- Compose 智慧啟動是受控腳本（核對 → config → up），不是自治基礎設施 Agent；`later`（Redis／MinIO）預設阻斷。
 - 素材庫依賴本機已經抓下來的抖音媒體（數萬件作品、數十 GB），repo 裡沒有任何媒體檔；索引與媒體都只在本機。
 - 只有八組寫入路徑（審核裁決、AI 事件 ack、收集認領／退回、席位派工與工單結果、MyLike 索引同步、素材庫補檔、圖片無損清理、圖片衍生層），其餘分頁唯讀。「產生衍生層」只新增 `<原檔>.q50.webp` 並記血緣，**原檔與 sha256 不動**，所以不會釋放空間；要省空間得另外決定原檔的保留政策。
 - 外部依賴只有 jsdelivr 的 tippy.js／popper.js 與 highlight.js，三者都帶 sha384 SRI；離線時失效但頁面仍可載入。

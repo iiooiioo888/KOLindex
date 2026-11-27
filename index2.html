@@ -18,7 +18,7 @@
 <link rel="stylesheet" href="css/review.css?v=20261121">
 <link rel="stylesheet" href="css/connectors.css?v=20261121">
 <link rel="stylesheet" href="css/jobs.css?v=20261121">
-<link rel="stylesheet" href="css/library.css?v=20261127b">
+<link rel="stylesheet" href="css/library.css?v=20261127e">
 <link rel="stylesheet" href="css/person.css?v=20261126h">
 <link rel="stylesheet" href="css/seats.css?v=20261126g">
 <link rel="stylesheet" href="css/sense.css?v=20261126a">
@@ -1084,6 +1084,17 @@
               <div class="ml-sec-head"><span>最近同步</span></div>
               <div class="ml-runs" id="mlRuns"></div>
             </div>
+            <div class="ml-sec ml-intel-sec">
+              <div class="ml-sec-head">
+                <span>深入分析<span class="ml-dim" id="mlIntelMeta"></span></span>
+                <label class="ml-auto" title="高優先洞察最多自動派 2 張席位大任務">
+                  <input type="checkbox" id="mlIntelAuto"> 自動派席
+                </label>
+                <button type="button" class="mini-btn" id="mlIntelRun">重跑分析</button>
+              </div>
+              <div class="ml-intel" id="mlIntel" aria-label="MyLike 分析洞察"></div>
+              <p class="ml-note">規則引擎依收藏夾缺口、缺檔比、磁碟、同步健康產出候選。只建議／派席，不自動寫庫或無限重試。</p>
+            </div>
             <div class="ml-note">
               同步只寫索引到 <code>douyin_item</code>，不下載媒體；缺檔另按「缺檔」。與人物檔案互跳不改寫歸戶。
             </div>
@@ -1303,13 +1314,14 @@
 <script defer src="https://cdn.jsdelivr.net/npm/tippy.js@6.3.7/dist/tippy.umd.min.js" integrity="sha384-pjtv4LzKGI/lGxchW/wd/upB/HsGOP/Q2iPYyDU8qo2bp4JLbN34hQkdAArvidZX" crossorigin="anonymous"></script>
 <script defer src="js/login.js?v=20261126b"></script>
 <script defer src="js/api.js?v=20261127d"></script>
-<script defer src="js/index2.js?v=20261127a"></script>
+<script defer src="js/index2.js?v=20261127e"></script>
 <script defer src="js/wireframe.js?v=20261121"></script>
 <script defer src="js/studio.js?v=20261126a"></script>
 <script defer src="js/review.js?v=20261126c"></script>
 <script defer src="js/infra.js?v=20261121"></script>
 <script defer src="js/jobs.js?v=20261123c"></script>
-<script defer src="js/library.js?v=20261127c"></script>
+<script defer src="js/mylike-intel.js?v=20261127a"></script>
+<script defer src="js/library.js?v=20261127d"></script>
 <script defer src="js/person.js?v=20261127b"></script>
 <script defer src="js/seats.js?v=20261126j"></script>
 <script defer src="js/sense.js?v=20261126b"></script>

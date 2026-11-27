@@ -1,3 +1,22 @@
+# KOL-Index Compose 單一真相
+# ─────────────────────────────────────────────────────────────
+# 預設（core）：web + postgres + meilisearch
+#   docker compose -p kolindex up -d
+#
+# 開源工具（不進 data 網路）：
+#   docker compose -p kolindex --profile oss up -d
+#   docker compose -p kolindex --profile oss --profile backup up -d   # 含 Maigret
+#
+# 後期（Celery／物件儲存候選，第一版勿開）：
+#   docker compose -p kolindex --profile later up -d
+#
+# 舊指令仍可用：
+#   -f docker-compose.yml -f docker-compose.oss.yml
+#   -f docker-compose.yml -f docker-compose.later.yml
+# 智慧啟動（核對架構 → config → up → ps）：
+#   node scripts/nas/compose-smart.mjs
+#   node scripts/nas/compose-smart.mjs --profiles oss
+# ─────────────────────────────────────────────────────────────
 name: kolindex
 
 x-logging: &logging
@@ -6,7 +25,20 @@ x-logging: &logging
     max-size: "10m"
     max-file: "3"
 
+x-harden-oss: &harden-oss
+  read_only: true
+  init: true
+  pull_policy: if_not_present
+  security_opt:
+    - no-new-privileges:true
+  cap_drop:
+    - ALL
+  logging: *logging
+  networks:
+    - oss
+
 services:
+  # ── core（無 profile＝預設啟動）────────────────────────────
   web:
     build:
       context: ../..
@@ -63,6 +95,9 @@ services:
       - no-new-privileges:true
     cap_drop:
       - ALL
+    labels:
+      org.kolindex.profile: core
+      org.kolindex.role: edge
     networks:
       - edge
       - data
@@ -104,6 +139,9 @@ services:
       start_period: 20s
     security_opt:
       - no-new-privileges:true
+    labels:
+      org.kolindex.profile: core
+      org.kolindex.role: truth
     networks:
       - data
     restart: unless-stopped
@@ -135,12 +173,176 @@ services:
     security_opt:
       - no-new-privileges:true
     labels:
+      org.kolindex.profile: core
       org.kolindex.role: derived
     networks:
       - data
     restart: unless-stopped
 
+  # ── profile: oss（不進 data；開機不抓取）───────────────────
+  sherlock:
+    <<: *harden-oss
+    profiles: ["oss"]
+    image: sherlock/sherlock@sha256:9d6602b98179fb15ceab88433626fb0ae603ae9880e13cab886970317fe1475f
+    environment:
+      TZ: ${TZ:-Asia/Taipei}
+    mem_limit: ${SHERLOCK_MEM_LIMIT:-512m}
+    memswap_limit: ${SHERLOCK_MEM_LIMIT:-512m}
+    cpus: ${SHERLOCK_CPUS:-0.50}
+    pids_limit: 128
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=32m
+    entrypoint: ["sleep", "infinity"]
+    restart: unless-stopped
+    labels:
+      org.kolindex.profile: oss
+      org.kolindex.tag: "0.16.0"
+      org.kolindex.measured: "2026-11-24"
+      org.kolindex.wait: control
+
+  xhs-downloader:
+    <<: *harden-oss
+    profiles: ["oss"]
+    image: joeanamier/xhs-downloader@sha256:5878c0972cc1236cd8ac4e069f9202152434d8402df52bf427210229b8a53fb9
+    environment:
+      TZ: ${TZ:-Asia/Taipei}
+      PYTHONDONTWRITEBYTECODE: "1"
+    ports:
+      - "${XHS_BIND:-127.0.0.1}:${XHS_PORT:-5556}:5556"
+    volumes:
+      - ${KOL_NAS_ROOT:-../../data/nas}/oss/xhs:/app/Volume
+    mem_limit: ${XHS_MEM_LIMIT:-512m}
+    memswap_limit: ${XHS_MEM_LIMIT:-512m}
+    cpus: ${XHS_CPUS:-0.50}
+    pids_limit: 128
+    tmpfs:
+      - /tmp:rw,nosuid,size=32m
+    restart: "on-failure:2"
+    labels:
+      org.kolindex.profile: oss
+      org.kolindex.tag: "2.8"
+      org.kolindex.measured: "2026-11-24"
+      org.kolindex.wait: control
+
+  douyin-tiktok-api:
+    <<: *harden-oss
+    profiles: ["oss"]
+    image: evil0ctal/douyin_tiktok_download_api@sha256:c0907e1bf08f4b7eda0a79c8157b29523a0b28f63bb26670bf666f4c88f50c00
+    command: ["api"]
+    environment:
+      TZ: ${TZ:-Asia/Taipei}
+      PYTHONDONTWRITEBYTECODE: "1"
+      DTK_BIND_HOST: "0.0.0.0"
+      DTK_BIND_PORT: "8000"
+    ports:
+      - "${DTK_BIND:-127.0.0.1}:${DTK_PORT:-8000}:8000"
+    volumes:
+      - ${KOL_NAS_ROOT:-../../data/nas}/oss/dtk/backups:/var/lib/dtk/backups
+    mem_limit: ${DTK_MEM_LIMIT:-512m}
+    memswap_limit: ${DTK_MEM_LIMIT:-512m}
+    cpus: ${DTK_CPUS:-1.00}
+    pids_limit: 256
+    tmpfs:
+      - /tmp:rw,nosuid,size=64m
+    stop_grace_period: 20s
+    restart: "on-failure:2"
+    labels:
+      org.kolindex.profile: oss
+      org.kolindex.tag: "5.1.13"
+      org.kolindex.measured: "2026-11-24"
+      org.kolindex.wait: control
+
+  # ── profile: backup（Maigret；不與 Sherlock 同為預設維護面）─
+  maigret:
+    <<: *harden-oss
+    profiles: ["backup"]
+    image: soxoj/maigret@sha256:0dba1e81178a4ce62bc73167ae68687217320ebb62b59ced094ba3cb879615e7
+    environment:
+      TZ: ${TZ:-Asia/Taipei}
+      PYTHONDONTWRITEBYTECODE: "1"
+    volumes:
+      - ${KOL_NAS_ROOT:-../../data/nas}/oss/maigret:/app/reports
+    mem_limit: ${MAIGRET_MEM_LIMIT:-512m}
+    memswap_limit: ${MAIGRET_MEM_LIMIT:-512m}
+    cpus: ${MAIGRET_CPUS:-0.50}
+    pids_limit: 128
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=32m
+    entrypoint: ["sleep", "infinity"]
+    restart: unless-stopped
+    labels:
+      org.kolindex.profile: backup
+      org.kolindex.tag: "327c2bc"
+      org.kolindex.measured: "2026-11-24"
+      org.kolindex.role: backup
+      org.kolindex.wait: control
+
+  # ── profile: later（第一版不啟動）─────────────────────────
+  redis:
+    profiles: ["later"]
+    image: redis:7.4.7-bookworm@sha256:976ab0f0939b78c06d802bcd3bea44c5142ea9a756a57b861e08819817f768c8
+    pull_policy: if_not_present
+    environment:
+      TZ: ${TZ:-Asia/Taipei}
+      REDISCLI_AUTH: ${REDIS_PASSWORD:?set REDIS_PASSWORD in infra/compose/.env}
+    command:
+      - redis-server
+      - --appendonly
+      - "yes"
+      - --requirepass
+      - ${REDIS_PASSWORD:?set REDIS_PASSWORD in infra/compose/.env}
+      - --maxmemory
+      - ${REDIS_MAXMEMORY:-128mb}
+      - --maxmemory-policy
+      - allkeys-lru
+    ports:
+      - "${REDIS_BIND:-127.0.0.1}:6379:6379"
+    volumes:
+      - ${KOL_NAS_ROOT:-../../data/nas}/redis:/data
+    mem_limit: ${REDIS_MEM_LIMIT:-192m}
+    cpus: ${REDIS_CPUS:-0.50}
+    pids_limit: 128
+    logging: *logging
+    restart: "no"
+    security_opt:
+      - no-new-privileges:true
+    labels:
+      org.kolindex.profile: later
+      org.kolindex.role: broker
+    networks:
+      - later
+
+  minio:
+    profiles: ["later"]
+    image: quay.io/minio/minio:RELEASE.2025-10-15T17-29-55Z
+    pull_policy: if_not_present
+    environment:
+      TZ: ${TZ:-Asia/Taipei}
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-kolindex}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?set MINIO_ROOT_PASSWORD in infra/compose/.env}
+    command: ["server", "/data", "--console-address", ":9001"]
+    ports:
+      - "${MINIO_BIND:-127.0.0.1}:9000:9000"
+      - "${MINIO_BIND:-127.0.0.1}:9001:9001"
+    volumes:
+      - ${KOL_NAS_ROOT:-../../data/nas}/minio:/data
+    mem_limit: ${MINIO_MEM_LIMIT:-512m}
+    cpus: ${MINIO_CPUS:-0.50}
+    pids_limit: 256
+    logging: *logging
+    restart: "no"
+    security_opt:
+      - no-new-privileges:true
+    labels:
+      org.kolindex.profile: later
+      org.kolindex.role: object-store-candidate
+    networks:
+      - later
+
 networks:
   edge: {}
   data:
+    internal: true
+  oss: {}
+  later:
     internal: true

@@ -85,7 +85,7 @@ GitHub Pages 只發靜態畫面。正式運行在家裡的 NAS。分頁細節見
 | 本機媒體 | `KOL_NAS_ROOT`，頁面讀同源 `/media` | 半 | 沒設時用倉庫下的 `data/nas` |
 | 容器 | Docker Compose | 真 | `infra/compose/docker-compose.yml`。網頁映像是 `infra/compose/Dockerfile`，容器內不掛 Docker socket |
 | 帳號發現 | Sherlock 官方映像 0.16.0，固定摘要 | 半 | 只在設了 `KOL_SHERLOCK=1` 的本機行程 |
-| 開源候選容器 | Sherlock、XHS-Downloader、Douyin_TikTok_Download_API | 半 | `docker-compose.oss.yml` 的 profile `oss`。Maigret 只在 profile `backup` |
+| 開源候選容器 | Sherlock、XHS-Downloader、Douyin_TikTok_Download_API | 半 | 單一 `docker-compose.yml`：`--profile oss`；Maigret 用 `--profile backup`。`docker-compose.oss.yml` 只做舊指令相容。智慧啟動：`node scripts/nas/compose-smart.mjs` |
 | 登入 | `KOL_GATE` 與 `KOL_ROLE` | 半 | 擋在這個網頁行程。業務 API 自身的認證待確認 |
 | Compose 網頁映像 | 仍可走 `infra/compose/Dockerfile`（dev-server） | 半 | Next standalone 映像是 `apps/web/Dockerfile`，切換前要先開 BFF |
 

@@ -32,6 +32,11 @@ node scripts/nas/verify-multiarch.mjs --offline
 ## 2. 拉起第一版服務
 
 ```bash
+# 智慧啟動（建議）
+node scripts/nas/compose-smart.mjs
+# 需要開源工具時：
+# node scripts/nas/compose-smart.mjs --profiles oss
+
 cd infra/compose
 docker compose -p kolindex up -d
 docker compose -p kolindex ps

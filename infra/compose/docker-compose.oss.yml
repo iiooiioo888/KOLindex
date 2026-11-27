@@ -1,110 +1,19 @@
-x-logging: &logging
-  driver: json-file
-  options:
-    max-size: "10m"
-    max-file: "3"
+# 相容覆寫：舊指令
+#   docker compose -f docker-compose.yml -f docker-compose.oss.yml up -d
+# 會把 OSS／backup 服務的 profiles 清掉，行為等同以前「跟主檔一起全開」。
+# 新指令請改用：
+#   docker compose -p kolindex --profile oss up -d
+#   docker compose -p kolindex --profile oss --profile backup up -d
+# 服務本體定義只在 docker-compose.yml。
 
-x-harden: &harden
-  read_only: true
-  init: true
-  restart: "no"
-  pull_policy: if_not_present
-  security_opt:
-    - no-new-privileges:true
-  cap_drop:
-    - ALL
-  logging: *logging
-  networks:
-    - oss
+name: kolindex
 
 services:
   sherlock:
-    <<: *harden
-    image: sherlock/sherlock@sha256:9d6602b98179fb15ceab88433626fb0ae603ae9880e13cab886970317fe1475f
-    environment:
-      TZ: ${TZ:-Asia/Taipei}
-    mem_limit: ${SHERLOCK_MEM_LIMIT:-512m}
-    memswap_limit: ${SHERLOCK_MEM_LIMIT:-512m}
-    cpus: ${SHERLOCK_CPUS:-0.50}
-    pids_limit: 128
-    tmpfs:
-      - /tmp:rw,noexec,nosuid,size=32m
-    entrypoint: ["sleep", "infinity"]
-    restart: unless-stopped
-    labels:
-      org.kolindex.tag: "0.16.0"
-      org.kolindex.measured: "2026-11-24"
-      org.kolindex.wait: control
-
-  maigret:
-    <<: *harden
-    image: soxoj/maigret@sha256:0dba1e81178a4ce62bc73167ae68687217320ebb62b59ced094ba3cb879615e7
-    environment:
-      TZ: ${TZ:-Asia/Taipei}
-      PYTHONDONTWRITEBYTECODE: "1"
-    volumes:
-      - ${KOL_NAS_ROOT:-../../data/nas}/oss/maigret:/app/reports
-    mem_limit: ${MAIGRET_MEM_LIMIT:-512m}
-    memswap_limit: ${MAIGRET_MEM_LIMIT:-512m}
-    cpus: ${MAIGRET_CPUS:-0.50}
-    pids_limit: 128
-    tmpfs:
-      - /tmp:rw,noexec,nosuid,size=32m
-    entrypoint: ["sleep", "infinity"]
-    restart: unless-stopped
-    labels:
-      org.kolindex.tag: "327c2bc"
-      org.kolindex.measured: "2026-11-24"
-      org.kolindex.role: backup
-      org.kolindex.wait: control
-
+    profiles: []
   xhs-downloader:
-    <<: *harden
-    image: joeanamier/xhs-downloader@sha256:5878c0972cc1236cd8ac4e069f9202152434d8402df52bf427210229b8a53fb9
-    environment:
-      TZ: ${TZ:-Asia/Taipei}
-      PYTHONDONTWRITEBYTECODE: "1"
-    ports:
-      - "${XHS_BIND:-127.0.0.1}:${XHS_PORT:-5556}:5556"
-    volumes:
-      - ${KOL_NAS_ROOT:-../../data/nas}/oss/xhs:/app/Volume
-    mem_limit: ${XHS_MEM_LIMIT:-512m}
-    memswap_limit: ${XHS_MEM_LIMIT:-512m}
-    cpus: ${XHS_CPUS:-0.50}
-    pids_limit: 128
-    tmpfs:
-      - /tmp:rw,nosuid,size=32m
-    restart: "on-failure:2"
-    labels:
-      org.kolindex.tag: "2.8"
-      org.kolindex.measured: "2026-11-24"
-      org.kolindex.wait: control
-
+    profiles: []
   douyin-tiktok-api:
-    <<: *harden
-    image: evil0ctal/douyin_tiktok_download_api@sha256:c0907e1bf08f4b7eda0a79c8157b29523a0b28f63bb26670bf666f4c88f50c00
-    command: ["api"]
-    environment:
-      TZ: ${TZ:-Asia/Taipei}
-      PYTHONDONTWRITEBYTECODE: "1"
-      DTK_BIND_HOST: "0.0.0.0"
-      DTK_BIND_PORT: "8000"
-    ports:
-      - "${DTK_BIND:-127.0.0.1}:${DTK_PORT:-8000}:8000"
-    volumes:
-      - ${KOL_NAS_ROOT:-../../data/nas}/oss/dtk/backups:/var/lib/dtk/backups
-    mem_limit: ${DTK_MEM_LIMIT:-512m}
-    memswap_limit: ${DTK_MEM_LIMIT:-512m}
-    cpus: ${DTK_CPUS:-1.00}
-    pids_limit: 256
-    tmpfs:
-      - /tmp:rw,nosuid,size=64m
-    stop_grace_period: 20s
-    restart: "on-failure:2"
-    labels:
-      org.kolindex.tag: "5.1.13"
-      org.kolindex.measured: "2026-11-24"
-      org.kolindex.wait: control
-
-networks:
-  oss: {}
+    profiles: []
+  maigret:
+    profiles: []

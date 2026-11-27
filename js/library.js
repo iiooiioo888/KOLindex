@@ -967,6 +967,9 @@ function mlRenderAll(){
   mlFolders(M.data);
   mlRuns(M.data);
   mlProg(M.job);
+  if(window.KOLINDEX_MYLIKE_INTEL&&typeof window.KOLINDEX_MYLIKE_INTEL.onData==='function'){
+    try{ window.KOLINDEX_MYLIKE_INTEL.onData(M.data); }catch(e){ /* 分析失敗不擋同步 UI */ }
+  }
 }
 
 function mlLoad(){
@@ -1001,9 +1004,13 @@ function mlPoll(){
       mlConn(M.data);
       if(job&&job.state==='running') return;
       clearInterval(M.polling); M.polling=0;
-      mlLoad();
+      mlLoad().then(function(){
+        if(window.KOLINDEX_MYLIKE_INTEL&&typeof window.KOLINDEX_MYLIKE_INTEL.run==='function'){
+          try{ window.KOLINDEX_MYLIKE_INTEL.run(M.data); }catch(e){}
+        }
+      });
       reload(true);
-      if(job&&job.state==='done') toast('同步完成 · 新增 '+nfmt(job.added)+' 件');
+      if(job&&job.state==='done') toast('同步完成 · 新增 '+nfmt(job.added)+' 件 · 已重跑分析');
       else if(job&&job.state==='error') toast('同步失敗：'+(job.error||''));
     }).catch(function(){ clearInterval(M.polling); M.polling=0; });
   },1500);

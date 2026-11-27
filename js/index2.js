@@ -3477,6 +3477,16 @@
     });
     return lanes;
   }
+  function mergeMylikeIntelBoard(items){
+    var list=items?items.slice():[];
+    var intel=window.KOLINDEX_MYLIKE_INTEL;
+    if(!intel||typeof intel.boardItems!=='function') return list;
+    var extra=[];
+    try{ extra=intel.boardItems()||[]; }catch(e){ extra=[]; }
+    list=list.filter(function(it){ return it.board!=='mylike-intel'; });
+    return list.concat(extra);
+  }
+
   function buildBoard(jobs,reviews,mylike,download,seats){
     var out=[];
     ((jobs&&jobs.items)||[]).forEach(function(j){
@@ -3529,12 +3539,12 @@
   }
   function liveJobCard(j){
     var kind={
-      classify:'人物分類',discover:'待查',mylike:'MyLike 同步',
+      classify:'人物分類',discover:'待查',mylike:'MyLike 同步','mylike-intel':'MyLike 分析',
       seat:'席位子任務', 'agent-job':'席位大任務',
       download:'補檔',crawl:'資料爬蟲'
     }[j.board]||'資料爬蟲';
     var foot={
-      classify:'人工複核 · 不改歸戶',discover:'待查 · 手動',mylike:'MyLike · 只補索引',
+      classify:'人工複核 · 不改歸戶',discover:'待查 · 手動',mylike:'MyLike · 只補索引','mylike-intel':'MyLike · 規則洞察',
       seat:'席位 Agent · 獨立空間承接', 'agent-job':'用戶發起 · 任務經理拆分',
       download:'補檔 · 只下載圖片',crawl:'排程工作 · 只讀'
     }[j.board]||'只讀';
@@ -3678,7 +3688,7 @@
     if (!claims&&snap&&snap.children){
       claims=snap.children.filter(function(c){ return !!c.seat; }).length;
     }
-    var items=mergeSeatAgentBoard(buildBoard(jobs,reviews,mylike,download,seats));
+    var items=mergeMylikeIntelBoard(mergeSeatAgentBoard(buildBoard(jobs,reviews,mylike,download,seats)));
     var lanes=tallyBoard(items);
     var openClassify=items.filter(function(it){ return it.board==='classify'&&it.state==='open'; }).length;
     var agentDone=items.filter(function(it){ return it.source==='seat-agent'&&(it.state==='done'||it.state==='succeeded'); }).length;
