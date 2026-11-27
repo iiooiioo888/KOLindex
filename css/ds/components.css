@@ -96,32 +96,42 @@
   pointer-events:none;user-select:none;
 }
 .topic-group:first-child{margin-left:0;border-left:0;padding-left:0}
+/* 左軌列：圖示｜名稱｜徽章。不用 ::before 序號，避免與 .ic 重疊 */
 .nav-item{
   position:relative;
-  height:30px;padding:0 var(--s-3) 0 30px;
-  gap:var(--s-3);border:0;border-radius:0;
+  display:flex;align-items:center;
+  height:30px;min-height:30px;
+  padding:0 8px 0 8px;
+  gap:8px;border:0;border-radius:0;
   color:var(--dim);font-size:12.5px;
+  box-sizing:border-box;
   transition:background var(--dur-1) var(--ease),color var(--dur-1) var(--ease),box-shadow var(--dur-1) var(--ease);
 }
-.nav-item::before{
-  counter-increment:nav;content:counter(nav,decimal-leading-zero);
-  position:absolute;left:10px;top:50%;transform:translateY(-50%);
-  font-family:var(--mono);font-size:9.5px;letter-spacing:0;color:var(--faint);
-  transition:color var(--dur-1) var(--ease);
-}
+.nav-item::before{content:none;display:none;counter-increment:none}
 .nav-item:hover{background:var(--surface-2);color:var(--text)}
 .nav-item.active{
   background:var(--surface-2);color:var(--text);
   box-shadow:inset 2px 0 0 var(--accent);
 }
-.nav-item.active::before{color:var(--accent)}
-.nav-item .nm{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
-.nav-item .bd{
-  font-family:var(--mono);font-size:9.5px;line-height:14px;padding:0 4px;
-  color:var(--faint);background:transparent;border:1px solid var(--line);border-radius:0;
+.nav-item .ic{
+  flex:0 0 14px;width:14px;height:14px;
+  color:currentColor;opacity:.85;
+  display:block;
 }
-.nav-item.active .bd{color:var(--text);border-color:var(--line-strong)}
-.nav-item .ic{color:currentColor;opacity:.8}
+.nav-item .nm{
+  flex:1 1 auto;min-width:0;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.nav-item .bd{
+  flex:0 0 auto;max-width:64px;
+  font-family:var(--mono);font-size:9.5px;line-height:16px;
+  padding:0 5px;margin-left:auto;
+  color:var(--faint);background:var(--surface-3);
+  border:1px solid var(--line);border-radius:0;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  text-align:center;
+}
+.nav-item.active .bd{color:var(--text);border-color:var(--line-strong);background:var(--surface-4)}
 
 .micro-card{
   border:1px solid var(--line);border-radius:0;

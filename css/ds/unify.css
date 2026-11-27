@@ -1,0 +1,762 @@
+/* ============================================================================
+   ds/unify.css — 強迫症對齊層（最後載入）
+   規則硬約束：
+   · 水平內縮一律 --frame-x（10）
+   · 垂直節奏只准 4／8／12／16（--s-2／4／6／8）
+   · 標題列 --frame-h（32）、工具列 --bar-h（28）、控制項 --ctl-h（26）
+   · IDE 三欄固定：48｜240｜1fr
+   · KPI 六等分同高；禁止 6／9／11／13 等私貨 padding
+   ============================================================================ */
+
+:root{
+  --ide-rail:48px;
+  --ide-side:240px;
+  --ide-head:32px;
+  --side-w:240px;
+  --row-pad-y:8px;
+  --row-pad-x:10px;
+  --seg-h:26px;
+}
+
+/* ── 舞台／面板骨架 ───────────────────────────────────────── */
+.waterfall{
+  padding:var(--frame-y) var(--frame-x) 0;
+  gap:var(--frame-y);
+}
+.panel{
+  border:1px solid var(--line);
+  border-radius:0;
+  background:var(--surface);
+  overflow:hidden;
+}
+.panel-head{
+  display:flex;
+  align-items:center;
+  gap:var(--col-gap);
+  min-height:var(--frame-h);
+  height:auto;
+  padding:0 var(--frame-x) !important;
+  border-bottom:1px solid var(--line-soft);
+  box-sizing:border-box;
+}
+.panel-title{
+  margin:0;
+  font:600 12px/1 var(--mono);
+  letter-spacing:.04em;
+  color:var(--text);
+}
+.panel-tools{
+  margin-left:auto;
+  display:flex;
+  align-items:center;
+  gap:var(--s-2);
+  flex-wrap:wrap;
+  justify-content:flex-end;
+}
+.panel-body{
+  padding:var(--frame-y) var(--frame-x) !important;
+}
+.panel-bar{
+  display:flex;
+  align-items:center;
+  gap:var(--s-2);
+  min-height:var(--bar-h);
+  padding:0 var(--frame-x) !important;
+  border-bottom:1px solid var(--line-soft);
+  background:var(--surface-2);
+  box-sizing:border-box;
+}
+
+/* ── 控制項統一高度 ───────────────────────────────────────── */
+.mini-btn,
+.panel-bar .mini-btn,
+.fleet .mini-btn,
+.ide .mini-btn,
+#sense .mini-btn,
+#topic-review .mini-btn,
+#topic-oss .mini-btn{
+  height:var(--ctl-h);
+  min-height:var(--ctl-h);
+  padding:0 8px;
+  box-sizing:border-box;
+  border-radius:var(--r-ctl);
+  font:500 11px/1 var(--mono);
+}
+select.pn-input,
+input.pn-input,
+.ide input[type="search"],
+.ide input[type="text"],
+.fleet input[type="text"],
+.fleet select,
+.lib-select,
+#sense select,
+#sense input[type="text"],
+#sense input[type="search"]{
+  height:var(--ctl-h) !important;
+  min-height:var(--ctl-h);
+  box-sizing:border-box;
+  border-radius:var(--r-ctl);
+  padding:0 8px !important;
+  font:500 11px/1 var(--mono) !important;
+}
+
+/* ── KPI 列：等分、同高、同內縮 ───────────────────────────── */
+.kpis,
+.fleet-kpis,
+.pn-ide-kpis,
+.lib-ide-kpis,
+#pnKpis,
+#libKpis,
+#fleetKpis,
+#sense .sense-kpis,
+#senseKpis{
+  display:grid !important;
+  grid-template-columns:repeat(6,minmax(0,1fr));
+  gap:0 !important;
+  border:0;
+  border-bottom:1px solid var(--line-soft);
+  background:var(--line-soft);
+  margin:0 !important;
+  padding:0 !important;
+}
+.kpis > *,
+.fleet-kpi,
+.pn-ide-kpis > *,
+.lib-ide-kpis > *,
+#pnKpis > *,
+#libKpis > *,
+#fleetKpis > .fleet-kpi,
+#sense .sk-kpi,
+#senseKpis > *{
+  background:var(--surface);
+  border:0;
+  border-right:1px solid var(--line-soft);
+  padding:8px 10px !important;
+  min-width:0;
+  margin:0;
+  box-sizing:border-box;
+}
+.kpis > *:last-child,
+.fleet-kpi:last-child,
+.pn-ide-kpis > *:last-child,
+.lib-ide-kpis > *:last-child,
+#pnKpis > *:last-child,
+#libKpis > *:last-child,
+#fleetKpis > .fleet-kpi:last-child,
+#sense .sk-kpi:last-child,
+#senseKpis > *:last-child{ border-right:0; }
+
+@media (max-width:1100px){
+  .kpis,
+  .fleet-kpis,
+  .pn-ide-kpis,
+  .lib-ide-kpis,
+  #pnKpis,
+  #libKpis,
+  #fleetKpis,
+  #sense .sense-kpis,
+  #senseKpis{ grid-template-columns:repeat(3,minmax(0,1fr)) !important; }
+  .kpis > *:nth-child(3n),
+  .fleet-kpi:nth-child(3n),
+  #fleetKpis > .fleet-kpi:nth-child(3n),
+  #pnKpis > *:nth-child(3n),
+  #libKpis > *:nth-child(3n),
+  #sense .sk-kpi:nth-child(3n){ border-right:0; }
+  .kpis > *:nth-child(n+4),
+  .fleet-kpi:nth-child(n+4),
+  #fleetKpis > .fleet-kpi:nth-child(n+4),
+  #pnKpis > *:nth-child(n+4),
+  #libKpis > *:nth-child(n+4),
+  #sense .sk-kpi:nth-child(n+4){ border-top:1px solid var(--line-soft); }
+}
+@media (max-width:640px){
+  .kpis,
+  .fleet-kpis,
+  .pn-ide-kpis,
+  .lib-ide-kpis,
+  #pnKpis,
+  #libKpis,
+  #fleetKpis,
+  #sense .sense-kpis,
+  #senseKpis{ grid-template-columns:repeat(2,minmax(0,1fr)) !important; }
+  .kpis > *,
+  .fleet-kpi,
+  #fleetKpis > .fleet-kpi,
+  #pnKpis > *,
+  #libKpis > *,
+  #sense .sk-kpi{ border-right:0; border-bottom:1px solid var(--line-soft); }
+}
+
+/* ── IDE 三頁（產出／人物／素材）同一骨架 ─────────────────── */
+#topic-out.on,
+#topic-person.on,
+#topic-library.on{
+  padding:0 !important;
+  margin:0;
+  gap:0;
+  flex:1 1 auto;
+  min-height:0;
+  overflow:hidden;
+  display:flex;
+  flex-direction:column;
+}
+#topic-out .ide,
+#topic-person .ide,
+#topic-library .ide{
+  flex:1 1 auto;
+  min-height:0;
+  width:100%;
+  display:grid !important;
+  grid-template-columns:var(--ide-rail) var(--ide-side) minmax(0,1fr) !important;
+  background:var(--surface) !important;
+  color:var(--text) !important;
+  border:0;
+}
+#topic-out .ide-bar,
+#topic-person .ide-bar,
+#topic-library .ide-bar{
+  width:var(--ide-rail);
+  padding:8px 0 !important;
+  gap:4px !important;
+  background:var(--bg) !important;
+  border-right:1px solid var(--line) !important;
+  box-sizing:border-box;
+}
+#topic-out .ide-act,
+#topic-person .ide-act,
+#topic-library .ide-act{
+  width:32px; height:32px;
+  margin:0 auto;
+  display:grid; place-items:center;
+  border:1px solid transparent;
+  border-radius:0;
+  color:var(--dim);
+  background:transparent;
+}
+#topic-out .ide-act.on,
+#topic-person .ide-act.on,
+#topic-library .ide-act.on{
+  background:var(--surface-3);
+  border-color:var(--line-strong);
+  color:var(--text);
+}
+#topic-out .ide-side,
+#topic-person .ide-side,
+#topic-library .ide-side{
+  width:auto;
+  min-width:0;
+  background:var(--surface-2) !important;
+  border-right:1px solid var(--line) !important;
+}
+#topic-out .ide-side-h,
+#topic-person .ide-side-h,
+#topic-library .ide-side-h{
+  height:var(--ide-head) !important;
+  min-height:var(--ide-head);
+  padding:0 var(--frame-x) !important;
+  box-sizing:border-box;
+  border-bottom:1px solid var(--line-soft);
+  font:500 10px/1 var(--mono) !important;
+  letter-spacing:.1em;
+  text-transform:uppercase;
+  color:var(--faint) !important;
+  background:var(--surface-2);
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+#topic-out .ide-tabs,
+#topic-person .ide-tabs,
+#topic-library .ide-tabs{
+  height:var(--ide-head) !important;
+  min-height:var(--ide-head);
+  background:var(--bg) !important;
+  border-bottom:1px solid var(--line) !important;
+}
+#topic-out .ide-tab,
+#topic-person .ide-tab,
+#topic-library .ide-tab{
+  height:var(--ide-head);
+  padding:0 4px 0 12px !important;
+  background:var(--bg) !important;
+  border-right:1px solid var(--line) !important;
+  color:var(--faint) !important;
+}
+#topic-out .ide-tab.on,
+#topic-person .ide-tab.on,
+#topic-library .ide-tab.on{
+  background:var(--surface) !important;
+  color:var(--text) !important;
+  box-shadow:inset 0 2px 0 var(--accent) !important;
+}
+#topic-out .ide-tab > button:first-child,
+#topic-person .ide-tab > button:first-child,
+#topic-library .ide-tab > button:first-child{
+  height:var(--ide-head) !important;
+}
+#topic-out .ide-crumb,
+#topic-person .ide-crumb,
+#topic-library .ide-crumb,
+#topic-library .lib-ide-chiprow{
+  min-height:28px !important;
+  height:auto;
+  padding:0 var(--frame-x) !important;
+  display:flex;
+  align-items:center;
+  gap:8px;
+  border-bottom:1px solid var(--line-soft);
+  font:400 11px/1 var(--mono);
+  color:var(--faint);
+  box-sizing:border-box;
+  background:var(--surface);
+}
+#topic-out .ide-main,
+#topic-person .ide-main,
+#topic-library .ide-main{
+  background:var(--surface) !important;
+  min-width:0;
+  display:flex;
+  flex-direction:column;
+  min-height:0;
+}
+#topic-out .ide-status,
+#topic-person .ide-status,
+#topic-library .ide-status,
+#topic-person #pnStatusBar,
+#topic-library #libStatusBar{
+  min-height:28px !important;
+  padding:0 var(--frame-x) !important;
+  display:flex;
+  align-items:center;
+  gap:8px;
+  border-top:1px solid var(--line-soft);
+  background:var(--surface-2);
+  box-sizing:border-box;
+  margin:0 !important;
+}
+#topic-out .ide-welcome,
+#topic-person .ide-welcome,
+#topic-library .ide-welcome{
+  padding:24px var(--frame-x) !important;
+  background:var(--surface) !important;
+  margin:0 !important;
+}
+#topic-out .ide-welcome h2,
+#topic-person .ide-welcome h2,
+#topic-library .ide-welcome h2{
+  margin:8px 0;
+  font:600 18px/1.2 var(--mono);
+}
+#topic-out .ide-welcome p,
+#topic-person .ide-welcome p,
+#topic-library .ide-welcome p{
+  margin:0;
+  max-width:42em;
+  color:var(--dim);
+  font:400 12px/1.5 var(--cjk);
+}
+
+/* IDE 側欄控件：同一水平內縮 */
+#topic-person .pn-ide-mode,
+#topic-library .lib-ide-mode,
+#topic-person .pn-ide-create,
+#topic-person .pn-ide-sort,
+#topic-library .lib-ide-filters,
+#topic-out .ide-filter,
+#topic-person .ide-filter,
+#topic-library .ide-filter{
+  margin-left:var(--frame-x) !important;
+  margin-right:var(--frame-x) !important;
+  width:auto;
+  box-sizing:border-box;
+}
+#topic-person .pn-ide-mode,
+#topic-library .lib-ide-mode{
+  margin-top:8px !important;
+  margin-bottom:8px !important;
+}
+#topic-person .pn-ide-mode button,
+#topic-library .lib-ide-mode button,
+#topic-library .lib-ide-filters .lib-seg button,
+#topic-person .pn-ide-sort button{
+  height:var(--seg-h) !important;
+  font:500 11px/1 var(--mono) !important;
+}
+#topic-person .pn-ide-foot,
+#topic-library .lib-ide-foot{
+  min-height:36px;
+  padding:0 var(--frame-x) !important;
+  gap:8px !important;
+  border-top:1px solid var(--line) !important;
+  box-sizing:border-box;
+  margin:0 !important;
+}
+#topic-person .pn-list .pn-row,
+#topic-out .ide-file,
+#topic-library .lib-author{
+  padding:8px var(--frame-x) !important;
+  box-sizing:border-box;
+}
+#topic-person .pn-ide-sheet,
+#topic-library .lib-ide-sheet{
+  padding:var(--frame-y) var(--frame-x) !important;
+  margin:0 !important;
+}
+#topic-person .pn-ide-kpis,
+#topic-library .lib-ide-kpis,
+#topic-person #pnKpis,
+#topic-library #libKpis{
+  margin:0 !important;
+}
+
+/* 壓掉人物／素材私貨色與歪 padding */
+#topic-person .pn-ide-mode,
+#topic-person .pn-ide-create,
+#topic-person .pn-ide-sort,
+#topic-library .lib-ide-mode,
+#topic-library .lib-ide-filters{
+  padding-left:0 !important;
+  padding-right:0 !important;
+}
+#topic-person .pn-list .pn-row,
+#topic-library .lib-card,
+#topic-library .lib-author{
+  border-color:var(--line-soft) !important;
+}
+
+@media (max-width:900px){
+  #topic-out .ide,
+  #topic-person .ide,
+  #topic-library .ide{
+    grid-template-columns:minmax(0,1fr) !important;
+    grid-template-rows:auto minmax(160px,34vh) minmax(0,1fr) !important;
+  }
+  #topic-out .ide-bar,
+  #topic-person .ide-bar,
+  #topic-library .ide-bar{
+    width:auto;
+    height:40px;
+    flex-direction:row !important;
+    padding:0 8px !important;
+    border-right:0 !important;
+    border-bottom:1px solid var(--line) !important;
+  }
+  #topic-out .ide-side,
+  #topic-person .ide-side,
+  #topic-library .ide-side{
+    border-right:0 !important;
+    border-bottom:1px solid var(--line) !important;
+  }
+}
+
+/* ── 席位編隊 ─────────────────────────────────────────────── */
+#topic-seat .panel-body{ padding:0 !important; }
+#topic-seat #fleet{
+  margin:0 !important;
+  border:0 !important;
+}
+#topic-seat .fleet-top,
+#topic-seat .fp-h,
+#topic-seat .fsp-top{
+  min-height:var(--frame-h);
+  height:auto;
+  padding:0 var(--frame-x) !important;
+  box-sizing:border-box;
+  align-items:center;
+  gap:8px;
+}
+#topic-seat .fleet-pipe{
+  grid-template-columns:minmax(0,1fr) minmax(0,1.05fr) minmax(0,1.25fr) !important;
+}
+#topic-seat .fp-form{
+  padding:8px var(--frame-x) !important;
+  gap:8px !important;
+}
+#topic-seat .fp-mgr-card{
+  margin:8px var(--frame-x) !important;
+}
+#topic-seat .fp-row{
+  padding:8px var(--frame-x) !important;
+  grid-template-columns:48px minmax(0,1fr) !important;
+  gap:8px !important;
+}
+#topic-seat .fleet-seats{ gap:1px; }
+#topic-seat .fs-card{
+  padding:8px 10px !important;
+  min-height:120px;
+  box-sizing:border-box;
+}
+#topic-seat .fleet-space .fsp-grid{
+  grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+}
+#topic-seat .fsp-block .fleet-sub,
+#topic-seat .fp-sub-row .fleet-sub{
+  padding:8px var(--frame-x) !important;
+}
+#topic-seat .fp-list{ margin:0; padding:0; }
+
+@media (max-width:1100px){
+  #topic-seat .fleet-pipe{ grid-template-columns:1fr !important; }
+}
+
+/* ── 佇列看板 ─────────────────────────────────────────────── */
+#topic-queue .panel-body{ padding:var(--frame-y) var(--frame-x) !important; }
+#topic-queue .board{ gap:8px; }
+#topic-queue .lane-head{
+  min-height:28px;
+  padding:0 8px !important;
+  box-sizing:border-box;
+  align-items:center;
+}
+#topic-queue .lane-body{ padding:8px !important; gap:8px; }
+#topic-queue .qcard{ padding:8px 10px !important; }
+
+/* ── 感測 ─────────────────────────────────────────────────── */
+#topic-sense .panel-body{ padding:var(--frame-y) var(--frame-x) !important; }
+#sense,
+#topic-sense #sense{
+  margin:0 !important;
+  border:1px solid var(--line);
+  background:var(--surface);
+}
+#sense .sense-top,
+#sense .sense-bar,
+#sense .sn-h{
+  min-height:var(--frame-h);
+  padding:0 var(--frame-x) !important;
+  box-sizing:border-box;
+  align-items:center;
+  gap:8px;
+}
+#sense .sn-row,
+#sense .sn-empty,
+#sense .sn-mood{
+  padding:8px var(--frame-x) !important;
+}
+#topic-sense .sense-grid{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:8px;
+}
+#topic-sense .scard{
+  border:1px solid var(--line);
+  border-radius:0;
+  background:var(--surface);
+  padding:8px 10px !important;
+  margin:0;
+}
+
+/* ── 收集 ─────────────────────────────────────────────────── */
+#topic-collect .panel-body{ padding:var(--frame-y) var(--frame-x) !important; }
+#topic-collect .collect-layout{
+  display:grid;
+  grid-template-columns:minmax(240px,320px) minmax(0,1fr);
+  gap:8px;
+  align-items:start;
+}
+#topic-collect .collect-stats{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:8px;
+  margin:0 0 8px !important;
+}
+#topic-collect .collect-form,
+#topic-collect .ccard,
+#topic-collect .collect-stat{
+  padding:8px 10px !important;
+  border-radius:0;
+  border:1px solid var(--line);
+  background:var(--surface);
+}
+
+/* ── 審核／開源／健康／基建：標題列與內容內縮對齊 ─────────── */
+#topic-review .panel-body,
+#topic-oss .panel-body,
+#topic-health .panel-body,
+#topic-infra .panel-body,
+#topic-pipe .panel-body,
+#topic-studio .panel-body{
+  padding:var(--frame-y) var(--frame-x) !important;
+}
+#topic-review .rv-layout{
+  display:grid;
+  grid-template-columns:minmax(240px,320px) minmax(0,1fr);
+  gap:8px;
+  align-items:stretch;
+}
+#topic-oss .oss-layout{
+  flex:0 0 auto !important;
+  min-height:360px !important;
+  height:auto !important;
+  display:grid !important;
+  grid-template-columns:minmax(0,1.15fr) minmax(280px,0.85fr) !important;
+  gap:8px !important;
+  align-items:start !important;
+  width:100% !important;
+}
+#topic-oss .oss-list{
+  display:grid !important;
+  grid-template-columns:1fr !important;
+  gap:8px !important;
+  min-height:360px !important;
+  overflow:visible !important;
+}
+#topic-oss .oss-detail{
+  min-height:360px !important;
+  max-height:min(70vh,720px) !important;
+  overflow:auto !important;
+  padding:12px !important;
+  border:1px solid var(--line) !important;
+  border-radius:0 !important;
+  background:var(--surface-2) !important;
+  position:sticky !important;
+  top:8px !important;
+  align-self:start !important;
+  box-sizing:border-box !important;
+}
+#topic-oss .oss-card{
+  padding:10px !important;
+  min-height:96px !important;
+  border:1px solid var(--line) !important;
+  border-radius:0 !important;
+  background:var(--surface) !important;
+  box-sizing:border-box !important;
+}
+#topic-oss .oss-card .oc-top{
+  display:flex !important;
+  align-items:center !important;
+  gap:8px !important;
+  min-width:0 !important;
+}
+#topic-oss .oss-card .oc-name{
+  flex:1 1 auto !important;
+  min-width:0 !important;
+  overflow:hidden !important;
+  text-overflow:ellipsis !important;
+}
+#topic-oss .oss-card .oss-st,
+#topic-oss .oss-card .oc-sample{
+  flex:0 0 auto !important;
+  margin-left:0 !important;
+}
+@media (max-width:1100px){
+  #topic-oss .oss-layout{
+    grid-template-columns:1fr !important;
+  }
+  #topic-oss .oss-detail{
+    position:static !important;
+    max-height:none !important;
+  }
+}
+
+@media (max-width:900px){
+  #topic-sense .sense-grid,
+  #topic-collect .collect-stats{ grid-template-columns:1fr 1fr; }
+  #topic-collect .collect-layout,
+  #topic-review .rv-layout{ grid-template-columns:1fr; }
+}
+
+/* ── 頂欄／主題列／狀態列：與舞台同一水平內縮 ─────────────── */
+.topbar{
+  padding-left:var(--frame-x) !important;
+  padding-right:var(--frame-x) !important;
+}
+.topic-bar{
+  padding-left:0 !important;
+  padding-right:0 !important;
+}
+.topic-bar .topic-head{
+  padding-left:var(--frame-x) !important;
+  padding-right:8px !important;
+}
+.topic-bar .topic-tabs{
+  padding-right:var(--frame-x) !important;
+}
+.statusbar{
+  padding-left:var(--frame-x) !important;
+  padding-right:var(--frame-x) !important;
+}
+
+/* 關掉會破壞對齊的進場位移 */
+.waterfall.on > .ide,
+.waterfall.on > .panel,
+.waterfall.on > .fleet,
+#topic-seat.on #fleet,
+.ide-welcome,
+.ide-tree > *,
+.pn-list > *,
+#outTree > *,
+#fleet .fp-row,
+#fleet .fleet-space:not([hidden]){
+  transform:none !important;
+}
+
+/* ── 左軌導覽：禁止序號／圖示／徽章重疊 ───────────────────── */
+.rail{
+  counter-reset:none;
+  min-width:0;
+}
+.rail .nav-item{
+  display:flex !important;
+  align-items:center !important;
+  justify-content:flex-start !important;
+  gap:8px !important;
+  height:30px !important;
+  min-height:30px !important;
+  padding:0 8px !important;
+  box-sizing:border-box !important;
+  transform:none !important; /* 禁止 hover 橫移造成整列錯位 */
+  overflow:hidden;
+}
+.rail .nav-item::before{
+  content:none !important;
+  display:none !important;
+  counter-increment:none !important;
+}
+.rail .nav-item .ic{
+  flex:0 0 14px !important;
+  width:14px !important;
+  height:14px !important;
+  margin:0 !important;
+  position:static !important;
+}
+.rail .nav-item .nm{
+  flex:1 1 auto !important;
+  min-width:0 !important;
+  margin:0 !important;
+  position:static !important;
+}
+.rail .nav-item .bd{
+  flex:0 0 auto !important;
+  margin-left:auto !important;
+  position:static !important;
+  max-width:4.5em;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.rail-label{
+  display:flex !important;
+  align-items:baseline !important;
+  justify-content:space-between !important;
+  gap:8px !important;
+}
+.rail-label > span{
+  flex:0 0 auto;
+  font-family:var(--mono);
+  font-size:10px;
+  color:var(--faint);
+}
+/* 底欄分頁同樣：圖示與文字不重疊 */
+.tabs .tab,
+.bottom-tabs .tab{
+  display:inline-flex !important;
+  align-items:center !important;
+  gap:6px !important;
+}
+.tabs .tab .ic,
+.bottom-tabs .tab .ic{
+  flex:0 0 14px;
+  width:14px;
+  height:14px;
+}

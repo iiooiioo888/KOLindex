@@ -235,8 +235,9 @@ html[data-skin="pixel"] .nav-item.active{
   box-shadow:inset 4px 0 0 var(--sel-fg) !important;
   background-image:none !important;
 }
-html[data-skin="pixel"] .nav-item.active::before{
-  color:var(--sel-fg) !important;
+html[data-skin="pixel"] .nav-item::before{
+  content:none !important;
+  display:none !important;
 }
 
 /* 卡片選中：深底 + 亮邊，不用琥珀色字疊在琥珀底 */

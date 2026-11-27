@@ -1,0 +1,169 @@
+/* ============================================================================
+   viz.css — 全站圖形化語言
+   LED · 進度條 · 卡片網格 · KPI 帶。各分頁共用，避免再各寫一套。
+   ============================================================================ */
+
+.viz-board{
+  display:grid;
+  grid-template-columns:88px minmax(0,1fr);
+  gap:12px;align-items:center;
+  padding:12px;border:1px solid var(--line);background:var(--surface-2);
+  margin:0 0 12px;
+}
+.viz-kpis{
+  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;
+}
+.viz-kpi{
+  border:1px solid var(--line);background:var(--surface);padding:8px 10px;min-width:0;
+}
+.viz-kpi .vk{display:block;font:500 9.5px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--faint)}
+.viz-kpi .vv{display:block;margin-top:6px;font:700 18px/1 var(--mono);color:var(--text);font-variant-numeric:tabular-nums}
+.viz-kpi .vs{display:block;margin-top:4px;font:400 10px/1.3 var(--mono);color:var(--faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.viz-kpi.is-up .vv{color:var(--green)}
+.viz-kpi.is-down .vv{color:var(--red)}
+.viz-kpi.is-warn .vv{color:var(--amber)}
+
+.viz-sec{display:flex;flex-direction:column;gap:8px;margin:0 0 12px}
+.viz-sec-h{
+  display:flex;align-items:baseline;gap:8px;
+  min-height:28px;padding:0 2px;border-bottom:1px solid var(--line-soft);
+}
+.viz-sec-h b{font:600 11px/1 var(--mono);letter-spacing:.04em;color:var(--text)}
+.viz-sec-h .note{margin:0}
+
+.viz-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(200px,1fr));
+  gap:8px;
+}
+.viz-empty{
+  grid-column:1/-1;padding:16px 12px;border:1px dashed var(--line);
+  font:400 11px/1.4 var(--mono);color:var(--faint);
+}
+
+.viz-card{
+  display:flex;flex-direction:column;gap:6px;
+  min-height:108px;padding:10px;box-sizing:border-box;
+  border:1px solid var(--line);background:var(--surface);text-align:left;
+}
+.viz-card.is-up{border-color:color-mix(in srgb,var(--green) 40%,var(--line));background:color-mix(in srgb,var(--green) 5%,var(--surface))}
+.viz-card.is-down{border-color:color-mix(in srgb,var(--red) 40%,var(--line));background:color-mix(in srgb,var(--red) 5%,var(--surface))}
+.viz-card.is-warn{border-color:color-mix(in srgb,var(--amber) 40%,var(--line))}
+.viz-card.is-busy{border-color:color-mix(in srgb,var(--amber) 45%,var(--line));background:color-mix(in srgb,var(--amber) 6%,var(--surface))}
+.viz-card.is-ok{border-color:color-mix(in srgb,var(--green) 35%,var(--line))}
+
+.viz-card .vc-top{display:flex;align-items:center;gap:8px;min-width:0}
+.viz-led{
+  flex:0 0 10px;width:10px;height:10px;
+  border:1px solid var(--line-strong);background:var(--line-strong);
+}
+.viz-card.is-up .viz-led,
+.viz-card.is-ok .viz-led,
+.viz-card.is-busy .viz-led{animation:viz-pulse 1.8s ease-in-out infinite}
+.viz-card.is-up .viz-led,.viz-card.is-ok .viz-led{background:var(--green);border-color:var(--green)}
+.viz-card.is-busy .viz-led{background:var(--amber);border-color:var(--amber)}
+.viz-card.is-down .viz-led{background:var(--red);border-color:var(--red)}
+.viz-card.is-warn .viz-led{background:var(--amber);border-color:var(--amber)}
+@keyframes viz-pulse{
+  0%,100%{box-shadow:0 0 0 0 color-mix(in srgb,var(--green) 45%,transparent)}
+  50%{box-shadow:0 0 0 4px transparent}
+}
+.viz-card.is-busy .viz-led{animation-name:viz-pulse-amber}
+@keyframes viz-pulse-amber{
+  0%,100%{box-shadow:0 0 0 0 color-mix(in srgb,var(--amber) 45%,transparent)}
+  50%{box-shadow:0 0 0 4px transparent}
+}
+
+.viz-card .vc-name{flex:1 1 auto;min-width:0;font:600 12px/1.2 var(--mono);color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.viz-card .vc-state{flex:0 0 auto;font:500 9.5px/1 var(--mono);letter-spacing:.04em;text-transform:uppercase;color:var(--faint)}
+.viz-card .vc-meta{font:400 10px/1.35 var(--mono);color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.viz-card .vc-note{font:400 10.5px/1.4 var(--cjk);color:var(--faint);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.viz-card .vc-img{font:400 10px/1.3 var(--mono);color:var(--cyan);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.viz-meter{height:4px;background:var(--track);border:1px solid var(--line-soft);overflow:hidden}
+.viz-meter > i{display:block;height:100%;width:0;background:var(--cyan);transition:width .35s linear}
+.viz-card.is-up .viz-meter > i,.viz-card.is-ok .viz-meter > i{background:var(--green)}
+.viz-card.is-down .viz-meter > i{background:var(--red)}
+.viz-card.is-busy .viz-meter > i,.viz-card.is-warn .viz-meter > i{background:var(--amber)}
+.viz-card .vc-acts{display:flex;flex-wrap:wrap;gap:6px;margin-top:auto;padding-top:4px}
+
+/* 表格退居明細，預設收合感 */
+.viz-tables{margin-top:8px;border:1px solid var(--line);background:var(--surface)}
+.viz-tables > summary{
+  cursor:pointer;list-style:none;padding:8px 10px;
+  font:500 11px/1.4 var(--mono);color:var(--dim);
+  border-bottom:1px solid transparent;
+}
+.viz-tables > summary::-webkit-details-marker{display:none}
+.viz-tables[open] > summary{border-bottom-color:var(--line-soft);color:var(--text)}
+
+/* 各分頁：把既有卡片拉進同一視覺密度 */
+#topic-collect .ccard,
+#topic-review .rv-item,
+#topic-oss .oss-card,
+#topic-queue .qcard,
+#fleet .fs-card,
+#sense .scard,
+#topic-pipe .tcell,
+#topic-pipe .pipe-slot{
+  min-height:96px;
+  box-sizing:border-box;
+  border:1px solid var(--line);
+}
+#topic-collect .collect-stat,
+#topic-queue .kpi,
+#fleet .fleet-kpi,
+#sense .sn-kpi,
+#topic-oss .oss-kpi{
+  border:1px solid var(--line);
+  background:var(--surface);
+  position:relative;
+}
+#topic-collect .collect-stat::before,
+#topic-queue .kpi::before,
+#fleet .fleet-kpi::before,
+#topic-oss .oss-kpi::before{
+  content:'';position:absolute;left:0;top:0;bottom:0;width:2px;background:var(--accent);
+}
+
+/* 審核／排程／連接器：清單列加 LED */
+#topic-review .rv-item,
+#topic-jobs .job-row,
+#connTable tbody tr{
+  position:relative;
+}
+#topic-review .rv-item::before{
+  content:'';flex:0 0 8px;width:8px;height:8px;margin-right:6px;
+  background:var(--amber);border:1px solid var(--amber);
+  align-self:center;
+}
+#topic-person .ide-tree button,
+#topic-library .ide-tree button,
+#topic-out .ide-tree button{
+  border-left:2px solid transparent;
+}
+#topic-person .ide-tree button.on,
+#topic-library .ide-tree button.on,
+#topic-out .ide-file.on{
+  border-left-color:var(--accent);
+}
+
+/* 基礎設施 Docker 圖形區 */
+#topic-infra .viz-grid{margin:0 0 12px}
+#pane-docker .viz-sec{padding:0 var(--frame-x)}
+
+.stack-docker-list{
+  display:grid !important;
+  grid-template-columns:1fr !important;
+  gap:6px !important;
+  max-height:280px;
+}
+.stack-docker-list .viz-card{
+  min-height:0;padding:8px;gap:4px;
+}
+.stack-docker-list .vc-note{-webkit-line-clamp:1}
+
+@media (max-width:900px){
+  .viz-board{grid-template-columns:1fr}
+  .viz-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+body.reduce-motion .viz-card .viz-led{animation:none !important}

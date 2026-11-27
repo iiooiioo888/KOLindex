@@ -7,13 +7,13 @@
 <title>KOL-Index</title>
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tippy.js@6.3.7/dist/tippy.css" integrity="sha384-IBgYl+I5X6ZDZXI5zv1vsSE3VopDomz4BxSu/GlxaPHfFtcrJ3uj70z1w6srO9zU" crossorigin="anonymous">
-<link rel="stylesheet" href="css/index2.css?v=20261126h">
+<link rel="stylesheet" href="css/index2.css?v=20261127b">
 <!-- design system：權杖 → 基礎 → 元件 → 版面，之後才是各頁覆寫 -->
 <link rel="stylesheet" href="css/ds/tokens.css?v=20261126c">
 <link rel="stylesheet" href="css/ds/base.css?v=20261121">
-<link rel="stylesheet" href="css/ds/components.css?v=20261126c">
-<link rel="stylesheet" href="css/ds/pages.css?v=20261126g">
-<link rel="stylesheet" href="css/ds/pixel.css?v=20261126g">
+<link rel="stylesheet" href="css/ds/components.css?v=20261127a">
+<link rel="stylesheet" href="css/ds/pages.css?v=20261127a">
+<link rel="stylesheet" href="css/ds/pixel.css?v=20261127a">
 <link rel="stylesheet" href="css/studio.css?v=20261121">
 <link rel="stylesheet" href="css/review.css?v=20261121">
 <link rel="stylesheet" href="css/connectors.css?v=20261121">
@@ -27,6 +27,9 @@
 <link rel="stylesheet" href="css/caps.css?v=20261124">
 <link rel="stylesheet" href="css/motion.css?v=20261126a">
 <link rel="stylesheet" href="css/ux.css?v=20261127b">
+<link rel="stylesheet" href="css/ds/unify.css?v=20261127d">
+<link rel="stylesheet" href="css/health.css?v=20261127a">
+<link rel="stylesheet" href="css/viz.css?v=20261127a">
 </head>
 <body data-topic="queue">
 <script>
@@ -519,15 +522,41 @@
           </div>
         </div>
         <p class="note" id="healthNote">瀏覽器不直連容器埠；由 BFF 代問。數字來自探測結果，沒來源顯示「—」。</p>
-        <div class="roster-wrap plain">
-          <table class="table tbl-md" id="healthProbeTable">
-            <thead><tr><th>探測項</th><th>問法</th><th>狀態</th><th>內容</th></tr></thead>
-            <tbody id="healthProbeBody"><tr><td colspan="4" class="conn-empty">正在讀 /__health/components…</td></tr></tbody>
-          </table>
-          <table class="table tbl-md" id="healthDockerTable">
-            <thead><tr><th>Compose 服務</th><th>狀態</th><th>健康</th><th>埠</th><th>映像／內容</th></tr></thead>
-            <tbody id="healthDockerBody"><tr><td colspan="5" class="conn-empty">正在讀容器目錄…</td></tr></tbody>
-          </table>
+        <div class="panel-body health-body">
+          <div class="hz-board" id="healthBoard" aria-label="健康總覽">
+            <div class="hz-ring" id="healthRing" aria-hidden="true">
+              <svg viewBox="0 0 72 72" width="72" height="72">
+                <circle class="hz-track" cx="36" cy="36" r="28"></circle>
+                <circle class="hz-prog" id="healthRingProg" cx="36" cy="36" r="28"></circle>
+              </svg>
+              <div class="hz-ring-v"><b id="healthRingPct">—</b><span>可用</span></div>
+            </div>
+            <div class="hz-kpis" id="healthKpis"></div>
+          </div>
+
+          <div class="hz-sec">
+            <div class="hz-sec-h"><b>探測</b><span class="note">HTTP／TCP／磁碟</span></div>
+            <div class="hz-grid" id="healthProbeGrid" aria-label="探測項"><div class="hz-empty">正在讀 /__health/components…</div></div>
+          </div>
+
+          <div class="hz-sec">
+            <div class="hz-sec-h"><b>Docker Compose</b><span class="note">容器狀態圖</span></div>
+            <div class="hz-grid hz-docker" id="healthDockerGrid" aria-label="Docker 容器"><div class="hz-empty">正在讀容器目錄…</div></div>
+          </div>
+
+          <details class="hz-tables">
+            <summary>表格明細</summary>
+            <div class="roster-wrap plain">
+              <table class="table tbl-md" id="healthProbeTable">
+                <thead><tr><th>探測項</th><th>問法</th><th>狀態</th><th>內容</th></tr></thead>
+                <tbody id="healthProbeBody"><tr><td colspan="4" class="conn-empty">—</td></tr></tbody>
+              </table>
+              <table class="table tbl-md" id="healthDockerTable">
+                <thead><tr><th>Compose 服務</th><th>狀態</th><th>健康</th><th>埠</th><th>映像／內容</th></tr></thead>
+                <tbody id="healthDockerBody"><tr><td colspan="5" class="conn-empty">—</td></tr></tbody>
+              </table>
+            </div>
+          </details>
         </div>
         <div class="jobs-foot"><span id="healthSource" class="chip or">來源 —</span><span>與左側「元件健康」卡、基礎設施／服務表同源。監測開關仍要 <code>KOL_DOCKER=1</code>。</span></div>
       </div>
@@ -557,40 +586,65 @@
         </div>
 
         <div class="tab-pane on" id="pane-docker" role="tabpanel" aria-labelledby="itab-docker">
-          <div class="roster-wrap plain">
-            <table class="table tbl-md" id="dockerTable">
-              <thead><tr><th>服務</th><th>來源</th><th>狀態</th><th>內容／讀到</th></tr></thead>
-              <tbody id="sysServices"><tr><td colspan="4" class="conn-empty">正在連後端…</td></tr></tbody>
-            </table>
-            <table class="table tbl-md" id="dockerCtl">
-              <thead><tr><th>NAS 容器</th><th>角色</th><th>映像／內容</th><th>狀態</th><th>健康</th><th>控制</th></tr></thead>
-              <tbody id="dockerCtlBody"><tr><td colspan="6" class="conn-empty">正在讀本機 Docker…</td></tr></tbody>
-            </table>
-            <p class="note">探測與容器目錄已獨立成 Topics「元件健康」（<code>#/health</code>、<a href="/ops/health">/ops/health</a>）。本表是同一份資料的摘要。監測與開關走本機 docker compose；開源容器另見開源組件頁。網頁容器沒有掛上 Docker socket。</p>
+          <div class="viz-sec">
+            <div class="viz-sec-h"><b>探測服務</b><span class="note">與健康頁同源</span></div>
+            <div class="viz-grid" id="sysServicesGrid" aria-label="探測服務圖"><div class="viz-empty">正在連後端…</div></div>
           </div>
+          <div class="viz-sec">
+            <div class="viz-sec-h"><b>NAS 容器控制</b><span class="note">圖形狀態 · 操作者可開關</span></div>
+            <div class="viz-grid hz-grid hz-docker" id="dockerCtlGrid" aria-label="Docker 控制"><div class="viz-empty">正在讀本機 Docker…</div></div>
+          </div>
+          <details class="viz-tables hz-tables">
+            <summary>表格明細</summary>
+            <div class="roster-wrap plain">
+              <table class="table tbl-md" id="dockerTable">
+                <thead><tr><th>服務</th><th>來源</th><th>狀態</th><th>內容／讀到</th></tr></thead>
+                <tbody id="sysServices"><tr><td colspan="4" class="conn-empty">—</td></tr></tbody>
+              </table>
+              <table class="table tbl-md" id="dockerCtl">
+                <thead><tr><th>NAS 容器</th><th>角色</th><th>映像／內容</th><th>狀態</th><th>健康</th><th>控制</th></tr></thead>
+                <tbody id="dockerCtlBody"><tr><td colspan="6" class="conn-empty">—</td></tr></tbody>
+              </table>
+            </div>
+          </details>
+          <p class="note">監測與開關走本機 docker compose；開源容器見開源組件頁。網頁容器不掛 Docker socket。</p>
         </div>
 
         <div class="tab-pane" id="pane-ecs" role="tabpanel" aria-labelledby="itab-ecs">
-          <div class="roster-wrap plain">
-            <table class="table tbl-md">
-              <thead><tr><th>席位</th><th>平台</th><th>狀態</th><th>車道</th><th data-col="low">完成</th><th data-col="low">失敗</th></tr></thead>
-              <tbody id="sysSeatBody"><tr><td colspan="6" class="conn-empty">正在連 /api/seats…</td></tr></tbody>
-            </table>
+          <div class="viz-sec">
+            <div class="viz-sec-h"><b>席位池</b><span class="note">執行狀態圖</span></div>
+            <div class="viz-grid" id="sysSeatGrid" aria-label="席位圖"><div class="viz-empty">正在連 /api/seats…</div></div>
           </div>
+          <details class="viz-tables">
+            <summary>表格明細</summary>
+            <div class="roster-wrap plain">
+              <table class="table tbl-md">
+                <thead><tr><th>席位</th><th>平台</th><th>狀態</th><th>車道</th><th data-col="low">完成</th><th data-col="low">失敗</th></tr></thead>
+                <tbody id="sysSeatBody"><tr><td colspan="6" class="conn-empty">—</td></tr></tbody>
+              </table>
+            </div>
+          </details>
         </div>
 
         <div class="tab-pane" id="pane-bill" role="tabpanel" aria-labelledby="itab-bill">
-          <div class="roster-wrap plain">
-            <table class="table tbl-md">
-              <thead><tr><th>項目</th><th>數值</th><th>說明</th></tr></thead>
-              <tbody id="sysStoreBody"><tr><td colspan="3" class="conn-empty">正在連 /api/rail…</td></tr></tbody>
-            </table>
+          <div class="viz-sec">
+            <div class="viz-sec-h"><b>素材庫指標</b><span class="note">來自 /api/rail</span></div>
+            <div class="viz-grid" id="sysStoreGrid" aria-label="儲存指標圖"><div class="viz-empty">正在連 /api/rail…</div></div>
           </div>
+          <details class="viz-tables">
+            <summary>表格明細</summary>
+            <div class="roster-wrap plain">
+              <table class="table tbl-md">
+                <thead><tr><th>項目</th><th>數值</th><th>說明</th></tr></thead>
+                <tbody id="sysStoreBody"><tr><td colspan="3" class="conn-empty">—</td></tr></tbody>
+              </table>
+            </div>
+          </details>
         </div>
 
         <div class="tab-pane" id="pane-cost" role="tabpanel" aria-labelledby="itab-cost">
           <div class="panel-body" id="sysDiskPane">
-            <div class="conn-empty">正在連 /api/rail…</div>
+            <div class="viz-empty">正在連 /api/rail…</div>
           </div>
         </div>
         <div class="tab-pane" id="pane-conn" role="tabpanel" aria-labelledby="itab-conn">
@@ -1260,7 +1314,7 @@
 <script defer src="js/seats.js?v=20261126j"></script>
 <script defer src="js/sense.js?v=20261126b"></script>
 <script defer src="js/rail.js?v=20261123b"></script>
-<script defer src="js/system.js?v=20261126b"></script>
+<script defer src="js/system.js?v=20261127c"></script>
 <script defer src="js/cmdk.js?v=20261127b"></script>
 </body>
 </html>
