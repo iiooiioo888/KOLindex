@@ -200,6 +200,73 @@ function loadAuthors(reset){
   return L.aPending;
 }
 
+function pageQuery(offset){
+  var saved=L.offset;
+  L.offset=offset;
+  var q=query();
+  L.offset=saved;
+  return q;
+}
+function reconcileAuthors(){
+  if(L.authorLoading) return;
+  if(!L.authors.length){ loadAuthors(true); return; }
+  if(Date.now()-L.at<POLL_MS) return;
+  var tok=++L.atok;
+  L.authorLoading=true;
+  var path='/api/library/authors?sort='+encodeURIComponent(L.asort)+'&limit='+ALIMIT+'&offset=0';
+  if(L.q) path+='&q='+encodeURIComponent(L.q);
+  req(path).then(function(res){
+    if(tok!==L.atok) return;
+    L.authorLoading=false;
+    if(!res.ok){ setStatus('後端離線 · 顯示上次結果','or'); return; }
+    var d=res.data||{};
+    var fresh=d.items||[];
+    L.aCounts=d.counts||L.aCounts;
+    L.authorTotal=Number(d.total)||L.authorTotal;
+    L.at=Date.now(); L.ok=true; L.loaded=true; L.error='';
+    var same=fresh.length<=L.authors.length;
+    for(var i=0; same&&i<fresh.length; i++){
+      if(String(fresh[i].author)!==String(L.authors[i].author)||authorFp(fresh[i])!==authorFp(L.authors[i])) same=false;
+    }
+    if(!same){ L.authors=fresh; L.aOffset=L.authors.length; renderAll(); }
+    else { renderKpis(); renderFoot(); setStatus('API · LIVE','cyan'); }
+  }).catch(function(){
+    if(tok!==L.atok) return;
+    L.authorLoading=false;
+    setStatus('後端離線 · 顯示上次結果','or');
+  });
+}
+function reconcile(){
+  if(!L.active) return;
+  if(L.mode==='authors'){ reconcileAuthors(); return; }
+  if(L.loading) return;
+  if(!L.loaded||!L.items.length){ load(true); return; }
+  if(Date.now()-L.at<POLL_MS) return;
+  var tok=++L.tok;
+  L.loading=true;
+  req(pageQuery(0)).then(function(res){
+    if(tok!==L.tok) return;
+    L.loading=false;
+    if(!res.ok){ setStatus('後端離線 · 顯示上次結果','or'); return; }
+    var d=res.data||{};
+    var fresh=d.items||[];
+    L.counts=d.counts||L.counts;
+    L.sources=d.sources||L.sources;
+    L.total=Number(d.total)||L.total;
+    L.at=Date.now(); L.ok=true; L.error='';
+    var same=fresh.length<=L.items.length;
+    for(var i=0; same&&i<fresh.length; i++){
+      if(String(fresh[i].id)!==String(L.items[i].id)||cardFp(fresh[i])!==cardFp(L.items[i])) same=false;
+    }
+    if(!same){ L.items=fresh; L.offset=L.items.length; renderAll(); }
+    else { renderKpis(); renderFoot(); setStatus('API · LIVE','cyan'); }
+  }).catch(function(){
+    if(tok!==L.tok) return;
+    L.loading=false;
+    setStatus('後端離線 · 顯示上次結果','or');
+  });
+}
+
 function authorRowHtml(a){
   var meta=[];
   if(a.works) meta.push(nfmt(a.works)+' 件');
@@ -221,7 +288,11 @@ function renderAuthors(){
   if(!L.authors.length){
     box.innerHTML='<div class="lib-empty">'+(L.loaded?'沒有符合的作者':'尚未載入')+'</div>';
   } else {
-    box.innerHTML=L.authors.map(authorRowHtml).join('');
+    mountCards(box, L.authors, {
+      sel:'.lib-author', attr:'data-author',
+      id:function(a){ return a.author; },
+      fp:authorFp, html:authorRowHtml
+    });
   }
   var cnt=$('libCount');
   if(cnt) cnt.textContent=nfmt(L.authorTotal)+' 位作者';
@@ -288,11 +359,15 @@ function openWithAuthor(name){
 function openAuthorInPerson(){
   var who=L.author;
   if(!who) return;
-  if(window.KOLINDEX_PERSON&&typeof window.KOLINDEX_PERSON.openAuthor==='function'){
-    window.KOLINDEX_PERSON.openAuthor(who);
-  } else if(window.KOLINDEX_UI&&window.KOLINDEX_UI.setTopic){
-    window.KOLINDEX_UI.setTopic('person');
+  function go(){
+    if(window.KOLINDEX_PERSON&&typeof window.KOLINDEX_PERSON.openAuthor==='function'){
+      window.KOLINDEX_PERSON.openAuthor(who);
+    }
   }
+  if(window.KOLINDEX_PERSON){ go(); return; }
+  var ui=window.KOLINDEX_UI;
+  if(ui&&ui.setTopic) ui.setTopic('person');
+  if(ui&&ui.whenTopic) ui.whenTopic('person').then(go);
 }
 
 function clearAuthor(){
@@ -370,6 +445,17 @@ function skelHtml(){
   return out;
 }
 
+function cardFp(it){
+  return [it.id,it.kind,it.hasLocal?1:0,it.images||0,it.caption||'',it.author||'',it.ct||'',it.bytes||0,(it.sources||[]).join(','),thumbUrl(it)||''].join('\u001f');
+}
+function authorFp(a){
+  return [a.author,a.works||0,a.gallery||0,a.video||0,a.localItems,a.files||0,a.bytes||0,a.lastCt||''].join('\u001f');
+}
+function mountCards(box, items, spec){
+  var dom=window.KOLINDEX_DOM;
+  if(dom&&dom.mountKeyed) dom.mountKeyed(box, items, spec);
+  else box.innerHTML=items.map(spec.html).join('');
+}
 function renderGrid(){
   var box=$('libGrid');
   if(!box) return;
@@ -383,9 +469,11 @@ function renderGrid(){
     renderFoot();
     return;
   }
-  var at=box.scrollTop;
-  box.innerHTML=L.items.map(cardHtml).join('');
-  box.scrollTop=at;
+  mountCards(box, L.items, {
+    sel:'.lib-card', attr:'data-id',
+    id:function(it){ return it.id; },
+    fp:cardFp, html:cardHtml
+  });
   renderFoot();
 }
 
@@ -1235,8 +1323,7 @@ function bind(){
       renderAll();
       return;
     }
-    // 不在素材庫分頁時不預抓 48 張卡片；等切過去再由 MutationObserver 載入。
-    if(d.ok&&L.active&&(!L.loaded||Date.now()-L.at>POLL_MS)) reload(true);
+    if(d.ok&&L.active) reconcile();
   });
 
   if(typeof MutationObserver==='function'){
@@ -1248,7 +1335,7 @@ function bind(){
       L.active=now;
       if(!now&&DV.poll){ clearTimeout(DV.poll); DV.poll=0; }
       if(now&&derivRunning()&&!DV.poll) derivTick();
-      if(now&&(!L.loaded||Date.now()-L.at>POLL_MS)) reload(true);
+      if(now) reconcile();
     });
     mo.observe(document.body,{attributes:true,attributeFilter:['data-topic']});
   }

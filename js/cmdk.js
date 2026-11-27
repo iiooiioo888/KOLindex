@@ -109,6 +109,14 @@
     return out;
   }
 
+  function afterTopic(topic, fn){
+    var u=ui();
+    if(u&&u.setTopic) u.setTopic(topic);
+    var wait=u&&u.whenTopic;
+    if(wait) wait(topic).then(function(){ setTimeout(fn, 0); });
+    else setTimeout(fn, 260);
+  }
+
   function req(path){
     if (window.KOL&&KOL.requestStatus){
       return KOL.requestStatus(path).then(function(r){ return r&&r.ok?r.data:null; },function(){ return null; });
@@ -131,8 +139,7 @@
         a.slice(0,5).forEach(function(x){
           var name=x.author==='unnamed'?'未命名':x.author;
           out.push({group:'作者',label:name,hint:(x.works||0)+' 件 · '+(x.files||0)+' 檔',icon:'人',meta:(x.gallery||0)+'/'+(x.video||0),run:function(){
-            if(ui()&&ui().setTopic) ui().setTopic('person');
-            setTimeout(function(){ if(window.KOLINDEX_PERSON&&KOLINDEX_PERSON.openAuthor) KOLINDEX_PERSON.openAuthor(x.author); },260);
+            afterTopic('person', function(){ if(window.KOLINDEX_PERSON&&KOLINDEX_PERSON.openAuthor) KOLINDEX_PERSON.openAuthor(x.author); });
           }});
         });
       }
@@ -142,8 +149,7 @@
           var cap=String(x.caption||'').replace(/\s+/g,' ').trim();
           if(!cap) cap='未命名';
           out.push({group:'作品',label:cap,hint:(x.author==='unnamed'?'未命名':x.author)+' · '+(x.published_at||'').slice(0,10),icon:'作',meta:x.kind==='video'?'影片':'圖集',run:function(){
-            if(ui()&&ui().setTopic) ui().setTopic('library');
-            setTimeout(function(){ if(window.KOLINDEX_LIBRARY&&KOLINDEX_LIBRARY.openViewer) KOLINDEX_LIBRARY.openViewer(x.id); },320);
+            afterTopic('library', function(){ if(window.KOLINDEX_LIBRARY&&KOLINDEX_LIBRARY.openViewer) KOLINDEX_LIBRARY.openViewer(x.id); });
           }});
         });
       }

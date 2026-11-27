@@ -75,7 +75,7 @@ GitHub Pages 只發靜態畫面。正式運行在家裡的 NAS。分頁細節見
 | 層 | 技術 | 狀態 | 位置 |
 |---|---|---|---|
 | 前端宿主 | Next.js 16.4.6、React 19.3.1、TypeScript 5.9.3 | 半 | `apps/web`。殼層 `/`，SSR 健康 `/ops/health` |
-| 現用監控台 | HTML、CSS、原生 JavaScript | 真 | 根目錄 `index2.html`；建置時同步到 `apps/web/public/console/` |
+| 現用監控台 | HTML、CSS、原生 JavaScript | 真 | 根目錄 `index2.html`；建置時同步到 `apps/web/public/console/`。`/` 與 `/queue` 進入 `#/queue`，不再轉去另一套隊列頁 |
 | 本機 BFF | Node，零依賴 `tests/dev-server.mjs` | 真 | 建議 `5201`，供 Next rewrite 登入／Sherlock／Docker |
 | 業務資料 | `kolindex-api` 的 `node:sqlite` | 真 | 另一個 repo。表數以該 repo 為準，本檔不另寫死 |
 | 關聯資料與知識庫 | PostgreSQL 16.16，pgvector 0.8.7 | 待確認 | 映像 `pgvector/pgvector@sha256:484e838076e04939d27d3e176e91c86eea96236126023be8d3059761122e579f`。amd64 與 arm64 的 `PG_VERSION` 都是 `16.16-1.pgdg12+1`，2026-11-24 讀自登錄檔。業務 API 未接。知識庫 SQL 只在空資料目錄第一次啟動時執行 |

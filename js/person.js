@@ -157,6 +157,37 @@ function load(reset){
   return A.pending;
 }
 
+function reconcilePeople(){
+  if(!A.active||A.mode==='subjects') return;
+  if(A.loading) return;
+  if(!A.loaded||!A.items.length){ load(true); return; }
+  if(Date.now()-A.at<POLL_MS) return;
+  var tok=++A.tok;
+  A.loading=true;
+  var path='/api/library/authors?sort='+encodeURIComponent(A.sort)+'&limit='+LIMIT+'&offset=0';
+  if(A.q) path+='&q='+encodeURIComponent(A.q);
+  req(path).then(function(res){
+    if(tok!==A.tok) return;
+    A.loading=false;
+    if(!res.ok){ setStatus('後端離線 · 顯示上次結果','or'); return; }
+    var d=res.data||{};
+    var fresh=d.items||[];
+    A.counts=d.counts||A.counts;
+    A.total=Number(d.total)||A.total;
+    A.at=Date.now(); A.ok=true; A.error='';
+    var same=fresh.length<=A.items.length;
+    for(var i=0; same&&i<fresh.length; i++){
+      if(String(fresh[i].author)!==String(A.items[i].author)||rowFp(fresh[i])!==rowFp(A.items[i])) same=false;
+    }
+    if(!same){ A.items=fresh; A.offset=A.items.length; renderAll(); }
+    else { renderKpis(); renderFoot(); setStatus('API · LIVE','cyan'); }
+  }).catch(function(){
+    if(tok!==A.tok) return;
+    A.loading=false;
+    setStatus('後端離線 · 顯示上次結果','or');
+  });
+}
+
 function loadWorks(reset){
   if(!A.sel) return Promise.resolve(false);
   if(A.worksLoading){
@@ -397,13 +428,30 @@ function subjectRowHtml(s){
   '</button>';
 }
 
+function rowFp(a){
+  return [a.author,a.works||0,a.files||0,a.bytes||0,a.lastCt||'',a.gallery||0,a.video||0,A.sel===a.author?1:0].join('\u001f');
+}
+function subjectFp(s){
+  var cov=s.coverage||{};
+  var on=A.subjectSel&&A.subjectSel.id===s.id?1:0;
+  return [s.id,s.display_name,s.updated_at||'',cov.confirmed_accounts||0,cov.candidate_accounts||0,on].join('\u001f');
+}
+function mountRows(box, items, spec){
+  var dom=window.KOLINDEX_DOM;
+  if(dom&&dom.mountKeyed) dom.mountKeyed(box, items, spec);
+  else box.innerHTML=items.map(spec.html).join('');
+}
 function renderList(){
   var box=$('pnList'); if(!box) return;
   if(A.mode==='subjects'){
     if(!A.subjects.length){
       box.innerHTML='<div class="pn-empty">'+(A.loaded?(A.error?'控制面：'+esc(A.error):'還沒有人物主檔。上方可建立一位。'):'尚未載入')+'</div>';
     } else {
-      box.innerHTML=A.subjects.map(subjectRowHtml).join('');
+      mountRows(box, A.subjects, {
+        sel:'.pn-row', attr:'data-subject',
+        id:function(s){ return s.id; },
+        fp:subjectFp, html:subjectRowHtml
+      });
     }
     renderFoot();
     return;
@@ -411,7 +459,11 @@ function renderList(){
   if(!A.items.length){
     box.innerHTML='<div class="pn-empty">'+(A.loaded?'沒有符合的人物':'尚未載入')+'</div>';
   } else {
-    box.innerHTML=A.items.map(rowHtml).join('');
+    mountRows(box, A.items, {
+      sel:'.pn-row', attr:'data-author',
+      id:function(a){ return a.author; },
+      fp:rowFp, html:rowHtml
+    });
   }
   renderFoot();
 }
@@ -532,11 +584,40 @@ function renderSubjectSide(){
     '<p class="note">OSS '+esc(ossLine)+'</p>';
 }
 
+function workFp(it){
+  var cover='';
+  if(it.cover&&!(it.kind==='gallery'&&!it.hasLocal)){
+    var lib=window.KOLINDEX_LIBRARY;
+    cover=(lib&&lib.thumbUrl)?lib.thumbUrl(it):'';
+  }
+  return [it.id,it.kind||'',it.ct||'',it.bytes||0,it.caption||'',cover].join('\u001f');
+}
+function personHeadFp(){
+  var m=A.meta||{};
+  return [A.mode,A.sel,m.works||0,m.gallery||0,m.video||0,m.files||0,m.bytes||0,m.lastCt||'',
+    (A.months||[]).map(function(x){ return x.m+':'+x.n; }).join(',')].join('\u001f');
+}
+function personSideFp(){
+  if(!A.sel) return 'empty';
+  return personHeadFp()+'\u001f'+A.worksTotal+'\u001f'+A.works.map(workFp).join('|');
+}
+function paintWorkMore(box, more){
+  var cur=box.querySelector('.pn-more-side');
+  if(!more){ if(cur) cur.remove(); return; }
+  if(cur){ if(cur.outerHTML!==more) cur.outerHTML=more; return; }
+  box.insertAdjacentHTML('beforeend', more);
+}
 function renderSide(){
   var box=$('pnSide'); if(!box) return;
-  if(A.mode==='subjects') return renderSubjectSide();
+  if(A.mode==='subjects'){
+    box.removeAttribute('data-fp');
+    box.removeAttribute('data-head');
+    return renderSubjectSide();
+  }
   if(!A.sel){
     box.innerHTML='<div class="pn-empty"><b>還沒選人物。</b>點清單裡任一位，這裡會顯示他的作品時間軸、作品牆與容量。</div>';
+    box.removeAttribute('data-fp');
+    box.removeAttribute('data-head');
     return;
   }
   var m=A.meta||{};
@@ -566,7 +647,51 @@ function renderSide(){
   if(A.works.length<A.worksTotal){
     more='<div class="pn-more pn-more-side"><button type="button" class="mini-btn" data-work-more="1">'+(A.worksLoading?'載入中…':'更多作品（還有 '+nfmt(A.worksTotal-A.works.length)+' 件）')+'</button></div>';
   }
-  box.innerHTML=head+platformHtml()+monthsHtml()+grid+more;
+  var html=head+platformHtml()+monthsHtml()+grid+more;
+  var fp=personSideFp();
+  if(box.getAttribute('data-fp')===fp){
+    paintWorkMore(box, more);
+    return;
+  }
+  var gridEl=box.querySelector('.pn-grid');
+  var buttons=gridEl?gridEl.querySelectorAll('.pw-work'):[];
+  var headNow=personHeadFp();
+  if(gridEl && buttons.length && buttons.length<A.works.length && box.getAttribute('data-head')===headNow){
+    var prefix=true;
+    for(var i=0;i<buttons.length;i++){
+      if(buttons[i].getAttribute('data-id')!==String(A.works[i].id)||buttons[i].getAttribute('data-fp')!==workFp(A.works[i])){
+        prefix=false; break;
+      }
+    }
+    if(prefix){
+      var extra='';
+      for(var k=buttons.length;k<A.works.length;k++) extra+=workHtml(A.works[k]);
+      gridEl.insertAdjacentHTML('beforeend', extra);
+      var added=gridEl.querySelectorAll('.pw-work');
+      for(var n=buttons.length;n<added.length;n++) added[n].setAttribute('data-fp', workFp(A.works[n]));
+      paintWorkMore(box, more);
+      box.setAttribute('data-fp', fp);
+      return;
+    }
+  }
+  var oldImg={};
+  Array.prototype.forEach.call(box.querySelectorAll('.pw-work'), function(node){
+    var img=node.querySelector('img');
+    var id=node.getAttribute('data-id');
+    if(img&&id) oldImg[id]=img;
+  });
+  var at=box.scrollTop;
+  box.innerHTML=html;
+  Array.prototype.forEach.call(box.querySelectorAll('.pw-work'), function(node, idx){
+    var img=node.querySelector('img');
+    var id=node.getAttribute('data-id');
+    var keep=oldImg[id];
+    if(img&&keep&&keep.getAttribute('src')===img.getAttribute('src')) img.replaceWith(keep);
+    if(A.works[idx]) node.setAttribute('data-fp', workFp(A.works[idx]));
+  });
+  box.scrollTop=at;
+  box.setAttribute('data-head', headNow);
+  box.setAttribute('data-fp', fp);
 }
 
 /* 兩個檢視：index＝歡迎頁、profile＝右側人物空間。殼層與產出庫相同。 */
@@ -616,12 +741,17 @@ function backToList(){
 
 function openInLibrary(){
   var who=A.sel; if(!who) return;
-  if(window.KOLINDEX_LIBRARY&&window.KOLINDEX_LIBRARY.openWithAuthor){
-    window.KOLINDEX_LIBRARY.openWithAuthor(who);
-    return;
+  function go(){
+    if(window.KOLINDEX_LIBRARY&&window.KOLINDEX_LIBRARY.openWithAuthor){
+      window.KOLINDEX_LIBRARY.openWithAuthor(who);
+      return;
+    }
+    if(window.KOLINDEX_LIBRARY&&window.KOLINDEX_LIBRARY.setAuthor) window.KOLINDEX_LIBRARY.setAuthor(who);
   }
-  if(window.KOLINDEX_LIBRARY&&window.KOLINDEX_LIBRARY.setAuthor) window.KOLINDEX_LIBRARY.setAuthor(who);
-  if(window.KOLINDEX_UI&&window.KOLINDEX_UI.setTopic) window.KOLINDEX_UI.setTopic('library');
+  if(window.KOLINDEX_LIBRARY){ go(); return; }
+  var ui=window.KOLINDEX_UI;
+  if(ui&&ui.setTopic) ui.setTopic('library');
+  if(ui&&ui.whenTopic) ui.whenTopic('library').then(go);
 }
 
 function openAuthor(name){
@@ -884,8 +1014,7 @@ function bind(){
       return;
     }
     if(A.mode==='subjects') return;
-    // 不在人物分頁時不預抓 100 位作者；切過去再載入。
-    if(d.ok&&A.active&&(!A.loaded||Date.now()-A.at>POLL_MS)) load(true);
+    if(d.ok&&A.active) reconcilePeople();
   });
 
   if(typeof MutationObserver==='function'){
@@ -893,7 +1022,7 @@ function bind(){
       var now=document.body.getAttribute('data-topic')==='person';
       if(now===A.active) return;
       A.active=now;
-      if(now&&(!A.loaded||Date.now()-A.at>POLL_MS)) load(true);
+      if(now) reconcilePeople();
     });
     mo.observe(document.body,{attributes:true,attributeFilter:['data-topic']});
   }

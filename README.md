@@ -2,7 +2,7 @@
 
 [![pages](https://github.com/iiooiioo888/KOLindex/actions/workflows/pages.yml/badge.svg)](https://github.com/iiooiioo888/KOLindex/actions/workflows/pages.yml)
 
-網紅索引與監控平台的介面原型。時間表、技術表、技術目標和格式要求在 [PROJECT.md](PROJECT.md)。畫面語意對齊較早的 v2.2；開發約束以 KOL-SPEC-001 v4.1 為準。前端宿主依 ADR-008 改為 `apps/web`（Next.js）。十二個分頁仍在原型層，建置時同步到 `/console/`；登入、Sherlock、Docker 仍由 `tests/dev-server.mjs` 當 BFF。
+網紅索引與監控平台的介面原型。時間表、技術表、技術目標和格式要求在 [PROJECT.md](PROJECT.md)。畫面語意對齊較早的 v2.2；開發約束以 KOL-SPEC-001 v4.1 為準。前端宿主依 ADR-008 改為 `apps/web`（Next.js）。監控台建置時同步到 `/console/`；`/` 與 `/queue` 進入隊列分頁。登入、Sherlock、Docker 仍由 `tests/dev-server.mjs` 當 BFF。
 
 > 畫面語意對齊 v2.2。開發約束以 KOL-SPEC-001 v4.1 為準。治理層還沒做，落差列在 ROADMAP。時間表和技術表在 PROJECT.md。
 
@@ -26,7 +26,7 @@
 | # | 分頁 | 內容 | 資料 |
 |---|---|---|---|
 | 01 | 任務收集 | 待歸戶帳號的收件匣，可「認領／退回」寫回後端 | 真（`GET /api/collect`、`POST /api/collect/:id/claim\|return`） |
-| 02 | 任務隊列 | 五條車道的真實工作看板：排程、歸戶複核、MyLike 同步、席位工單、補檔；KPI 與派工／席位面板即時更新 | 真（`/api/jobs`、`/api/seats`、`/api/rail`、`/api/review/queue`） |
+| 02 | 任務隊列 | 五條車道的工作看板，入口 `/console/#/queue`（`/` 與 `/queue` 轉到這裡）。卡片只讀，派工連到席位頁 | 真（`/api/jobs`、`/api/seats`、`/api/rail`、`/api/review/queue`） |
 | 03 | 感測上下文 | 抖音近 30 日作品量、作者、互動、關鍵詞、情緒粗分 | 真（`GET /api/sense`） |
 | 04 | 產出庫 | 已交付的內容與檢視器 | 空（控制面沒有 `GET /artifacts`） |
 | 05 | 席位執行 | 8 個席位的 worker pool：搶工單、掃資料庫／磁碟、寫回結果與耗時 | 真（`GET /api/seats`、`POST /api/seats/run\|auto`） |
@@ -74,7 +74,7 @@ npm run sync:console
 npm run dev
 ```
 
-開 <http://127.0.0.1:5200/> 進殼層，<http://127.0.0.1:5200/console/> 進現用監控台，<http://127.0.0.1:5200/ops/health> 看 SSR 元件健康。可用 `KOL_API`、`KOL_CONTROL`、`KOL_BFF` 覆寫 rewrite 目標。
+開 <http://127.0.0.1:5200/> 進監控台任務隊列（`/console/index.html#/queue`）。元件健康在 <http://127.0.0.1:5200/ops/health>。可用 `KOL_API`、`KOL_CONTROL`、`KOL_BFF` 覆寫 rewrite 目標。
 
 任務收集的「呼叫 Sherlock」只給操作者。開源組件頁的「拉起映像」會在設了 `KOL_DOCKER=1` 的宿主行程拉取官方映像 `sherlock/sherlock` 0.16.0 的固定摘要，並打開這個入口；查詢仍是 `docker run`，查完就退出。沒有按過拉起、也沒設 `KOL_SHERLOCK=1` 時，入口回 `{"error":"disabled"}`。Maigret 用同一個按鈕只拉取備援映像，不接到收集頁。兩者都是命令列映像，沒有網頁埠。網頁容器把 `KOL_DOCKER` 和 `KOL_SHERLOCK` 固定為 `0`，也不掛 Docker socket，所以容器裡的按鈕會被拒絕。GitHub Pages 沒有這個入口。
 

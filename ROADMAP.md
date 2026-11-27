@@ -7,7 +7,7 @@
 | # | 分頁 | 現況 | 資料來源 | 還缺什麼 |
 |---|---|---|---|---|
 | 01 | 任務收集 | 真 | `GET /api/collect`、認領／退回寫 `collect_decision` + `audit_log` | 收集項目前只來自抖音作者索引（candidate 帳號），沒有其他平台。**邊界**：認領只做工作分派（assignee/state），不改 `identity_state`、不建 `person`；`confirmed` 只能由審核台的人類裁決產生 |
-| 02 | 任務隊列 | 真 | 五條車道吃 `/api/jobs`、`/api/review/queue`、`/api/mylike/job`、`/api/seats`、`/api/library/download/job`；下方派工與席位面板吃 `/api/rail`、`/api/seats` | 沒有自己的 queue 表，是各真資料源的聚合視圖；派工仍要去席位頁按，這一頁唯讀 |
+| 02 | 任務隊列 | 真 | 入口是監控台 `#/queue`（`/` 與 `/queue` 都進 `/console/index.html#/queue`）。五條車道仍吃 `/api/jobs`、`/api/review/queue`、`/api/mylike/job`、`/api/seats`、`/api/library/download/job`；派工與席位條吃 `/api/rail`、`/api/seats` | 沒有自己的 queue 表，是各真資料源的聚合視圖；派工仍要去席位頁按，這一頁唯讀。十三個分頁都在 `/console/` |
 | 03 | 感測上下文 | 真 | `GET /api/sense`：`douyin_item` 近 30 日作品量、作者、互動、關鍵詞、詞典情緒、`open ai_event` | 沒有跨平台；情緒是 `lexicon-v1` 粗分，不是模型判定；`plays` 多數為 0 |
 | 04 | 產出庫 | 空 | `OUTPUTS=[]`，畫面顯示「目前沒有產出物」 | 沒有產出物表／檔案儲存；控制面缺 `GET /artifacts` |
 | 05 | 席位執行 | 真 | 八席 worker pool（`GET/POST /api/seats`，`seat`／`seat_task` 表）；工單、耗時、失敗數都回後端 | 席位是規則型掃描器（rule-v1），不是 LLM agent；80 席角色表已移除 |

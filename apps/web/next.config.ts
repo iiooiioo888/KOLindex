@@ -6,6 +6,8 @@ const bff = (process.env.KOL_BFF || "http://127.0.0.1:5201").replace(/\/+$/, "")
 
 const nextConfig: NextConfig = {
   output: "standalone",
+  // README 用 127.0.0.1:5200。dev 預設只放行 localhost，否則客戶端腳本被擋、登入停在「正在問」。
+  allowedDevOrigins: ["127.0.0.1"],
   async redirects() {
     return [
       // public/console/index.html 不會自動接到 /console；沒尾斜線會 404
@@ -15,7 +17,8 @@ const nextConfig: NextConfig = {
   },
   async rewrites() {
     return [
-      { source: "/api/:path*", destination: `${api}/:path*` },
+      // kolindex-api 掛在 /api 下（dev-server 轉發的是完整路徑）。不能把前綴拿掉。
+      { source: "/api/:path*", destination: `${api}/api/:path*` },
       { source: "/__control", destination: `${control}/` },
       { source: "/__control/:path*", destination: `${control}/:path*` },
       // 本機 BFF（登入、Sherlock、Docker）仍由 tests/dev-server.mjs 提供，預設 5201

@@ -7,7 +7,9 @@
   window.KOLINDEX_SEATS_LIVE = true;
 
   var BASE = window.KOLINDEX_BASE || '';
-  var POLL_MS = 1500;
+  var POLL_BUSY_MS = 1500;
+  var POLL_IDLE_MS = 8000;
+  var pollTimer = 0;
   var S = { ok: false, loaded: false, loading: false, queued: false, data: null, at: null, error: null, auto: true, busy: false };
 
   function $(id) { return document.getElementById(id); }
@@ -69,50 +71,83 @@
       { k: '平均耗時', v: d.avgMs == null ? '—' : num(d.avgMs) + ' ms', s: '最近全部工單' },
       { k: '自動派工', v: d.auto ? 'ON' : 'OFF', s: d.auto ? '閒時每 10 秒補一張' : '只接人工派工' }
     ];
-    host.innerHTML = cells.map(function (c) {
+    var html = cells.map(function (c) {
       return '<div class="fleet-kpi"><span class="fk-k">' + esc(c.k) + '</span>' +
         '<b class="fk-v">' + esc(c.v) + '</b><span class="fk-s">' + esc(c.s) + '</span></div>';
     }).join('');
+    if (host.getAttribute('data-fp') === html) return;
+    host.innerHTML = html;
+    host.setAttribute('data-fp', html);
   }
 
+  function seatFp(s) {
+    var c = s.current;
+    return [s.id, s.platform, s.lane, s.done, s.failed, s.failStreak, s.lastOkAt,
+      c ? c.id : '', c ? c.label : '', c ? c.startedAt : ''].join('\u001f');
+  }
+  function seatHtml(s, lanes) {
+    var st = stateOf(s);
+    var title = s.current ? (s.current.label + ' #' + s.current.id + ' · ' + rel(s.current.startedAt)) : (lanes[s.lane] || s.lane);
+    return '<div class="fs-card is-' + st.key + '" data-seat="' + esc(s.id) + '" title="' + esc(title) + '">' +
+      '<div class="fs-top"><b class="fs-id">' + esc(s.id) + '</b>' +
+      '<span class="fs-plat">' + esc(s.platform) + '</span>' +
+      '<span class="fs-dot"></span><span class="fs-state">' + esc(st.label) + '</span></div>' +
+      '<div class="fs-kind">' + esc(s.current ? s.current.label : (lanes[s.lane] || s.lane)) + '</div>' +
+      '<div class="fs-meta">' + num(s.done) + ' 完成 · ' + num(s.failed) + ' 失敗 · ' + esc(rel(s.lastOkAt)) + '</div>' +
+      '</div>';
+  }
   function paintSeats(d) {
     var host = $('fleetSeats');
     if (!host) return;
     var lanes = {};
     (d.kinds || []).forEach(function (k) { lanes[k.key] = k.label; });
-    host.innerHTML = (d.seats || []).map(function (s) {
-      var st = stateOf(s);
-      var title = s.current ? (s.current.label + ' #' + s.current.id + ' · ' + rel(s.current.startedAt)) : (lanes[s.lane] || s.lane);
-      return '<div class="fs-card is-' + st.key + '" title="' + esc(title) + '">' +
-        '<div class="fs-top"><b class="fs-id">' + esc(s.id) + '</b>' +
-        '<span class="fs-plat">' + esc(s.platform) + '</span>' +
-        '<span class="fs-dot"></span><span class="fs-state">' + esc(st.label) + '</span></div>' +
-        '<div class="fs-kind">' + esc(s.current ? s.current.label : (lanes[s.lane] || s.lane)) + '</div>' +
-        '<div class="fs-meta">' + num(s.done) + ' 完成 · ' + num(s.failed) + ' 失敗 · ' + esc(rel(s.lastOkAt)) + '</div>' +
-        '</div>';
-    }).join('');
+    var items = d.seats || [];
+    var dom = window.KOLINDEX_DOM;
+    if (!dom) {
+      host.innerHTML = items.map(function (s) { return seatHtml(s, lanes); }).join('');
+      return;
+    }
+    dom.mountKeyed(host, items, {
+      sel: '.fs-card',
+      attr: 'data-seat',
+      id: function (s) { return s.id; },
+      fp: seatFp,
+      html: function (s) { return seatHtml(s, lanes); }
+    });
   }
 
+  function taskFp(t) {
+    return [t.id, t.status, t.label, t.seat || '', t.ms, t.finishedAt || '', t.startedAt || '', t.createdAt || '', t.error || '', summarize(t)].join('\u001f');
+  }
+  function taskHtml(t) {
+    return '<li class="ft-row" data-task="' + t.id + '">' +
+      '<span class="ft-time">' + esc(rel(t.finishedAt || t.startedAt || t.createdAt)) + '</span>' +
+      '<span class="ft-id">#' + t.id + '</span>' +
+      '<span class="ft-seat">' + esc(t.seat || '—') + '</span>' +
+      '<span class="ft-main">' +
+        '<span class="ft-line">' +
+          '<span class="ft-kind">' + esc(t.label) + '</span>' +
+          '<span class="ft-st is-' + esc(t.status) + '">' + esc(statusLabel(t.status)) + '</span>' +
+          '<span class="ft-ms">' + (t.ms == null ? '' : num(t.ms) + ' ms') + '</span>' +
+        '</span>' +
+        '<span class="ft-res" title="' + esc(summarize(t)) + '">' + esc(summarize(t)) + '</span>' +
+      '</span>' +
+      '</li>';
+  }
   function paintTasks(d) {
     var host = $('fleetTasks');
     if (!host) return;
     var list = (d.tasks || []).slice(0, 12);
     if (!list.length) { host.innerHTML = '<li class="ft-empty">還沒有工單 · 按上方「派工」開始</li>'; return; }
-    host.innerHTML = list.map(function (t) {
-      return '<li class="ft-row">' +
-        '<span class="ft-time">' + esc(rel(t.finishedAt || t.startedAt || t.createdAt)) + '</span>' +
-        '<span class="ft-id">#' + t.id + '</span>' +
-        '<span class="ft-seat">' + esc(t.seat || '—') + '</span>' +
-        '<span class="ft-main">' +
-          '<span class="ft-line">' +
-            '<span class="ft-kind">' + esc(t.label) + '</span>' +
-            '<span class="ft-st is-' + esc(t.status) + '">' + esc(statusLabel(t.status)) + '</span>' +
-            '<span class="ft-ms">' + (t.ms == null ? '' : num(t.ms) + ' ms') + '</span>' +
-          '</span>' +
-          '<span class="ft-res" title="' + esc(summarize(t)) + '">' + esc(summarize(t)) + '</span>' +
-        '</span>' +
-        '</li>';
-    }).join('');
+    var dom = window.KOLINDEX_DOM;
+    if (!dom) { host.innerHTML = list.map(taskHtml).join(''); return; }
+    dom.mountKeyed(host, list, {
+      sel: '.ft-row',
+      attr: 'data-task',
+      id: function (t) { return t.id; },
+      fp: taskFp,
+      html: taskHtml
+    });
   }
 
   function paintChrome(d) {
@@ -123,7 +158,7 @@
       live.textContent = 'LIVE';
       live.className = 'fleet-live is-ok';
     }
-    if (note) note.textContent = '來源 api · 每 1.5 秒 · 最後同步 ' + rel(d && d.at);
+    if (note) note.textContent = '來源 api · 每 ' + pollLabel(d) + ' 秒 · 最後同步 ' + rel(d && d.at);
     if (auto && d) auto.checked = !!d.auto;
   }
 
@@ -199,6 +234,25 @@
     });
   }
 
+  function seatBusy(d) {
+    var seats = (d && d.seats) || [];
+    for (var i = 0; i < seats.length; i++) if (seats[i].current) return true;
+    return false;
+  }
+  function pollWait(d) { return seatBusy(d) ? POLL_BUSY_MS : POLL_IDLE_MS; }
+  function pollLabel(d) { return seatBusy(d) ? '1.5' : '8'; }
+  function stopPoll() {
+    if (pollTimer) { clearTimeout(pollTimer); pollTimer = 0; }
+  }
+  function armPoll() {
+    stopPoll();
+    if (!visible() || document.hidden) return;
+    pollTimer = setTimeout(function () {
+      pollTimer = 0;
+      if (!visible() || document.hidden) return;
+      load().then(armPoll, armPoll);
+    }, pollWait(S.data));
+  }
   function visible() {
     return document.body.getAttribute('data-topic') === 'seat';
   }
@@ -213,17 +267,20 @@
     var rf = $('fleetRefresh');
     if (rf) rf.addEventListener('click', function () { load(); });
     document.addEventListener('visibilitychange', function () {
-      if (!document.hidden && visible()) load();
+      if (document.hidden) { stopPoll(); return; }
+      if (visible()) load().then(armPoll, armPoll);
     });
   }
 
   function boot() {
     if (!$('fleet')) return;
     bind();
-    load();
-    setInterval(function () { if (visible() && !document.hidden) load(); }, POLL_MS);
+    if (visible() && !document.hidden) load().then(armPoll, armPoll);
     if (typeof MutationObserver === 'function') {
-      var obs = new MutationObserver(function () { if (visible()) load(); });
+      var obs = new MutationObserver(function () {
+        if (visible() && !document.hidden) load().then(armPoll, armPoll);
+        else stopPoll();
+      });
       obs.observe(document.body, { attributes: true, attributeFilter: ['data-topic'] });
     }
   }

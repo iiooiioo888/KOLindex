@@ -15,10 +15,11 @@
 
   var BASE = window.KOLINDEX_BASE || '';
   var POLL_MS = 15000;
+  var pollTimer = 0;
 
   var R = {
     ok: false, loaded: false, loading: false, queued: false,
-    range: '24H', data: null, at: 0, error: '',
+    range: '24H', data: null, at: 0, error: '', fp: {},
     paused: false, cleared: false
   };
 
@@ -93,6 +94,12 @@
       var y = h - pad - (v / max) * (h - pad * 2);
       return x.toFixed(1) + ',' + y.toFixed(1);
     });
+    var sig = series.join(',') + '|' + range;
+    if (c.getAttribute('data-fp') === sig) {
+      var startSame = $('rangeStart'); if (startSame) startSame.textContent = '-' + range;
+      var midSame = $('rangeMid'); if (midSame) midSame.textContent = '-' + (range === '24H' ? '12H' : range === '6H' ? '3H' : '30m');
+      return;
+    }
     if (!pts.length) pts = [pad + ',' + (h - pad), (w - pad) + ',' + (h - pad)];
     var area = pad + ',' + (h - pad) + ' ' + pts.join(' ') + ' ' + (w - pad) + ',' + (h - pad);
     c.innerHTML = '<svg class="chart" viewBox="0 0 ' + w + ' ' + h + '" preserveAspectRatio="none" aria-hidden="true">' +
@@ -103,6 +110,7 @@
       '<polyline fill="none" stroke="#7fb2c9" stroke-width="1.7" stroke-linejoin="round" points="' + pts.join(' ') + '"></polyline>' +
       '<circle r="2.4" fill="#7fb2c9" cx="' + pts[pts.length - 1].split(',')[0] + '" cy="' + pts[pts.length - 1].split(',')[1] + '"></circle>' +
       '</svg>';
+    c.setAttribute('data-fp', sig);
     var start = $('rangeStart'); if (start) start.textContent = '-' + range;
     var mid = $('rangeMid'); if (mid) mid.textContent = '-' + (range === '24H' ? '12H' : range === '6H' ? '3H' : '30m');
   }
@@ -142,17 +150,29 @@
     var total = $('railSlotTotal'); if (total) total.textContent = num(s.total);
     var grid = $('railSlots');
     if (grid) {
-      grid.innerHTML = items.length ? items.map(function (it) {
-        var tone = slotTone(it.status);
-        var load = it.jobs ? Math.min(100, (it.running / Math.max(1, it.jobs)) * 100) : 0;
-        var meta = it.jobs ? it.jobs + ' 工作' : '無工作';
-        if (it.failStreak) meta += ' · 失敗 ' + it.failStreak;
-        return '<div class="slot" data-slot="' + esc(it.id) + '" data-status="' + esc(it.status) + '">' +
-          '<div class="s-id"><span>' + esc(it.id) + '</span><span class="st tone-' + tone + '">' + esc(String(it.status).toUpperCase()) + '</span></div>' +
-          '<div class="s-who">' + esc(it.platform) + '</div>' +
-          '<div class="s-meta">' + esc(meta) + '</div>' +
-          '<div class="s-ttl"><i style="--pct:' + clampPct(load) + '"></i></div></div>';
-      }).join('') : '<div class="lane-empty">沒有連接器憑證</div>';
+      if (!items.length) grid.innerHTML = '<div class="lane-empty">沒有連接器憑證</div>';
+      else {
+        var dom = window.KOLINDEX_DOM;
+        var slotHtml = function (it) {
+          var tone = slotTone(it.status);
+          var load = it.jobs ? Math.min(100, (it.running / Math.max(1, it.jobs)) * 100) : 0;
+          var meta = it.jobs ? it.jobs + ' 工作' : '無工作';
+          if (it.failStreak) meta += ' · 失敗 ' + it.failStreak;
+          return '<div class="slot" data-slot="' + esc(it.id) + '" data-status="' + esc(it.status) + '">' +
+            '<div class="s-id"><span>' + esc(it.id) + '</span><span class="st tone-' + tone + '">' + esc(String(it.status).toUpperCase()) + '</span></div>' +
+            '<div class="s-who">' + esc(it.platform) + '</div>' +
+            '<div class="s-meta">' + esc(meta) + '</div>' +
+            '<div class="s-ttl"><i style="--pct:' + clampPct(load) + '"></i></div></div>';
+        };
+        if (!dom) grid.innerHTML = items.map(slotHtml).join('');
+        else dom.mountKeyed(grid, items, {
+          sel: '.slot',
+          attr: 'data-slot',
+          id: function (it) { return it.id; },
+          fp: function (it) { return [it.id, it.status, it.platform, it.jobs, it.running, it.failStreak].join('\u001f'); },
+          html: slotHtml
+        });
+      }
     }
     var quotas = $('railQuotas');
     if (quotas) {
@@ -209,14 +229,23 @@
       if (items[0] && items[0].id !== R.clearedId) R.cleared = false;
       else { el.innerHTML = '<div class="lane-empty" style="padding:8px 4px">已清空，等新事件</div>'; return; }
     }
-    el.innerHTML = items.map(function (e) {
+    var dom = window.KOLINDEX_DOM;
+    var evHtml = function (e) {
       var key = String(e.action || '').split('.')[0];
       var color = EV_COLOR[key] || '#7a8894';
       var sub = e.subject ? ' <span class="dim">' + esc(e.subject) + '</span>' : '';
-      return '<div class="ev"><span class="ts">' + esc(hhmm(e.at)) + '</span>' +
+      return '<div class="ev" data-ev="' + esc(e.id) + '"><span class="ts">' + esc(hhmm(e.at)) + '</span>' +
         '<span class="bul" style="background:' + color + '"></span>' +
         '<span class="msg"><b>' + esc(e.action) + '</b>' + sub + '</span></div>';
-    }).join('');
+    };
+    if (!dom) { el.innerHTML = items.map(evHtml).join(''); return; }
+    dom.mountKeyed(el, items, {
+      sel: '.ev',
+      attr: 'data-ev',
+      id: function (e) { return e.id; },
+      fp: function (e) { return [e.id, e.at, e.action, e.subject || ''].join('\u001f'); },
+      html: evHtml
+    });
   }
 
   /* ---------- 面板 6：操作審計 ---------- */
@@ -248,18 +277,32 @@
   }
 
   /* ---------- 抓資料 ---------- */
+  function touchSync() {
+    var sync = $('railSync');
+    if (sync) sync.textContent = R.at ? rel(R.at) : '—';
+    var src = $('railSrc');
+    if (src) src.textContent = R.ok ? 'api · 每 ' + (POLL_MS / 1000) + 's' : 'api · 離線';
+  }
+  function changed(key, value) {
+    var fp = '';
+    try { fp = JSON.stringify(value == null ? null : value); } catch (e) { fp = String(Math.random()); }
+    if (R.fp[key] === fp) return false;
+    R.fp[key] = fp;
+    return true;
+  }
   function paint(d) {
     R.data = d;
     R.ok = true;
     R.loaded = true;
     R.at = Date.now();
     R.error = '';
-    paintQueue(d);
-    paintSlots(d.slots || {});
-    paintDispatcher(d);
-    paintEvents(d.events);
-    paintAudit(d.audit);
-    paintStorage(d.storage || {});
+    if (changed('queue', d.queue)) paintQueue(d);
+    if (changed('slots', d.slots)) paintSlots(d.slots || {});
+    if (changed('dispatcher', d.dispatcher)) paintDispatcher(d);
+    if (changed('events', d.events)) paintEvents(d.events);
+    if (changed('audit', d.audit)) paintAudit(d.audit);
+    if (changed('storage', d.storage)) paintStorage(d.storage || {});
+    touchSync();
   }
 
   function paintOffline(err) {
@@ -329,14 +372,27 @@
 
     /* 新事件流進來（不主動輪詢以外的方式）→ 清空標記在下一批資料時解除 */
     document.addEventListener('visibilitychange', function () {
-      if (!document.hidden) load();
+      if (document.hidden) { stopPoll(); return; }
+      load().then(armPoll, armPoll);
     });
+  }
+
+  function stopPoll() {
+    if (pollTimer) { clearTimeout(pollTimer); pollTimer = 0; }
+  }
+  function armPoll() {
+    stopPoll();
+    if (document.hidden) return;
+    pollTimer = setTimeout(function () {
+      pollTimer = 0;
+      if (document.hidden) return;
+      load().then(armPoll, armPoll);
+    }, POLL_MS);
   }
 
   function boot() {
     bind();
-    load();
-    setInterval(function () { if (!document.hidden) load(); }, POLL_MS);
+    load().then(armPoll, armPoll);
   }
 
   window.KOLINDEX_RAIL = {

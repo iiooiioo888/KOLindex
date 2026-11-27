@@ -20,6 +20,10 @@
 
 一段時間內會有兩層入口：`/console/`（原型）與 Next 殼層。Compose 預設映像若仍用 `infra/compose/Dockerfile`（dev-server），要另開 `apps/web` 的建置流程才能換成 Next 映像。BFF 未搬完之前，Sherlock／容器開關不能只靠 Next。
 
+## 2026-11-27 入口
+
+`/` 與 `/queue` 進入現有監控台的隊列分頁（`/console/index.html#/queue`）。`/collect` 進入 `#/collect`。Next 宿主不再把 `#/queue` 送回 `/queue`。隊列畫面仍是 `index2.html`，不另做一套 React 隊列。
+
 ## 何時重審
 
 第一個分頁完成 App Router 遷移並刪掉對應舊檔時重審。若 BFF 全部進 Next Route Handler，可停用 `tests/dev-server.mjs` 當正式入口。

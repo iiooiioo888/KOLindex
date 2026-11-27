@@ -7,7 +7,8 @@
     "dev": "npm run sync:console && next dev -p 5200",
     "dev:bff": "node scripts/dev-bff.mjs",
     "build": "npm run sync:console && next build",
-    "start": "next start -H 0.0.0.0 -p 5200"
+    "start": "next start -H 0.0.0.0 -p 5200",
+    "test:queue": "node scripts/check-queue-board.mjs"
   },
   "dependencies": {
     "next": "16.4.6",

@@ -13,33 +13,48 @@
   /* 示範資料已移除；保留常數讓既有分支一律走真資料。 */
   var DEMO=false;
   function every(ms, fn, opt){
-    tickerJobs.push({ms:ms, acc:0, fn:fn, clock:!!(opt&&opt.clock), demo:!(opt&&(opt.clock||opt.live))});
+    tickerJobs.push({
+      ms:ms, fn:fn,
+      clock:!!(opt&&opt.clock),
+      live:!!(opt&&opt.live),
+      next:Date.now()+ms
+    });
   }
-  var tickerStamp=0;
-  function pumpTicker(now){
-    if (!tickerStamp) tickerStamp=now;
-    var dt=now-tickerStamp;
-    tickerStamp=now;
-    if (dt>1500) dt=1500;
-    if (dt<0) dt=0;
-    if (!document.hidden){
-      var paused=store.paused;
-      for (var i=0;i<tickerJobs.length;i++){
-        var job=tickerJobs[i];
-        job.acc+=dt;
-        if (job.acc<job.ms) continue;
-        job.acc%=job.ms;
-        if (job.demo && !DEMO) continue;
-        if (paused && !job.clock) continue;
-        try { job.fn(); }
-        catch (err) { if (window.console) console.error(err); }
+  var tickerTimer=0;
+  function tickerActive(job){
+    return job.clock || job.live || DEMO;
+  }
+  function runTicker(){
+    tickerTimer=0;
+    if (document.hidden) return;
+    var now=Date.now();
+    var wait=1000;
+    var paused=store.paused;
+    for (var i=0;i<tickerJobs.length;i++){
+      var job=tickerJobs[i];
+      if (!tickerActive(job)) continue;
+      if (job.next<=now){
+        job.next=now+job.ms;
+        if (!(paused && !job.clock)){
+          try { job.fn(); }
+          catch (err) { if (window.console) console.error(err); }
+        }
       }
+      var left=job.next-Date.now();
+      if (left<wait) wait=left;
     }
-    requestAnimationFrame(pumpTicker);
+    if (wait<16) wait=16;
+    tickerTimer=setTimeout(runTicker, wait);
+  }
+  function pauseTicker(){
+    if (tickerTimer){ clearTimeout(tickerTimer); tickerTimer=0; }
   }
   document.addEventListener('visibilitychange', function(){
-    tickerStamp=0;
-    if (!document.hidden) tickClock();
+    if (document.hidden){ pauseTicker(); return; }
+    var now=Date.now();
+    for (var i=0;i<tickerJobs.length;i++) tickerJobs[i].next=now+tickerJobs[i].ms;
+    tickClock();
+    runTicker();
   });
   /* ================= FIXTURES ================= */
   var EMPTY_FIX={tasks:[],seats:[],locks:[],alerts:[],slots:[],collect:[],metrics:null};
@@ -1746,6 +1761,45 @@
     var gs=$('#globalSearch');
     runSearch(gs?gs.value:'');
     if (window.requestAnimationFrame) requestAnimationFrame(scrollActiveTab);
+    ensureTopicScripts(next.topic);
+  }
+  var PAGE_SCRIPTS={
+    library:['js/mylike-intel.js?v=20261127a','js/library.js?v=20261127p'],
+    person:['js/person.js?v=20261127p'],
+    seat:['js/seats.js?v=20261127p'],
+    sense:['js/sense.js?v=20261126b'],
+    review:['js/review.js?v=20261126c'],
+    infra:['js/infra.js?v=20261121','js/jobs.js?v=20261123c'],
+    studio:['js/wireframe.js?v=20261121','js/studio.js?v=20261126a']
+  };
+  var pageWait={};
+  function loadScript(src){
+    return new Promise(function(resolve){
+      var found=document.querySelector('script[data-kol-src="'+src+'"]');
+      if (found){
+        if (found.getAttribute('data-kol-ready')==='1') resolve();
+        else found.addEventListener('load', function(){ resolve(); }, {once:true});
+        return;
+      }
+      var s=document.createElement('script');
+      s.src=src;
+      s.async=false;
+      s.setAttribute('data-kol-src', src);
+      s.onload=function(){ s.setAttribute('data-kol-ready','1'); resolve(); };
+      s.onerror=function(){ resolve(); };
+      document.body.appendChild(s);
+    });
+  }
+  function ensureTopicScripts(topic){
+    var list=PAGE_SCRIPTS[topic];
+    if (!list) return Promise.resolve();
+    if (pageWait[topic]) return pageWait[topic];
+    var chain=Promise.resolve();
+    list.forEach(function(src){
+      chain=chain.then(function(){ return loadScript(src); });
+    });
+    pageWait[topic]=chain;
+    return chain;
   }
   function go(partial,mode){
     var next=normalizeRoute(partial);
@@ -4331,6 +4385,7 @@
     toast:function(msg,tone){ toast(msg,tone); },
     topic:function(){ return routeState.topic; },
     setTopic:function(t){ if (TOPICS.indexOf(t)>=0) setTopic(t); },
+    whenTopic:function(t){ return ensureTopicScripts(t); },
     /* 給快速切換用：目前註冊的分頁與說明，避免前端另抄一份清單 */
     topics:function(){
       return TOPICS.map(function(t){
@@ -4360,7 +4415,71 @@
     }
   };
 
+  window.KOLINDEX_DOM={
+    mountKeyed:function(box, items, spec){
+      if (!box || !spec) return;
+      var nodes=box.querySelectorAll(spec.sel);
+      var i, same;
+      if (nodes.length===items.length && box.children.length===nodes.length){
+        same=true;
+        for (i=0;i<items.length;i++){
+          if (nodes[i].getAttribute(spec.attr)!==String(spec.id(items[i])) || nodes[i].getAttribute('data-fp')!==spec.fp(items[i])){
+            same=false; break;
+          }
+        }
+        if (same) return;
+      }
+      if (nodes.length && nodes.length<items.length && box.children.length===nodes.length){
+        var prefix=true;
+        for (i=0;i<nodes.length;i++){
+          if (nodes[i].getAttribute(spec.attr)!==String(spec.id(items[i])) || nodes[i].getAttribute('data-fp')!==spec.fp(items[i])){
+            prefix=false; break;
+          }
+        }
+        if (prefix){
+          var extra='';
+          for (i=nodes.length;i<items.length;i++) extra+=spec.html(items[i]);
+          box.insertAdjacentHTML('beforeend', extra);
+          var added=box.querySelectorAll(spec.sel);
+          for (i=nodes.length;i<added.length;i++) added[i].setAttribute('data-fp', spec.fp(items[i]));
+          return;
+        }
+      }
+      var old={};
+      Array.prototype.forEach.call(nodes, function(node){
+        var id=node.getAttribute(spec.attr);
+        if (id) old[id]=node;
+      });
+      var at=box.scrollTop;
+      var frag=document.createDocumentFragment();
+      items.forEach(function(it){
+        var id=String(spec.id(it));
+        var fp=spec.fp(it);
+        var prev=old[id];
+        if (prev && prev.getAttribute('data-fp')===fp){
+          frag.appendChild(prev);
+          delete old[id];
+          return;
+        }
+        var wrap=document.createElement('div');
+        wrap.innerHTML=spec.html(it);
+        var fresh=wrap.firstElementChild;
+        if (!fresh) return;
+        fresh.setAttribute('data-fp', fp);
+        if (prev){
+          var oldImg=prev.querySelector('img');
+          var newImg=fresh.querySelector('img');
+          if (oldImg && newImg && oldImg.getAttribute('src')===newImg.getAttribute('src')) newImg.replaceWith(oldImg);
+          delete old[id];
+        }
+        frag.appendChild(fresh);
+      });
+      while (box.firstChild) box.removeChild(box.firstChild);
+      box.appendChild(frag);
+      box.scrollTop=at;
+    }
+  };
   bootRouter();
   mountTips();
-  requestAnimationFrame(pumpTicker);
+  runTicker();
 })();
